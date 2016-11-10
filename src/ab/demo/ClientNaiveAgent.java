@@ -10,10 +10,14 @@ package ab.demo;
 
 import ab.demo.other.ClientActionRobot;
 import ab.demo.other.ClientActionRobotJava;
+import ab.demo.other.InGameState;
 import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.Query;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -31,34 +35,27 @@ public class ClientNaiveAgent implements Runnable {
     public int failedCounter = 0;
     public int[] solved;
     TrajectoryPlanner tp;
+    private double discountFactor = 0.9;
+    private double learningRate = 0.1;
+    private double explorationRate = 0.1;
     private int id = 28888;
     private boolean firstShot;
     private Point prevTarget;
     private Random randomGenerator;
+    private Handle h;
 
     /**
      * Constructor using the default IP
      */
     public ClientNaiveAgent() {
-        // the default ip is the localhost
-        ar = new ClientActionRobotJava("127.0.0.1");
-        tp = new TrajectoryPlanner();
-        randomGenerator = new Random();
-        prevTarget = null;
-        firstShot = true;
-
+        this("127.0.0.1");
     }
 
     /**
      * Constructor with a specified IP
      */
     public ClientNaiveAgent(String ip) {
-        ar = new ClientActionRobotJava(ip);
-        tp = new TrajectoryPlanner();
-        randomGenerator = new Random();
-        prevTarget = null;
-        firstShot = true;
-
+        this(ip, 0);
     }
 
     public ClientNaiveAgent(String ip, int id) {
@@ -194,7 +191,7 @@ public class ClientNaiveAgent implements Runnable {
         // capture Image
         BufferedImage screenshot = ar.doScreenShot();
 
-        // process image
+        // process images
         Vision vision = new Vision(screenshot);
 
         Rectangle sling = vision.findSlingshotMBR();
@@ -333,6 +330,43 @@ public class ClientNaiveAgent implements Runnable {
         }
         return state;
     }
+
+    public double getQValue(InGameState s, String action){
+        return 0.0;
+    }
+
+    public double getReward(){
+        return 0.0;
+    }
+
+    public double maxQValue(InGameState to){
+        return 0.0;
+    }
+
+    public void writeQValue(InGameState s, String action, double newValue){
+
+    }
+
+    public void updateQValue(InGameState from, String action, InGameState to){
+        double oldValue = getQValue(from, action);
+        double reward = getReward();
+        double newValue = oldValue + learningRate * (reward + discountFactor * maxQValue(to) - oldValue);
+        writeQValue(from, action, newValue);
+    }
+
+    public String bestAction(InGameState s){
+        return "";
+    }
+
+    public String getNextAction(InGameState s){
+        int randomValue = randomGenerator.nextInt(100);
+        if (randomValue < explorationRate * 100) {
+            return "Random Action";
+        }
+        return bestAction(s);
+    }
+
+
 
     private double distance(Point p1, Point p2) {
         return Math.sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)));
