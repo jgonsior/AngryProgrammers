@@ -1,24 +1,23 @@
 /*****************************************************************************
-** ANGRYBIRDS AI AGENT FRAMEWORK
-** Copyright (c) 2014,XiaoYu (Gary) Ge, Stephen Gould,Jochen Renz
-**  Sahan Abeyasinghe, Jim Keys,   Andrew Wang, Peng Zhang
-** All rights reserved.
-**This work is licensed under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-**To view a copy of this license, visit http://www.gnu.org/licenses/
-*****************************************************************************/
+ ** ANGRYBIRDS AI AGENT FRAMEWORK
+ ** Copyright (c) 2014,XiaoYu (Gary) Ge, Stephen Gould,Jochen Renz
+ **  Sahan Abeyasinghe, Jim Keys,   Andrew Wang, Peng Zhang
+ ** All rights reserved.
+ **This work is licensed under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ **To view a copy of this license, visit http://www.gnu.org/licenses/
+ *****************************************************************************/
 package ab.utils;
 
+import ab.server.Proxy;
+import ab.server.proxy.message.ProxyScreenshotMessage;
+import ab.vision.VisionUtils;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
-
-import javax.imageio.ImageIO;
-
-import ab.server.Proxy;
-import ab.server.proxy.message.ProxyScreenshotMessage;
-import ab.vision.VisionUtils;
 
 /* GameImageRecorder ------------------------------------------------------ */
 
@@ -36,7 +35,7 @@ public class GameImageRecorder {
             System.exit(1);
         }
 
-       
+
         // connect to game proxy
         Proxy proxy = null;
         try {
@@ -50,7 +49,7 @@ public class GameImageRecorder {
                 public void onClose() {
                     System.out.println("Disconnected from game proxy");
                 }
-                };
+            };
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -73,7 +72,7 @@ public class GameImageRecorder {
 
             // write image to disk
             if ((screenshot == null) ||
-                (VisionUtils.numPixelsDifferent(screenshot, image) > 2048)) {
+                    (VisionUtils.numPixelsDifferent(screenshot, image) > 2048)) {
                 final String imgFilename = String.format(args[0] + File.separator + "img%04d.png", frameCount);
                 System.out.println("saving image to " + imgFilename);
                 try {
@@ -91,7 +90,8 @@ public class GameImageRecorder {
             // sleep for a while
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) { }
+            } catch (InterruptedException e) {
+            }
         }
     }
 }
