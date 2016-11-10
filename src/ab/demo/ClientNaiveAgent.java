@@ -204,7 +204,7 @@ public class ClientNaiveAgent implements Runnable {
             System.out.println("no slingshot detected. Please remove pop up or zoom out");
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
 
                 e.printStackTrace();

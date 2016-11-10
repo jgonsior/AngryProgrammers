@@ -35,7 +35,9 @@ public class ClientActionRobotJava extends ClientActionRobot {
         return state;
     }
 
-    //return an array of best scores. the nth slot stores the score of (n+1)th level
+    /**
+     * return an array of best scores. the nth slot stores the score of (n+1)th level
+     */
     public int[] checkScore() {
         byte[] scores = super.getBestScores();
         int[] _scores = new int[scores.length / 4];
