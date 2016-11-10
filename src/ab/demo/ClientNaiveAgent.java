@@ -15,6 +15,9 @@ import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.Query;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -39,30 +42,20 @@ public class ClientNaiveAgent implements Runnable {
     private boolean firstShot;
     private Point prevTarget;
     private Random randomGenerator;
+    private Handle h;
 
     /**
      * Constructor using the default IP
      */
     public ClientNaiveAgent() {
-        // the default ip is the localhost
-        ar = new ClientActionRobotJava("127.0.0.1");
-        tp = new TrajectoryPlanner();
-        randomGenerator = new Random();
-        prevTarget = null;
-        firstShot = true;
-
+        this("127.0.0.1");
     }
 
     /**
      * Constructor with a specified IP
      */
     public ClientNaiveAgent(String ip) {
-        ar = new ClientActionRobotJava(ip);
-        tp = new TrajectoryPlanner();
-        randomGenerator = new Random();
-        prevTarget = null;
-        firstShot = true;
-
+        this(ip, 0);
     }
 
     public ClientNaiveAgent(String ip, int id) {
