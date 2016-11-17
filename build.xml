@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="create_run_jar" name="Create Runnable Jar for Project AB1.0 with Jar-in-Jar Loader">
+<project xmlns:ivy="antlib:org.apache.ivy.ant"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd"
+         default="jar"
+         name="Create Runnable Jar for Project AB1.0 with Jar-in-Jar Loader"         >
     <!--ANT 1.7 is required                                        -->
-    <property name="lib.dir" value="external"/>
+    <property name="lib.dir" value="lib"/>
 
     <path id="classpath">
         <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -18,6 +22,7 @@
 
     <target name="jar">
         <jar destfile="ABSoftware.jar">
+            <!-- recheck if this stil works with ivy support!-->
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="ab.demo.MainEntry"/>
@@ -25,12 +30,19 @@
                 <attribute name="Rsrc-Class-Path"
                            value="./ Jama-1.0.2.jar json-simple-1.1.1.jar WebSocket.jar commons-codec-1.7.jar"/>
             </manifest>
-            <zipfileset src="external/jar-in-jar-loader.zip"/>
+            <!--<zipfileset src="lib/jar-in-jar-loader.zip"/>
             <fileset dir="src/"/>
             <zipfileset dir="external" includes="Jama-1.0.2.jar"/>
             <zipfileset dir="external" includes="json-simple-1.1.1.jar"/>
             <zipfileset dir="external" includes="WebSocket.jar"/>
-            <zipfileset dir="external" includes="commons-codec-1.7.jar"/>
+            <zipfileset dir="external" includes="commons-codec-1.7.jar"/> -->
         </jar>
+    </target>
+
+    <!-- =================================
+          target: resolve
+         ================================= -->
+    <target name="resolve" description="--> retrieve dependencies with ivy">
+        <ivy:retrieve/>
     </target>
 </project>
