@@ -13,17 +13,22 @@ import ab.demo.other.ClientActionRobotJava;
 import ab.demo.other.InGameState;
 import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
+import ab.vision.GameStateExtractor;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.Query;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 //Naive agent (server/client version)
 
 public class ClientNaiveAgent implements Runnable {
@@ -42,7 +47,12 @@ public class ClientNaiveAgent implements Runnable {
     private boolean firstShot;
     private Point prevTarget;
     private Random randomGenerator;
+    private GameStateExtractor ex;
     private Handle h;
+    private String db_user;
+    private String db_path;
+    private String db_pass;
+    private String db_name;
 
     /**
      * Constructor using the default IP
@@ -65,6 +75,39 @@ public class ClientNaiveAgent implements Runnable {
         prevTarget = null;
         firstShot = true;
         this.id = id;
+
+        Properties prop = new Properties();
+        InputStream input = null;
+
+        try {
+            input = new FileInputStream("config.properties");
+
+            // load a properties file
+            prop.load(input);
+
+            // get the property values
+            db_path = prop.getProperty("db_path");
+            db_user = prop.getProperty("db_user");
+            db_pass = prop.getProperty("db_pass");
+            db_name = prop.getProperty("db_name");
+
+            DBI dbi = new DBI(db_path,db_user,db_pass);
+            h = dbi.open();
+
+            InGameState s = new InGameState("state1");
+            getNextAction(s);
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public int getNextLevel() {
@@ -184,12 +227,13 @@ public class ClientNaiveAgent implements Runnable {
      *
      * @return GameState: the game state after shots.
      */
-    public GameState solve()
-
-    {
+    public GameState solve(){
 
         // capture Image
         BufferedImage screenshot = ar.doScreenShot();
+
+        // GameStateExtractor for currentScore inGame
+        ex = new GameStateExtractor();
 
         // process images
         Vision vision = new Vision(screenshot);
@@ -311,6 +355,7 @@ public class ClientNaiveAgent implements Runnable {
                         if (dx < 0) {
                             long timer = System.currentTimeMillis();
                             ar.shoot(refPoint.x, refPoint.y, dx, dy, 0, tapTime, false);
+                            System.out.println(getReward());
                             System.out.println("It takes " + (System.currentTimeMillis() - timer) + " ms to take a shot");
                             state = ar.checkState();
                             if (state == GameState.PLAYING) {
@@ -332,41 +377,86 @@ public class ClientNaiveAgent implements Runnable {
     }
 
     public double getQValue(InGameState s, String action){
-        return 0.0;
+        Query<Map<String, Object>> q = h.createQuery("select "+ action + " from q_test where state='"+s.toString()+"';");
+        Map<String, Object> result = q.list().get(0);
+        return (Double) result.get(action);
     }
 
+    /*
+    returns reward as highscore difference
+     */
     public double getReward(){
-        return 0.0;
+        BufferedImage scoreScreenshot = ar.doScreenShot();
+        double reward = ex.getScoreEndGame(scoreScreenshot);
+        //sometimes not correct so he interprets that he got 0 or 1
+        if (reward < 10){
+            return 0.0;
+        }
+        return reward;
     }
 
-    public double maxQValue(InGameState to){
-        return 0.0;
-    }
-
-    public void writeQValue(InGameState s, String action, double newValue){
-
-    }
-
+    /*
+    updates q-value in database when new information comes in
+     */
     public void updateQValue(InGameState from, String action, InGameState to){
         double oldValue = getQValue(from, action);
         double reward = getReward();
         double newValue = oldValue + learningRate * (reward + discountFactor * maxQValue(to) - oldValue);
-        writeQValue(from, action, newValue);
+        h.execute("UPDATE q_test SET " + action +" = "+ newValue + " where state = " + from.toString());
     }
 
+    /*
+    looks for best action,value pair with highest value
+     */
+    public Map.Entry<String, Object> bestValue(InGameState s){
+        Map.Entry<String, Object> maxEntry = null;
+        Query<Map<String, Object>> q = h.createQuery("select * from q_test where state='"+s.toString()+"';");
+        Map<String, Object> result = q.list().get(0);
+
+        for (Map.Entry<String, Object> entry : result.entrySet()){
+            if (entry.getValue() instanceof Double){
+                if (maxEntry == null){
+                    maxEntry = entry;
+                }else if((Double) entry.getValue() > (Double) maxEntry.getValue()) {
+                    maxEntry = entry;
+                }
+            }
+        }
+        return maxEntry;
+    }
+
+    /*
+    returns action with maximum q-value for a given state
+     */
     public String bestAction(InGameState s){
-        return "";
+        return bestValue(s).getKey();
     }
 
+    /*
+    returns maximum q-value for a given state looking in all actions
+     */
+    public double maxQValue(InGameState to){
+        return (Double) bestValue(to).getValue();
+    }
+
+    /*
+    Returns next action, with explorationrate as probability of taking a random action
+     and else look for the so far best action
+     */
     public String getNextAction(InGameState s){
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
-            return "Random Action";
+            Query<Map<String, Object>> q = h.createQuery("SELECT `COLUMN_NAME` \n" +
+                    "FROM `INFORMATION_SCHEMA`.`COLUMNS` \n" +
+                    "WHERE `TABLE_SCHEMA`='"+db_name+"' \n" +
+                    "    AND `TABLE_NAME`='q_test';");
+            List<Map<String,Object>> result = q.list();
+            // -1 +1 depends on how many columns exist for state
+            int randomAction = randomGenerator.nextInt(result.size()-1)+1;
+            return (String) result.get(randomAction).get("column_name");
         }
         return bestAction(s);
     }
-
-
 
     private double distance(Point p1, Point p2) {
         return Math.sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)));
