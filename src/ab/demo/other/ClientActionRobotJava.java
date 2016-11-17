@@ -33,6 +33,7 @@ public class ClientActionRobotJava extends ClientActionRobot {
         byte result = super.getState();
         GameState state = GameState.values()[result];
         return state;
+
     }
 
     /**
