@@ -16,6 +16,7 @@ import ab.vision.ShowSeg;
 public class MainEntry {
     // the entry of the software.
     public static void main(String args[]) {
+        //@todo: redo this here using commons-cli
         String command = "";
         if (args.length > 0) {
             command = args[0];
@@ -27,14 +28,14 @@ public class MainEntry {
             } else if (command.equalsIgnoreCase("-pshoot")) {
                 ShootingAgent.shoot(args, false);
             } else if (args.length == 1 && command.equalsIgnoreCase("-nasc")) {
-                ClientNaiveAgent na = new ClientNaiveAgent();
+                ReinforcementLearningAgent na = new ReinforcementLearningAgent();
                 na.run();
             } else if (args.length == 2 && command.equalsIgnoreCase("-nasc")) {
-                ClientNaiveAgent na = new ClientNaiveAgent(args[1]);
+                ReinforcementLearningAgent na = new ReinforcementLearningAgent(args[1]);
                 na.run();
             } else if (args.length == 3 && command.equalsIgnoreCase("-nasc")) {
                 int id = Integer.parseInt(args[2]);
-                ClientNaiveAgent na = new ClientNaiveAgent(args[1], id);
+                ReinforcementLearningAgent na = new ReinforcementLearningAgent(args[1], id);
                 na.run();
             } else if (args.length == 2 && command.equalsIgnoreCase("-na")) {
                 NaiveAgent na = new NaiveAgent();

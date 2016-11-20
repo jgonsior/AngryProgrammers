@@ -19,18 +19,6 @@ public class Rect extends Body {
     public Polygon p;
     protected double pwidth = -1, plength = -1;
 
-    public double getpWidth() {
-        if (pwidth != -1)
-            return pwidth;
-        return width;
-    }
-
-    public double getpLength() {
-        if (plength != -1)
-            return plength;
-        return height;
-    }
-
     public Rect(double xs, double ys, double w, double h, double theta, ABType type) {
 
 
@@ -58,6 +46,60 @@ public class Rect extends Body {
 
     }
 
+    public Rect(int box[], ABType type) {
+        centerX = (box[0] + box[2]) / 2.0;
+        centerY = (box[3] + box[1]) / 2.0;
+        pwidth = box[2] - box[0];
+        plength = box[3] - box[1];
+        angle = Math.PI / 2;
+
+        if (plength < pwidth) {
+            pwidth = plength;
+            plength = box[2] - box[0];
+            angle = 0;
+        }
+
+
+        width = (int) pwidth;
+        height = (int) plength;
+
+        this.type = type;
+
+        area = width * height;
+        createPolygon();
+
+    }
+
+    public Rect(double centerX, double centerY, double pwidth, double plength, double angle, ABType type, int area) {
+        this.centerX = centerX;
+        this.centerY = centerY;
+        this.pwidth = pwidth;
+        this.plength = plength;
+        this.type = type;
+        this.angle = angle;
+        this.area = area;
+        createPolygon();
+        super.setBounds(p.getBounds());
+        width = p.getBounds().width;
+        height = p.getBounds().height;
+
+    }
+
+    public static double perpendicular(double angle) {
+        return angle > Math.PI / 2 ? angle - Math.PI / 2 : angle + Math.PI / 2;
+    }
+
+    public double getpWidth() {
+        if (pwidth != -1)
+            return pwidth;
+        return width;
+    }
+
+    public double getpLength() {
+        if (plength != -1)
+            return plength;
+        return height;
+    }
 
     private void createPolygon() {
 
@@ -102,46 +144,6 @@ public class Rect extends Body {
         return p.getBounds();
     }
 
-    public Rect(int box[], ABType type) {
-        centerX = (box[0] + box[2]) / 2.0;
-        centerY = (box[3] + box[1]) / 2.0;
-        pwidth = box[2] - box[0];
-        plength = box[3] - box[1];
-        angle = Math.PI / 2;
-
-        if (plength < pwidth) {
-            pwidth = plength;
-            plength = box[2] - box[0];
-            angle = 0;
-        }
-
-
-        width = (int) pwidth;
-        height = (int) plength;
-
-        this.type = type;
-
-        area = width * height;
-        createPolygon();
-
-    }
-
-    public Rect(double centerX, double centerY, double pwidth, double plength, double angle, ABType type, int area) {
-        this.centerX = centerX;
-        this.centerY = centerY;
-        this.pwidth = pwidth;
-        this.plength = plength;
-        this.type = type;
-        this.angle = angle;
-        this.area = area;
-        createPolygon();
-        super.setBounds(p.getBounds());
-        width = p.getBounds().width;
-        height = p.getBounds().height;
-
-    }
-
-
     /* draw the rectangle onto canvas */
     public void draw(Graphics2D g, boolean fill, Color boxColor) {
 
@@ -153,10 +155,6 @@ public class Rect extends Body {
             g.setColor(boxColor);
             g.drawPolygon(p);
         }
-    }
-
-    public static double perpendicular(double angle) {
-        return angle > Math.PI / 2 ? angle - Math.PI / 2 : angle + Math.PI / 2;
     }
 
     public String toString() {

@@ -24,40 +24,38 @@ import java.util.Queue;
 
 public class ConnectedComponent {
 
-    // neighbour lookup table
-    private static Point _connectedPoint[][][] = null;
-    private static boolean _firstTime = true;
-
-    // atan lookup table
-    private static double atan[][];
     public final static double ANGLE_UNDEFINED = 2 * Math.PI;
     private final static int WINDOW_SIZE = 10;
-
     // types of points in the image
     private final static int EMPTY = 0;
     private final static int FILLED = 1;
     private final static int EDGE = 2;
-
     // define small object as min(width, height) < constant
     private final static int SMALL = 20;
-
     // smoothing constant
     private final static int SMOOTH = 3;
-
+    private final static int xClock[][] = {{0, -1, -1},
+            {0, 0, 0},
+            {1, 1, 0}};
+    private final static int yClock[][] = {{1, 0, 0},
+            {1, 0, -1},
+            {0, 0, -1}};
+    // neighbour lookup table
+    private static Point _connectedPoint[][][] = null;
+    private static boolean _firstTime = true;
+    // atan lookup table
+    private static double atan[][];
     // component parameters
     private int _area;
     private int _perimeter;
     private int _type;
     private int _image[][];
     private double _angleThreshold = 0;
-
     // points and lines in the component
     private ArrayList<LineSegment> _lines = null;
     private ArrayList<Point> _edgePoints = null;
-
     // size of the bounding box
     private int _left, _top, _width, _height;
-
     // extreme points
     private Point _extrema[];
 
@@ -146,7 +144,73 @@ public class ConnectedComponent {
         _perimeter = _edgePoints.size();
     }
 
-    /* Trace the contour using Moore-Neighbour tracing 
+    /* initialise neighbour and atan lookup table
+     * @param   class map of the current game
+     */
+    private static void initialise(int map[][]) {
+        if (_connectedPoint != null &&
+                _connectedPoint.length == map.length &&
+                _connectedPoint[0].length == map[0].length)
+            return;
+
+        // initialise atan lookup
+        if (_firstTime) {
+            atan = new double[WINDOW_SIZE * 2][WINDOW_SIZE * 2];
+
+            for (int y = 0; y < 2 * WINDOW_SIZE; y++)
+                for (int x = 0; x < 2 * WINDOW_SIZE; x++) {
+                    if (x - WINDOW_SIZE == 0 && y - WINDOW_SIZE == 0)
+                        atan[y][x] = ANGLE_UNDEFINED;
+                    else if (x - WINDOW_SIZE == 0)
+                        atan[y][x] = Math.PI / 2;
+                    else {
+                        atan[y][x] = Math.atan((double) (y - WINDOW_SIZE) / (x - WINDOW_SIZE));
+
+                        if (atan[y][x] < 0)
+                            atan[y][x] += Math.PI;
+                    }
+                }
+            _firstTime = false;
+        }
+
+        // initialise neighbour point map
+        int width = map[0].length;
+        int height = map.length;
+        _connectedPoint = new Point[height][width][8];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                _connectedPoint[y][x][0] = new Point(x, y - 1);
+                _connectedPoint[y][x][1] = new Point(x + 1, y - 1);
+                _connectedPoint[y][x][2] = new Point(x + 1, y);
+                _connectedPoint[y][x][3] = new Point(x + 1, y + 1);
+                _connectedPoint[y][x][4] = new Point(x, y + 1);
+                _connectedPoint[y][x][5] = new Point(x - 1, y + 1);
+                _connectedPoint[y][x][6] = new Point(x - 1, y);
+                _connectedPoint[y][x][7] = new Point(x - 1, y - 1);
+                for (int i = 0; i < 8; i++) {
+                    Point p = _connectedPoint[y][x][i];
+                    if (p.x >= width || p.y >= height || p.x < 0 || p.y < 0) {
+                        _connectedPoint[y][x][i] = new Point(x, y);
+                    }
+                }
+            }
+        }
+    }
+    //public boolean testHollow(Shape shape){}
+
+    /* find the next point to trace in Moore-Neighbourhood
+     * @param   p - the current contour point
+     *          prev - point just examined
+     * @return  point connected to p which is in the anticlockwise
+     *          direction from p to prev
+     */
+    private static Point clockwise(Point p, Point prev) {
+        int dx = prev.x - p.x + 1;
+        int dy = prev.y - p.y + 1;
+        return new Point(prev.x + xClock[dy][dx], prev.y + yClock[dy][dx]);
+    }
+
+    /* Trace the contour using Moore-Neighbour tracing
      * and partition contour points into line segments
      * @return  list of line segments which form a cycle around
      *          outer border of the connected component
@@ -231,7 +295,7 @@ public class ConnectedComponent {
         return _lines;
     }
 
-    /* Determine if the connected component is a Rectangle, 
+    /* Determine if the connected component is a Rectangle,
      * Circle or in fact multiple objects stacked together.
      *
      * @param   list of corners the component contains
@@ -332,7 +396,6 @@ public class ConnectedComponent {
         return rect;
     }
 
-
     public int getArea(Polygon poly) {
         int area = 0;
         Rectangle rect = poly.getBounds();
@@ -344,7 +407,6 @@ public class ConnectedComponent {
         return area;
 
     }
-    //public boolean testHollow(Shape shape){}
 
     /* find the most likely shape of the component
      * @return  most likely shape, null if it is noise
@@ -381,7 +443,6 @@ public class ConnectedComponent {
         }
         return findShape(corners);
     }
-
 
     // return number of internal points in the component
     public int getArea() {
@@ -422,60 +483,6 @@ public class ConnectedComponent {
         }
     }
 
-
-    /* initialise neighbour and atan lookup table
-     * @param   class map of the current game
-     */
-    private static void initialise(int map[][]) {
-        if (_connectedPoint != null &&
-                _connectedPoint.length == map.length &&
-                _connectedPoint[0].length == map[0].length)
-            return;
-
-        // initialise atan lookup
-        if (_firstTime) {
-            atan = new double[WINDOW_SIZE * 2][WINDOW_SIZE * 2];
-
-            for (int y = 0; y < 2 * WINDOW_SIZE; y++)
-                for (int x = 0; x < 2 * WINDOW_SIZE; x++) {
-                    if (x - WINDOW_SIZE == 0 && y - WINDOW_SIZE == 0)
-                        atan[y][x] = ANGLE_UNDEFINED;
-                    else if (x - WINDOW_SIZE == 0)
-                        atan[y][x] = Math.PI / 2;
-                    else {
-                        atan[y][x] = Math.atan((double) (y - WINDOW_SIZE) / (x - WINDOW_SIZE));
-
-                        if (atan[y][x] < 0)
-                            atan[y][x] += Math.PI;
-                    }
-                }
-            _firstTime = false;
-        }
-
-        // initialise neighbour point map
-        int width = map[0].length;
-        int height = map.length;
-        _connectedPoint = new Point[height][width][8];
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                _connectedPoint[y][x][0] = new Point(x, y - 1);
-                _connectedPoint[y][x][1] = new Point(x + 1, y - 1);
-                _connectedPoint[y][x][2] = new Point(x + 1, y);
-                _connectedPoint[y][x][3] = new Point(x + 1, y + 1);
-                _connectedPoint[y][x][4] = new Point(x, y + 1);
-                _connectedPoint[y][x][5] = new Point(x - 1, y + 1);
-                _connectedPoint[y][x][6] = new Point(x - 1, y);
-                _connectedPoint[y][x][7] = new Point(x - 1, y - 1);
-                for (int i = 0; i < 8; i++) {
-                    Point p = _connectedPoint[y][x][i];
-                    if (p.x >= width || p.y >= height || p.x < 0 || p.y < 0) {
-                        _connectedPoint[y][x][i] = new Point(x, y);
-                    }
-                }
-            }
-        }
-    }
-
     public ABType assignType(int vision_type) {
         ABType type = ABType.Unknown;
         switch (vision_type) {
@@ -513,24 +520,5 @@ public class ConnectedComponent {
                 type = ABType.Unknown;
         }
         return type;
-    }
-
-    private final static int xClock[][] = {{0, -1, -1},
-            {0, 0, 0},
-            {1, 1, 0}};
-    private final static int yClock[][] = {{1, 0, 0},
-            {1, 0, -1},
-            {0, 0, -1}};
-
-    /* find the next point to trace in Moore-Neighbourhood
-     * @param   p - the current contour point
-     *          prev - point just examined
-     * @return  point connected to p which is in the anticlockwise
-     *          direction from p to prev
-     */
-    private static Point clockwise(Point p, Point prev) {
-        int dx = prev.x - p.x + 1;
-        int dy = prev.y - p.y + 1;
-        return new Point(prev.x + xClock[dy][dx], prev.y + yClock[dy][dx]);
     }
 }

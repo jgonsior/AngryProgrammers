@@ -1,17 +1,17 @@
-package ab.demo.other;
+package ab.demo.qlearning;
 
 /**
  * Created by Richard on 10.11.2016.
  */
-public class InGameState {
+public class State {
 
     public String name;
 
-    public InGameState(String name){
+    public State(String name) {
         this.name = name;
     }
 
-    public String toString(){
+    public String toString() {
         return name;
     }
 }

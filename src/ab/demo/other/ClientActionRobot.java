@@ -51,6 +51,24 @@ public class ClientActionRobot {
         }
     }
 
+    //convert an int value to byte[4] array
+    public static byte[] intToByteArray(int a) {
+        byte[] ret = new byte[4];
+        ret[3] = (byte) (a & 0xFF);
+        ret[2] = (byte) ((a >> 8) & 0xFF);
+        ret[1] = (byte) ((a >> 16) & 0xFF);
+        ret[0] = (byte) ((a >> 24) & 0xFF);
+        return ret;
+    }
+
+    public static void main(String args[]) {
+        ClientActionRobot robot = new ClientActionRobot();
+        byte[] id = {1, 2, 3, 4};
+        robot.configure(id);
+        while (true)
+            robot.doScreenShot();
+    }
+
     public BufferedImage doScreenShot() {
         BufferedImage bfImage = null;
         try {
@@ -121,16 +139,6 @@ public class ClientActionRobot {
         return value;
     }
 
-    //convert an int value to byte[4] array
-    public static byte[] intToByteArray(int a) {
-        byte[] ret = new byte[4];
-        ret[3] = (byte) (a & 0xFF);
-        ret[2] = (byte) ((a >> 8) & 0xFF);
-        ret[1] = (byte) ((a >> 16) & 0xFF);
-        ret[0] = (byte) ((a >> 24) & 0xFF);
-        return ret;
-    }
-
     //send message to fully zoom out
     public byte fullyZoomOut() {
         try {
@@ -199,7 +207,6 @@ public class ClientActionRobot {
         }
         return 0;
     }
-
 
     //send a message to restart the level
     public byte restartLevel() {
@@ -274,7 +281,6 @@ public class ClientActionRobot {
         return new byte[]{0};
     }
 
-
     //send a message to get the current state
     public byte getState() {
         try {
@@ -303,7 +309,6 @@ public class ClientActionRobot {
 
 
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return buffer;
@@ -323,18 +328,9 @@ public class ClientActionRobot {
 
 
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return buffer;
-    }
-
-    public static void main(String args[]) {
-        ClientActionRobot robot = new ClientActionRobot();
-        byte[] id = {1, 2, 3, 4};
-        robot.configure(id);
-        while (true)
-            robot.doScreenShot();
     }
 
 }

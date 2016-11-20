@@ -20,9 +20,9 @@ import java.util.List;
 
 public class VisionMBR {
 
+    public int _scene[][]; // quantized scene colours
     private int _nHeight; // height of the scene
     private int _nWidth; // width of the scene
-    public int _scene[][]; // quantized scene colours
     private int _nSegments; // number of segments
     private int _segments[][]; // connected components (0 to _nSegments)
     private int _colours[]; // colour for each segment

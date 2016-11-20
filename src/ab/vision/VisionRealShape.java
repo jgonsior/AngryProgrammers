@@ -22,10 +22,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class VisionRealShape {
+    private final static int unassigned = -1;
     // offset constants for calculating reference point
     private static double X_OFFSET = 0.188;
     private static double Y_OFFSET = 0.156;
-    private final static int unassigned = -1;
     // image segmenter 
     private ImageSegmenter _seg;
 
@@ -71,6 +71,25 @@ public class VisionRealShape {
         // find the slingshot and reference point
         findSling();
 
+    }
+
+    // calculate Euclidean distance between two points
+    public static double distance(Point p1, Point p2) {
+        int x = p1.x - p2.x;
+        int y = p1.y - p2.y;
+        return Math.sqrt(x * x + y * y);
+    }
+
+    public static void main(String args[]) {
+        new ActionRobot();
+        BufferedImage screenshot = ActionRobot.doScreenShot();
+        Vision vision = new Vision(screenshot);
+        //List<ABObject> objs = vision.findBlocksRealShape();
+        //List<ABObject> objs = vision.findHills();
+        Rectangle obj = vision.findSlingshotMBR();
+        System.out.println(obj);
+//		for (ABObject obj : objs)
+//			System.out.println(obj);
     }
 
     // find the slingshot
@@ -248,7 +267,7 @@ public class VisionRealShape {
         }
 
         if (fill) {
-            //draw connected components    
+            //draw connected components
             for (ConnectedComponent d : _draw)
                 d.draw(image, false, false);
         }
@@ -274,7 +293,7 @@ public class VisionRealShape {
 
 
         if (fill) {
-            //draw connected components    
+            //draw connected components
             for (ConnectedComponent d : _draw)
                 d.draw(image, false, false);
         }
@@ -298,25 +317,5 @@ public class VisionRealShape {
     // return the scene scale
     public int getSceneScale() {
         return _sling.height;
-    }
-
-    // calculate Euclidean distance between two points
-    public static double distance(Point p1, Point p2) {
-        int x = p1.x - p2.x;
-        int y = p1.y - p2.y;
-        return Math.sqrt(x * x + y * y);
-    }
-
-
-    public static void main(String args[]) {
-        new ActionRobot();
-        BufferedImage screenshot = ActionRobot.doScreenShot();
-        Vision vision = new Vision(screenshot);
-        //List<ABObject> objs = vision.findBlocksRealShape();
-        //List<ABObject> objs = vision.findHills();
-        Rectangle obj = vision.findSlingshotMBR();
-        System.out.println(obj);
-//		for (ABObject obj : objs)
-//			System.out.println(obj);
     }
 }

@@ -16,15 +16,13 @@ public abstract class Body extends ABObject
 
 {
     private static final long serialVersionUID = 1L;
-
-    public Body() {
-        super();
-    }
-
     // position (x, y) as center of the object
     public double centerX = 0;
     public double centerY = 0;
 
+    public Body() {
+        super();
+    }
 
     public static int round(double i) {
         return (int) (i + 0.5);

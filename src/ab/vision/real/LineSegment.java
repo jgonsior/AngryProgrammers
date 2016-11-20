@@ -19,15 +19,13 @@ public class LineSegment {
     private static double THRESHOLD1 = Math.toRadians(20);
     private static double JOIN_THRESHOLD = Math.toRadians(5);
     private static double JOIN_THRESHOLD2 = 40;//40;
-
+    public Point _start = null;
+    public Point _end = null;
+    public Point _prevEnd = null;
     // angle tracking parameters
     private double prevAngle;
     private double accumChange;
     private int dirChange;
-
-    public Point _start = null;
-    public Point _end = null;
-    public Point _prevEnd = null;
 
     public LineSegment(Point start, double angle) {
         // initialise start and end points
@@ -41,6 +39,45 @@ public class LineSegment {
         dirChange = NO_CHANGE;
     }
 
+    /* calculate angle difference a - b
+     * @param   a, b - angles (radians) in range [0, PI)
+     * @return  difference a - b (positive for clockwise)
+     */
+    public static double angleDiff(double a, double b) {
+        double diff = a - b;
+
+        if (diff < -Math.PI / 2)
+            diff += Math.PI;
+        else if (diff > Math.PI / 2)
+            diff -= Math.PI;
+
+        return diff;
+    }
+
+    /* convert the angle a to a representation which is close
+     * to the target by adding/subtracting PI
+     *  - e.g  closeAngle(179, 0) = -1
+     */
+    public static double closeAngle(double a, double target) {
+        return target + angleDiff(a, target);
+    }
+
+    /* return direction of the angle change,
+       clockwise for positive changes */
+    public static int sign(double diff) {
+        if (diff > 0)
+            return CLOCKWISE;
+        else if (diff < 0)
+            return ANTICLOCKWISE;
+        else
+            return NO_CHANGE;
+    }
+
+    public static double distance(Point a, Point b) {
+        int x = a.x - b.x;
+        int y = a.y - b.y;
+        return Math.sqrt(x * x + y * y);
+    }
 
     public double addPoint(Point p, double angle, double THRESHOLD2) {
         if (angle != ConnectedComponent.ANGLE_UNDEFINED) {
@@ -105,47 +142,6 @@ public class LineSegment {
         }
 
         return false;
-    }
-
-    /* calculate angle difference a - b
-     * @param   a, b - angles (radians) in range [0, PI)
-     * @return  difference a - b (positive for clockwise)
-     */
-    public static double angleDiff(double a, double b) {
-        double diff = a - b;
-
-        if (diff < -Math.PI / 2)
-            diff += Math.PI;
-        else if (diff > Math.PI / 2)
-            diff -= Math.PI;
-
-        return diff;
-    }
-
-    /* convert the angle a to a representation which is close 
-     * to the target by adding/subtracting PI
-     *  - e.g  closeAngle(179, 0) = -1
-     */
-    public static double closeAngle(double a, double target) {
-        return target + angleDiff(a, target);
-    }
-
-
-    /* return direction of the angle change,
-       clockwise for positive changes */
-    public static int sign(double diff) {
-        if (diff > 0)
-            return CLOCKWISE;
-        else if (diff < 0)
-            return ANTICLOCKWISE;
-        else
-            return NO_CHANGE;
-    }
-
-    public static double distance(Point a, Point b) {
-        int x = a.x - b.x;
-        int y = a.y - b.y;
-        return Math.sqrt(x * x + y * y);
     }
 
     public void removeEndPoint() {

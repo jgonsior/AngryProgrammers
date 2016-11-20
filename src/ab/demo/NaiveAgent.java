@@ -23,12 +23,12 @@ import java.util.List;
 
 public class NaiveAgent implements Runnable {
 
+    public static int time_limit = 12;
+    public int currentLevel = 1;
+    TrajectoryPlanner tp;
     private ActionRobot aRobot;
     private Random randomGenerator;
-    public int currentLevel = 1;
-    public static int time_limit = 12;
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
-    TrajectoryPlanner tp;
     private boolean firstShot;
     private Point prevTarget;
 
@@ -45,6 +45,14 @@ public class NaiveAgent implements Runnable {
 
     }
 
+    public static void main(String args[]) {
+
+        NaiveAgent na = new NaiveAgent();
+        if (args.length > 0)
+            na.currentLevel = Integer.parseInt(args[0]);
+        na.run();
+
+    }
 
     // run the client
     public void run() {
@@ -253,14 +261,5 @@ public class NaiveAgent implements Runnable {
 
         }
         return state;
-    }
-
-    public static void main(String args[]) {
-
-        NaiveAgent na = new NaiveAgent();
-        if (args.length > 0)
-            na.currentLevel = Integer.parseInt(args[0]);
-        na.run();
-
     }
 }

@@ -27,11 +27,6 @@ public class Proxy extends WebSocketServer {
     private Long id = 0L;
     private HashMap<Long, ProxyResult<?>> results = new HashMap<Long, ProxyResult<?>>();
 
-    private class ProxyResult<T> {
-        public ProxyMessage<T> message;
-        public SynchronousQueue<Object> queue = new SynchronousQueue<Object>();
-    }
-
     public Proxy(int port) throws UnknownHostException {
         super(new InetSocketAddress(port));
     }
@@ -117,5 +112,10 @@ public class Proxy extends WebSocketServer {
             } catch (InterruptedException e) {
             }
         }
+    }
+
+    private class ProxyResult<T> {
+        public ProxyMessage<T> message;
+        public SynchronousQueue<Object> queue = new SynchronousQueue<Object>();
     }
 }

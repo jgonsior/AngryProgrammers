@@ -19,14 +19,9 @@ import java.util.Arrays;
 
 public class GameStateExtractor {
 
-    public enum GameState {
-        UNKNOWN, MAIN_MENU, EPISODE_MENU, LEVEL_SELECTION, LOADING, PLAYING, WON, LOST
-    }
-
     static int repeatCount = 0;
     static int prevScore = 0;
     static boolean saved = false;
-
     // images for determining game state
     private static BufferedImage _mainmenu = null;
     private static BufferedImage _episodemenu = null;
@@ -36,7 +31,6 @@ public class GameStateExtractor {
     private static BufferedImage _gamewon1 = null;
     private static BufferedImage _gamewon2 = null;
     private static BufferedImage _gamelost = null;
-
     // images for classifying end game score
     private static BufferedImage _endGame0 = null;
     private static BufferedImage _endGame1 = null;
@@ -48,14 +42,6 @@ public class GameStateExtractor {
     private static BufferedImage _endGame7 = null;
     private static BufferedImage _endGame8 = null;
     private static BufferedImage _endGame9 = null;
-
-
-    private static class RectLeftOf implements java.util.Comparator<Rectangle> {
-        public int compare(Rectangle rA, Rectangle rB) {
-            return (rA.x - rB.x);
-        }
-    }
-
     // create a game state extractor and load subimages
     public GameStateExtractor() {
         try {
@@ -100,6 +86,24 @@ public class GameStateExtractor {
             System.err.println("failed to load resources");
             e.printStackTrace();
         }
+    }
+
+    //transform image into black-white format
+    private static BufferedImage extractNumber(BufferedImage image) {
+
+        int mask[][] = new int[image.getHeight()][image.getWidth()];
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                final int colour = image.getRGB(x, y);
+                mask[y][x] = (((colour & 0x00ff0000) >> 16) > 192) ? 1 : -1;
+            }
+        }
+
+        BufferedImage numberImage = VisionUtils.int2image(mask);
+        mask = VisionUtils.findConnectedComponents(mask);
+        Rectangle number[] = VisionUtils.findBoundingBoxes(mask);
+
+        return numberImage.getSubimage(number[0].x, number[0].y, number[0].width, number[0].height);
     }
 
     public GameState getGameState(BufferedImage screenshot) {
@@ -199,7 +203,7 @@ public class GameStateExtractor {
             // System.out.println(i + " : " + letters[i] + " : " + letterHash +
             // " : " + value);
         }
-        
+
 		/*
          * VisionUtils.drawBoundingBoxes(scoreImage, letters, Color.BLUE); if
 		 * (_debug == null) { _debug = new ShowDebuggingImage("score",
@@ -207,24 +211,6 @@ public class GameStateExtractor {
 		 */
 
         return score;
-    }
-
-    //transform image into black-white format
-    private static BufferedImage extractNumber(BufferedImage image) {
-
-        int mask[][] = new int[image.getHeight()][image.getWidth()];
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                final int colour = image.getRGB(x, y);
-                mask[y][x] = (((colour & 0x00ff0000) >> 16) > 192) ? 1 : -1;
-            }
-        }
-
-        BufferedImage numberImage = VisionUtils.int2image(mask);
-        mask = VisionUtils.findConnectedComponents(mask);
-        Rectangle number[] = VisionUtils.findBoundingBoxes(mask);
-
-        return numberImage.getSubimage(number[0].x, number[0].y, number[0].width, number[0].height);
     }
 
     public int getScoreEndGame(BufferedImage screenshot) {
@@ -296,11 +282,11 @@ public class GameStateExtractor {
                     File outputfile = new File("scoreImage/" + score + ".png");
                     ImageIO.write(saveImage, "png", outputfile);
                 } catch (IOException e) {
-                
+
                 }
             }
         }*/
-        
+
 		/*
          * VisionUtils.drawBoundingBoxes(scoreImage, letters, Color.BLUE); if
 		 * (_debug == null) { _debug = new ShowDebuggingImage("score",
@@ -336,5 +322,15 @@ public class GameStateExtractor {
 
         // return image difference
         return VisionUtils.imageDifference(letter, template);
+    }
+
+    public enum GameState {
+        UNKNOWN, MAIN_MENU, EPISODE_MENU, LEVEL_SELECTION, LOADING, PLAYING, WON, LOST
+    }
+
+    private static class RectLeftOf implements java.util.Comparator<Rectangle> {
+        public int compare(Rectangle rA, Rectangle rB) {
+            return (rA.x - rB.x);
+        }
     }
 }

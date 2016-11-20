@@ -29,9 +29,9 @@ import java.util.List;
 /* TestVision ------------------------------------------------------------- */
 
 public class ShowSeg implements Runnable {
+    public static boolean useRealshape = false;
     private static List<Rectangle> pigs, redBirds, blueBirds, yellowBirds, blackBirds, whiteBirds, iceBlocks, woodBlocks, stoneBlocks, TNTs;
     private static List<Point> trajPoints;
-    public static boolean useRealshape = false;
     private static VisionRealShape vision;
 
     static public Proxy getGameConnection(int port) {

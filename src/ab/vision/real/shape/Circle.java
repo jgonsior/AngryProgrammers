@@ -44,12 +44,6 @@ public class Circle extends Body {
 
     }
 
-    @Override
-    public Rectangle getBounds() {
-        return bounds;
-    }
-
-
     public Circle(int box[], ABType type) {
         centerX = (box[0] + box[2]) / 2.0;
         centerY = (box[1] + box[3]) / 2.0;
@@ -60,6 +54,11 @@ public class Circle extends Body {
         angle = 0;
         this.type = type;
         super.setBounds(bounds);
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        return bounds;
     }
 
     /* draw the circle onto canvas */

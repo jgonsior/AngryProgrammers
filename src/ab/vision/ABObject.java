@@ -51,16 +51,16 @@ public class ABObject extends Rectangle {
         this.type = ABType.Unknown;
     }
 
+    public static void resetCounter() {
+        counter = 0;
+    }
+
     public ABType getType() {
         return type;
     }
 
     public Point getCenter() {
         return new Point((int) getCenterX(), (int) getCenterY());
-    }
-
-    public static void resetCounter() {
-        counter = 0;
     }
 
 }

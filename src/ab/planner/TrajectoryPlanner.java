@@ -29,24 +29,17 @@ public class TrajectoryPlanner {
     private static double _launchAngle[] = {0.13, 0.215, 0.296, 0.381, 0.476, 0.567, 0.657, 0.741, 0.832, 0.924, 1.014, 1.106, 1.197};
     private static double _changeAngle[] = {0.052, 0.057, 0.063, 0.066, 0.056, 0.054, 0.050, 0.053, 0.042, 0.038, 0.034, 0.029, 0.025};
     private static double _launchVelocity[] = {2.9, 2.88, 2.866, 2.838, 2.810, 2.800, 2.790, 2.773, 2.763, 2.745, 2.74, 2.735, 2.73};
-
+    // the trajectory points
+    ArrayList<Point> _trajectory;
     // small modification to the scale and angle
     private double _scaleFactor = 1.005;
-
-
     // conversion between the trajectory time and actual time in milliseconds
     private double _timeUnit = 815;
-
     // boolean flag on set trajectory
     private boolean _trajSet = false;
-
     // parameters of the set trajectory
     private Point _release;
     private double _theta, _velocity, _ux, _uy, _a, _b;
-
-    // the trajectory points
-    ArrayList<Point> _trajectory;
-
     // reference point and current scale
     private Point _ref;
     private double _scale;

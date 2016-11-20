@@ -25,24 +25,195 @@ import java.util.List;
 
 public class ImageSegFrame {
 
-    private static int _saveCount = 0;
     public static String saveFileDir = "";
     public static volatile boolean recordScreenshot = false;
     public static volatile boolean saveAndExit = false;
+    private static int _saveCount = 0;
+    protected JFrame frame;
+    protected ImagePanel panel;
+    protected Image img;
+    protected int[][] meta;
+    protected String name;
+    protected volatile boolean refresh = false;
+    private int bound_x = -1;
+    private int bound_y = -1;
+
+    public ImageSegFrame(String name, Image img, int[][] meta, int bound_x, int bound_y) {
+        this.name = name;
+        this.img = img;
+        this.meta = meta;
+        frame = new JFrame(name);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        panel = new ImagePanel(frame);
+
+        frame.getContentPane().add(panel);
+
+        frame.pack();
+        Insets insets = frame.getInsets();
+        frame.setSize(img.getWidth(null) + insets.left + insets.right,
+                img.getHeight(null) + insets.top + insets.bottom);
+        if (bound_x != -1 && bound_y != -1)
+            frame.setBounds(bound_x, bound_y, frame.getSize().width, frame.getSize().height);
+        else {
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            GraphicsDevice defaultScreen = ge.getDefaultScreenDevice();
+            Rectangle rect = defaultScreen.getDefaultConfiguration().getBounds();
+            int x = (int) rect.getMaxX() - frame.getWidth();
+            int y = 0;
+            //System.out.println(frame.getWidth());
+            frame.setLocation(x, y);
+
+        }
+        frame.setVisible(true);
+        if (img != null && meta != null)
+            panel.refresh(img, meta);
+    }
+
+    public ImageSegFrame(String name, Image img, int[][] meta) {
+
+        this.name = name;
+        this.img = img;
+        this.meta = meta;
+        frame = new JFrame(name);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        panel = new ImagePanel(frame);
+
+        frame.getContentPane().add(panel);
+
+        frame.pack();
+        Insets insets = frame.getInsets();
+        frame.setSize(img.getWidth(null) + insets.left + insets.right,
+                img.getHeight(null) + insets.top + insets.bottom);
+        if (bound_x != -1 && bound_y != -1)
+            frame.setBounds(bound_x, bound_y, frame.getSize().width, frame.getSize().height);
+        else {
+            int x = 0;
+            int y = 0;
+            frame.setLocation(x, y);
+
+        }
+        frame.setVisible(true);
+        frame.setResizable(false);
+        if (img != null && meta != null)
+            panel.refresh(img, meta);
+
+        //panel.requestFocus();
+    }
+
+    public ImageSegFrame(String name, Image img) {
+        this(name, img, null);
+    }
+
+    public static void main(String args[]) throws InterruptedException, IOException {
+        long timegap = 0;
+        if (args.length == 1)
+            ImageSegFrame.saveFileDir = (args[0]) + "";
+        else if (args.length == 2) {
+            ImageSegFrame.saveFileDir = args[0] + "";
+            timegap = Long.parseLong(args[1]);
+        }
+
+        new ActionRobot();
+        BufferedImage screenshot = null;
+        ImageSegFrame frame = null;
+        screenshot = ActionRobot.doScreenShot();
+        frame = new ImageSegFrame(" Screenshots ", screenshot, null);
+        List<BufferedImage> images = new LinkedList<BufferedImage>();
+        long time;
+        long avg = 0;
+        while (true) {
+            if (recordScreenshot) {
+                time = System.nanoTime();
+                screenshot = ActionRobot.doScreenShot();
+                images.add(screenshot);
+                Thread.sleep(timegap);
+                avg += (System.nanoTime() - time);
+            } else {
+                screenshot = ActionRobot.doScreenShot();
+            }
+            frame.refresh(screenshot);
+            if (saveAndExit) {
+                saveFileDir += "_" + (avg / images.size() / 1000000) + "\\";
+                File file = new File(ImageSegFrame.saveFileDir);
+                if (!file.exists())
+                    file.mkdir();
+                for (BufferedImage image : images) {
+                    String imgFilename = saveFileDir + String.format("img%04d.png", _saveCount++);
+                    System.out.println("saving image to " + imgFilename);
+                    ImageIO.write(image, "png", new File(imgFilename));
+                }
+                System.exit(0);
+            }
+        }
+
+/*    	if(recordScreenshot)
+            for (BufferedImage image : images)
+    		{
+    			String imgFilename = saveFileDir + String.format("img%04d.png", _saveCount ++);
+    			ImageIO.write(image, "png", new File(imgFilename));
+    		}
+    	*/
+
+
+    }
+
+    public JFrame getFrame() {
+        return frame;
+    }
+
+    // set new image
+    public void refresh(Image img) {
+        panel.refresh(img);
+    }
+
+    public void refreshNow(Image img, int[][] meta) {
+        this.img = img;
+        this.meta = meta;
+        refresh = true;
+    }
+
+    // set new image and meta information for tooltip
+    public void refresh(Image img, int[][] meta) {
+
+        panel.refresh(img, meta);
+
+    }
+
+    public void highlightTarget(Point point) {
+        panel.highlightTarget(point);
+    }
+
+    // close the window
+    public void close() {
+        frame.setVisible(false);
+        frame.dispose();
+    }
+
+    // wait for user input
+    public void waitForKeyPress() {
+        panel.bWaitingForKey = true;
+        while (panel.bWaitingForKey) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+            }
+        }
+    }
 
     public class ImagePanel extends JPanel implements KeyListener, MouseListener {
         /**
          *
          */
         private static final long serialVersionUID = -1162922707389749340L;
+        public Boolean bWaitingForKey = false;
         protected JFrame _parent;
         protected Image _img = null;
         protected Popup _tip = null;
         protected int[][] _meta = null;
         protected Boolean _highlightMode = false;
         protected int _highlightIndex = -1;
-
-        public Boolean bWaitingForKey = false;
 
 
         public ImagePanel(JFrame parent) {
@@ -223,179 +394,6 @@ public class ImageSegFrame {
                 _tip = null;
             }
         }
-    }
-
-    protected JFrame frame;
-    protected ImagePanel panel;
-    protected Image img;
-    protected int[][] meta;
-    protected String name;
-    protected volatile boolean refresh = false;
-    private int bound_x = -1;
-    private int bound_y = -1;
-
-    public JFrame getFrame() {
-        return frame;
-    }
-
-    public ImageSegFrame(String name, Image img, int[][] meta, int bound_x, int bound_y) {
-        this.name = name;
-        this.img = img;
-        this.meta = meta;
-        frame = new JFrame(name);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
-        panel = new ImagePanel(frame);
-
-        frame.getContentPane().add(panel);
-
-        frame.pack();
-        Insets insets = frame.getInsets();
-        frame.setSize(img.getWidth(null) + insets.left + insets.right,
-                img.getHeight(null) + insets.top + insets.bottom);
-        if (bound_x != -1 && bound_y != -1)
-            frame.setBounds(bound_x, bound_y, frame.getSize().width, frame.getSize().height);
-        else {
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            GraphicsDevice defaultScreen = ge.getDefaultScreenDevice();
-            Rectangle rect = defaultScreen.getDefaultConfiguration().getBounds();
-            int x = (int) rect.getMaxX() - frame.getWidth();
-            int y = 0;
-            //System.out.println(frame.getWidth());
-            frame.setLocation(x, y);
-
-        }
-        frame.setVisible(true);
-        if (img != null && meta != null)
-            panel.refresh(img, meta);
-    }
-
-    public ImageSegFrame(String name, Image img, int[][] meta) {
-
-        this.name = name;
-        this.img = img;
-        this.meta = meta;
-        frame = new JFrame(name);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        panel = new ImagePanel(frame);
-
-        frame.getContentPane().add(panel);
-
-        frame.pack();
-        Insets insets = frame.getInsets();
-        frame.setSize(img.getWidth(null) + insets.left + insets.right,
-                img.getHeight(null) + insets.top + insets.bottom);
-        if (bound_x != -1 && bound_y != -1)
-            frame.setBounds(bound_x, bound_y, frame.getSize().width, frame.getSize().height);
-        else {
-            int x = 0;
-            int y = 0;
-            frame.setLocation(x, y);
-
-        }
-        frame.setVisible(true);
-        frame.setResizable(false);
-        if (img != null && meta != null)
-            panel.refresh(img, meta);
-
-        //panel.requestFocus();
-    }
-
-    public ImageSegFrame(String name, Image img) {
-        this(name, img, null);
-    }
-
-    // set new image
-    public void refresh(Image img) {
-        panel.refresh(img);
-    }
-
-    public void refreshNow(Image img, int[][] meta) {
-        this.img = img;
-        this.meta = meta;
-        refresh = true;
-    }
-
-    // set new image and meta information for tooltip
-    public void refresh(Image img, int[][] meta) {
-
-        panel.refresh(img, meta);
-
-    }
-
-    public void highlightTarget(Point point) {
-        panel.highlightTarget(point);
-    }
-
-    // close the window
-    public void close() {
-        frame.setVisible(false);
-        frame.dispose();
-    }
-
-    // wait for user input
-    public void waitForKeyPress() {
-        panel.bWaitingForKey = true;
-        while (panel.bWaitingForKey) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
-    public static void main(String args[]) throws InterruptedException, IOException {
-        long timegap = 0;
-        if (args.length == 1)
-            ImageSegFrame.saveFileDir = (args[0]) + "";
-        else if (args.length == 2) {
-            ImageSegFrame.saveFileDir = args[0] + "";
-            timegap = Long.parseLong(args[1]);
-        }
-
-        new ActionRobot();
-        BufferedImage screenshot = null;
-        ImageSegFrame frame = null;
-        screenshot = ActionRobot.doScreenShot();
-        frame = new ImageSegFrame(" Screenshots ", screenshot, null);
-        List<BufferedImage> images = new LinkedList<BufferedImage>();
-        long time;
-        long avg = 0;
-        while (true) {
-            if (recordScreenshot) {
-                time = System.nanoTime();
-                screenshot = ActionRobot.doScreenShot();
-                images.add(screenshot);
-                Thread.sleep(timegap);
-                avg += (System.nanoTime() - time);
-            } else {
-                screenshot = ActionRobot.doScreenShot();
-            }
-            frame.refresh(screenshot);
-            if (saveAndExit) {
-                saveFileDir += "_" + (avg / images.size() / 1000000) + "\\";
-                File file = new File(ImageSegFrame.saveFileDir);
-                if (!file.exists())
-                    file.mkdir();
-                for (BufferedImage image : images) {
-                    String imgFilename = saveFileDir + String.format("img%04d.png", _saveCount++);
-                    System.out.println("saving image to " + imgFilename);
-                    ImageIO.write(image, "png", new File(imgFilename));
-                }
-                System.exit(0);
-            }
-        }
-
-/*    	if(recordScreenshot)
-            for (BufferedImage image : images)
-    		{
-    			String imgFilename = saveFileDir + String.format("img%04d.png", _saveCount ++);
-    			ImageIO.write(image, "png", new File(imgFilename));
-    		}
-    	*/
-
-
     }
 
 }

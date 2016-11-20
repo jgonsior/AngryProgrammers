@@ -20,7 +20,6 @@ public class ShootingAgent {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             System.out.println("no slingshot detected. Please remove pop up or zoom out");

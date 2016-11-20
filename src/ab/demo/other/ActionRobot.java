@@ -35,10 +35,6 @@ import java.util.List;
  */
 public class ActionRobot {
     public static Proxy proxy;
-    public String level_status = "UNKNOWN";
-    public int current_score = 0;
-    private LoadLevelSchema lls;
-    private RestartLevelSchema rls;
 
     static {
         if (proxy == null) {
@@ -69,15 +65,16 @@ public class ActionRobot {
         }
     }
 
+    public String level_status = "UNKNOWN";
+    public int current_score = 0;
+    private LoadLevelSchema lls;
+    private RestartLevelSchema rls;
+
     // A java util class for the standalone version. It provides common
     // functions an agent would use. E.g. get the screenshot
     public ActionRobot() {
         lls = new LoadLevelSchema(proxy);
         rls = new RestartLevelSchema(proxy);
-    }
-
-    public void restartLevel() {
-        rls.restartLevel();
     }
 
     public static void GoFromMainMenuToLevelSelection() {
@@ -109,6 +106,65 @@ public class ActionRobot {
             state = StateUtil.getGameState(proxy);
         }
 
+    }
+
+    public static void fullyZoomOut() {
+        for (int k = 0; k < 15; k++) {
+
+            proxy.send(new ProxyMouseWheelMessage(-1));
+        }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void fullyZoomIn() {
+        for (int k = 0; k < 15; k++) {
+
+            proxy.send(new ProxyMouseWheelMessage(1));
+        }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static BufferedImage doScreenShot() {
+        byte[] imageBytes = proxy.send(new ProxyScreenshotMessage());
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        } catch (IOException e) {
+
+        }
+
+        return image;
+    }
+
+    public static void main(String args[]) {
+
+        long time = System.currentTimeMillis();
+        ActionRobot.doScreenShot();
+        time = System.currentTimeMillis() - time;
+        System.out.println(" cost: " + time);
+        time = System.currentTimeMillis();
+        int count = 0;
+        while (count < 40) {
+            ActionRobot.doScreenShot();
+            count++;
+        }
+
+        System.out.println(" time to take 40 screenshots"
+                + (System.currentTimeMillis() - time));
+        System.exit(0);
+
+    }
+
+    public void restartLevel() {
+        rls.restartLevel();
     }
 
     public GameState shootWithStateInfoReturned(List<Shot> csc) {
@@ -188,42 +244,6 @@ public class ActionRobot {
         lls.loadLevel(level);
     }
 
-    public static void fullyZoomOut() {
-        for (int k = 0; k < 15; k++) {
-
-            proxy.send(new ProxyMouseWheelMessage(-1));
-        }
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void fullyZoomIn() {
-        for (int k = 0; k < 15; k++) {
-
-            proxy.send(new ProxyMouseWheelMessage(1));
-        }
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static BufferedImage doScreenShot() {
-        byte[] imageBytes = proxy.send(new ProxyScreenshotMessage());
-        BufferedImage image = null;
-        try {
-            image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-        } catch (IOException e) {
-
-        }
-
-        return image;
-    }
-
     /*
      * @return the type of the bird on the sling.
      *
@@ -251,25 +271,6 @@ public class ActionRobot {
             }
         });
         return _birds.get(0).getType();
-    }
-
-    public static void main(String args[]) {
-
-        long time = System.currentTimeMillis();
-        ActionRobot.doScreenShot();
-        time = System.currentTimeMillis() - time;
-        System.out.println(" cost: " + time);
-        time = System.currentTimeMillis();
-        int count = 0;
-        while (count < 40) {
-            ActionRobot.doScreenShot();
-            count++;
-        }
-
-        System.out.println(" time to take 40 screenshots"
-                + (System.currentTimeMillis() - time));
-        System.exit(0);
-
     }
 
     public int getScore() {

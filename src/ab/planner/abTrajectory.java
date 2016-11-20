@@ -56,18 +56,6 @@ public class abTrajectory {
         }
     }
 
-    public BufferedImage doScreenShot() {
-        byte[] imageBytes = server.send(new ProxyScreenshotMessage());
-        BufferedImage image = null;
-        try {
-            image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-        } catch (IOException e) {
-            // do something
-        }
-
-        return image;
-    }
-
     public static void main(String args[]) {
         abTrajectory ar = new abTrajectory();
 
@@ -140,5 +128,17 @@ public class abTrajectory {
             } catch (InterruptedException e) {
             }
         }
+    }
+
+    public BufferedImage doScreenShot() {
+        byte[] imageBytes = server.send(new ProxyScreenshotMessage());
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        } catch (IOException e) {
+            // do something
+        }
+
+        return image;
     }
 }

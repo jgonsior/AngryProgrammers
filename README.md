@@ -6,7 +6,14 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
 ## Get it running for development with Intellij Idea
 1. Install the IvyIDEA plugin
 2. Let this plugin download all the Dependencies specified in ivy.xml
-3. Execute it as usual
+3. Create your own config.properties file:
+ ```
+ db_user=aibirds
+ db_pass=secret
+ db_path=jdbc:sqlite:database.db
+ db_name=ai_test
+ ```
+4. Execute it as usual
 
 ## Get it running for the competition or on a development server (untested yet)
 1. Install Apache Ant and Apache Ivy locally

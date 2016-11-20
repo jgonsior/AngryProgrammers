@@ -132,53 +132,42 @@ public class ImageSegmenter {
             {88, 112, 16, WATERMELON},
             {56, 88, 16, WATERMELON}
     };
-
-    private static int MIN_SIZE[];
-    private static int MAX_SIZE[];
-
-    // table mapping each 15 bit color code to a type
-    private static int _assignedType[];
-
-    // drawing color for different objects
-    public static int _drawColor[];
-    public static Color _colors[];
-    private static boolean _firstTime = true;
-
     // edge detection thresholds
     private static final int EDGE_THRESHOLD1 = 300;
     private static final int EDGE_THRESHOLD2 = 125;
-
     // weights for edge strength calculation and maximum single response
     private static final int wh = 400;
     private static final int ws = 12;
     private static final int wv = 7;
     private static final int EDGE_BOUND = 180;
-
     private static final int NEIGHBOURS[][] = {
             {0, -1, 0, 1, 0, 0},  // horizontal neighbours
             {1, -1, -1, 1, 0, 0}, // 45 degress
             {-1, 0, 1, 0, 0, 0},  // vertical
             {-1, -1, 1, 1, 0, 0}  // 135 degrees
     };
-
+    private static final double ROOT3 = Math.sqrt(3);
+    // drawing color for different objects
+    public static int _drawColor[];
+    public static Color _colors[];
+    private static int MIN_SIZE[];
+    private static int MAX_SIZE[];
+    // table mapping each 15 bit color code to a type
+    private static int _assignedType[];
+    private static boolean _firstTime = true;
+    // the compressed image
+    public int[][] _image = null;
     // dimension of the image
     private int _width;
     private int _height;
-
     // ground level
     private int _groundLevel = 0;
-
     // the labelled image using integer colours, indexed as [y][x]
     private int[][] _class = null;
     private boolean[][] _edges = null;
-
-    // the compressed image
-    public int[][] _image = null;
     private int[][] _val = null;
     private int[][] _hue = null;
     private int[][] _sat = null;
-
-
     // connected components in the scene
     private ArrayList<ConnectedComponent> _components = null;
 
@@ -213,252 +202,6 @@ public class ImageSegmenter {
             }
         classifyPixels();
         findGroundLevel();
-    }
-
-    /* Assign a class label to every point in the screenshot
-     */
-    private void classifyPixels() {
-        _class = new int[_height][_width];
-
-        for (int y = 0; y < _height; y++)
-            for (int x = 0; x < _width; x++)
-                _class[y][x] = _assignedType[_image[y][x]];
-    }
-
-    /* find edges in the image, using the custom edge detector
-     * @return  boolean map in the form isEdge[y][x], where isEdge[y][x]
-     *          means point (x, y) is an edge
-     */
-    private boolean[][] findEdges() {
-        int G[][][] = new int[_height][_width][4];
-        int G1[][][] = new int[_height][_width][4];
-        int G2[][][] = new int[_height][_width][4];
-        boolean isEdge[][][] = new boolean[_height][_width][4];
-
-        // calculate individual edge strength in each direction
-        for (int y = _height - 2; y > 0; y--)
-            for (int x = 1; x < _width - 1; x++) {
-                for (int o = 0; o < 4; o++) {
-                    int x2 = x + NEIGHBOURS[o][0];
-                    int y2 = y + NEIGHBOURS[o][1];
-                    int x3 = x + NEIGHBOURS[o][2];
-                    int y3 = y + NEIGHBOURS[o][3];
-
-                    G[y][x][o] = distance(x, y, x2, y2) + distance(x, y, x3, y3);
-                }
-                G[y][x][0] *= 1.5;
-                G[y][x][2] *= 1.5;
-            }
-
-        // cross-correlate with neighbouring points
-        for (int y = _height - 3; y > 1; y--)
-            for (int x = 2; x < _width - 2; x++) {
-                for (int o = 0; o < 4; o++) {
-                    int o2 = (o + 2) % 4;
-                    int x2 = x + NEIGHBOURS[o2][0];
-                    int y2 = y + NEIGHBOURS[o2][1];
-                    int x3 = x + NEIGHBOURS[o2][2];
-                    int y3 = y + NEIGHBOURS[o2][3];
-
-                    G1[y][x][o] = (G[y][x][o] + G[y2][x2][o] + G[y3][x3][o]) / 3;
-                }
-            }
-
-        // apply non-maximum suppression for each direction
-        for (int y = _height - 3; y > 1; y--)
-            for (int x = 2; x < _width - 2; x++) {
-                for (int o = 0; o < 4; o++) {
-                    G2[y][x][o] = G1[y][x][o];
-
-                    int x1 = x + NEIGHBOURS[o][0];
-                    int y1 = y + NEIGHBOURS[o][1];
-                    int x2 = x + NEIGHBOURS[o][2];
-                    int y2 = y + NEIGHBOURS[o][3];
-
-                    if (G1[y][x][o] <= G1[y1][x1][o] || G1[y][x][o] < G1[y2][x2][o])
-                        G2[y][x][o] = 0;
-                }
-            }
-
-        // Trace edge using two thresholds       
-        for (int y = _height - 3; y > 1; y--)
-            for (int x = 2; x < _width - 2; x++) {
-                // add pixel if gradient is greater than threshold1
-                for (int o = 0; o < 4; o++)
-                    if (G2[y][x][o] > EDGE_THRESHOLD1 && !isEdge[y][x][o]) {
-                        isEdge[y][x][o] = true;
-
-                        // perform BFS for edge pixels
-                        Queue<Point> q = new LinkedList<Point>();
-                        q.add(new Point(x, y));
-
-                        while (!q.isEmpty()) {
-                            Point p = q.poll();
-
-                            for (int i = -1; i < 2; i++)
-                                for (int j = -1; j < 2; j++) {
-                                    if (i == 0 && j == 0)
-                                        continue;
-
-                                    int ny = p.y + i;
-                                    int nx = p.x + j;
-
-                                    // if the gradient is greater than threshold2
-                                    if (G2[ny][nx][o] > EDGE_THRESHOLD2 && !isEdge[ny][nx][o]) {
-                                        isEdge[ny][nx][o] = true;
-                                        q.add(new Point(nx, ny));
-                                    }
-                                }
-                        }
-                    }
-            }
-
-        // combine edge in all four directions
-        boolean ret[][] = new boolean[_height][_width];
-        for (int y = _height - 3; y > 1; y--)
-            for (int x = 2; x < _width - 2; x++) {
-                if (isEdge[y][x][0] || isEdge[y][x][1] ||
-                        isEdge[y][x][2] || isEdge[y][x][3])
-                    ret[y][x] = true;
-            }
-
-        return ret;
-    }
-
-    /* find all connected components in the game
-     */
-    public ArrayList<ConnectedComponent> findComponents() {
-        // find edges and add to the class map        
-        _edges = findEdges();
-        for (int y = _groundLevel - 1; y > 0; y--)
-            for (int x = 0; x < _width; x++) {
-                if (!(_class[y][x] >= ICE && _class[y][x] <= STONE))
-                    continue;
-
-                if (_edges[y][x])
-                    _class[y][x] = EDGE;
-            }
-
-        // search for connected components
-        _components = new ArrayList<ConnectedComponent>();
-        boolean searched[][] = new boolean[_height][_width];
-
-        for (int x = 50; x < _width - 50; x++)
-            for (int y = _groundLevel - 1; y > _height * 0.2; y--) {
-                int cls = _class[y][x];
-                if (!searched[y][x] && cls > GROUND && cls < EDGE) {
-                    ConnectedComponent cc;
-
-                    // use 8-connect for birds and sling, 4-connect otherwise
-                    if (cls >= SLING && cls <= BLACK_BIRD)
-                        cc = new ConnectedComponent(_class, x, y, searched, true);
-                    else
-                        cc = new ConnectedComponent(_class, x, y, searched, false);
-
-                    // verify component has the correct size
-                    if (cc.getArea() >= MIN_SIZE[cls] && cc.getArea() <= MAX_SIZE[cls])
-                        _components.add(cc);
-                }
-            }
-        //_edges = null;
-        return _components;
-    }
-
-    /* find all connected components with type trajectory */
-    public ArrayList<ConnectedComponent> findTrajectory() {
-        ArrayList<ConnectedComponent> traj = new ArrayList<ConnectedComponent>();
-
-        boolean searched[][] = new boolean[_height][_width];
-        for (int x = 50; x < _width - 50; x++)
-            for (int y = _groundLevel - 1; y > _height * 0.1; y--) {
-                int cls = _class[y][x];
-                if (!searched[y][x] && cls == TRAJECTORY) {
-                    ConnectedComponent cc;
-                    cc = new ConnectedComponent(_class, x, y, searched, false);
-
-                    if (cc.getArea() >= MIN_SIZE[TRAJECTORY] && cc.getArea() <= MAX_SIZE[TRAJECTORY])
-                        traj.add(cc);
-                }
-            }
-        return traj;
-    }
-
-    /* find the ground level */
-    public int findGroundLevel() {
-        if (_groundLevel != 0)
-            return _groundLevel;
-
-        for (int y = _height - 1; y > 0; y--) {
-            int counter = 0;
-            for (int x = 0; x < _width; x++) {
-                if (_class[y][x] == GROUND)
-                    counter++;
-            }
-            if (counter < _width * 0.8) {
-                _groundLevel = y;
-                break;
-            }
-        }
-        return _groundLevel;
-    }
-
-    /* draw all found components
-     * @param   canvas to draw onto
-     *          if the corners should be indicated
-     */
-    public void drawComponents(BufferedImage canvas, boolean drawCorner) {
-        if (_components == null)
-            findComponents();
-
-        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
-
-        for (int x = 0; x < _width; x++)
-            for (int y = 0; y < _height; y++)
-                image.setRGB(x, y, 0xffffff);
-
-        // draw connected components      
-        for (ConnectedComponent cc : _components)
-            cc.draw(image, true, drawCorner);
-
-        canvas.createGraphics().drawImage(image, 0, 0, null);
-    }
-
-    // draw the segmentation onto canvas
-    public void drawClassification(BufferedImage canvas) {
-        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
-
-        for (int y = 0; y < _height; y++) {
-            for (int x = 0; x < _width; x++) {
-                int c = _class[y][x];
-                image.setRGB(x, y, _drawColor[c]);
-            }
-        }
-        Graphics2D g = canvas.createGraphics();
-        g.drawImage(image, 0, 0, null);
-    }
-
-    // draw the edge image onto canvas
-    public void drawEdges(BufferedImage canvas) {
-        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
-
-        _edges = findEdges();
-        for (int y = 0; y < _height; y++) {
-            for (int x = 0; x < _width; x++) {
-                if (_edges[y][x])
-                    image.setRGB(x, y, 0x000000);
-                else
-                    image.setRGB(x, y, 0xffffff);
-            }
-        }
-        Graphics2D g = canvas.createGraphics();
-        g.drawImage(image, 0, 0, null);
-    }
-
-    // draw the compressed image
-    public void drawImage(BufferedImage canvas) {
-        BufferedImage image = decompressImage(_image);
-        Graphics2D g = canvas.createGraphics();
-        g.drawImage(image, 0, 0, null);
     }
 
     /* compress the given image to 15 bit per pixel
@@ -607,8 +350,6 @@ public class ImageSegmenter {
         return type;
     }
 
-    private static final double ROOT3 = Math.sqrt(3);
-
     // calculate hue from the r, g, b color
     public static int getHue(int r, int g, int b) {
         double alpha = 2 * r - g - b;
@@ -636,6 +377,251 @@ public class ImageSegmenter {
         return 100 * (r + g + b) / 768;
     }
 
+    /* Assign a class label to every point in the screenshot
+     */
+    private void classifyPixels() {
+        _class = new int[_height][_width];
+
+        for (int y = 0; y < _height; y++)
+            for (int x = 0; x < _width; x++)
+                _class[y][x] = _assignedType[_image[y][x]];
+    }
+
+    /* find edges in the image, using the custom edge detector
+     * @return  boolean map in the form isEdge[y][x], where isEdge[y][x]
+     *          means point (x, y) is an edge
+     */
+    private boolean[][] findEdges() {
+        int G[][][] = new int[_height][_width][4];
+        int G1[][][] = new int[_height][_width][4];
+        int G2[][][] = new int[_height][_width][4];
+        boolean isEdge[][][] = new boolean[_height][_width][4];
+
+        // calculate individual edge strength in each direction
+        for (int y = _height - 2; y > 0; y--)
+            for (int x = 1; x < _width - 1; x++) {
+                for (int o = 0; o < 4; o++) {
+                    int x2 = x + NEIGHBOURS[o][0];
+                    int y2 = y + NEIGHBOURS[o][1];
+                    int x3 = x + NEIGHBOURS[o][2];
+                    int y3 = y + NEIGHBOURS[o][3];
+
+                    G[y][x][o] = distance(x, y, x2, y2) + distance(x, y, x3, y3);
+                }
+                G[y][x][0] *= 1.5;
+                G[y][x][2] *= 1.5;
+            }
+
+        // cross-correlate with neighbouring points
+        for (int y = _height - 3; y > 1; y--)
+            for (int x = 2; x < _width - 2; x++) {
+                for (int o = 0; o < 4; o++) {
+                    int o2 = (o + 2) % 4;
+                    int x2 = x + NEIGHBOURS[o2][0];
+                    int y2 = y + NEIGHBOURS[o2][1];
+                    int x3 = x + NEIGHBOURS[o2][2];
+                    int y3 = y + NEIGHBOURS[o2][3];
+
+                    G1[y][x][o] = (G[y][x][o] + G[y2][x2][o] + G[y3][x3][o]) / 3;
+                }
+            }
+
+        // apply non-maximum suppression for each direction
+        for (int y = _height - 3; y > 1; y--)
+            for (int x = 2; x < _width - 2; x++) {
+                for (int o = 0; o < 4; o++) {
+                    G2[y][x][o] = G1[y][x][o];
+
+                    int x1 = x + NEIGHBOURS[o][0];
+                    int y1 = y + NEIGHBOURS[o][1];
+                    int x2 = x + NEIGHBOURS[o][2];
+                    int y2 = y + NEIGHBOURS[o][3];
+
+                    if (G1[y][x][o] <= G1[y1][x1][o] || G1[y][x][o] < G1[y2][x2][o])
+                        G2[y][x][o] = 0;
+                }
+            }
+
+        // Trace edge using two thresholds
+        for (int y = _height - 3; y > 1; y--)
+            for (int x = 2; x < _width - 2; x++) {
+                // add pixel if gradient is greater than threshold1
+                for (int o = 0; o < 4; o++)
+                    if (G2[y][x][o] > EDGE_THRESHOLD1 && !isEdge[y][x][o]) {
+                        isEdge[y][x][o] = true;
+
+                        // perform BFS for edge pixels
+                        Queue<Point> q = new LinkedList<Point>();
+                        q.add(new Point(x, y));
+
+                        while (!q.isEmpty()) {
+                            Point p = q.poll();
+
+                            for (int i = -1; i < 2; i++)
+                                for (int j = -1; j < 2; j++) {
+                                    if (i == 0 && j == 0)
+                                        continue;
+
+                                    int ny = p.y + i;
+                                    int nx = p.x + j;
+
+                                    // if the gradient is greater than threshold2
+                                    if (G2[ny][nx][o] > EDGE_THRESHOLD2 && !isEdge[ny][nx][o]) {
+                                        isEdge[ny][nx][o] = true;
+                                        q.add(new Point(nx, ny));
+                                    }
+                                }
+                        }
+                    }
+            }
+
+        // combine edge in all four directions
+        boolean ret[][] = new boolean[_height][_width];
+        for (int y = _height - 3; y > 1; y--)
+            for (int x = 2; x < _width - 2; x++) {
+                if (isEdge[y][x][0] || isEdge[y][x][1] ||
+                        isEdge[y][x][2] || isEdge[y][x][3])
+                    ret[y][x] = true;
+            }
+
+        return ret;
+    }
+
+    /* find all connected components in the game
+     */
+    public ArrayList<ConnectedComponent> findComponents() {
+        // find edges and add to the class map
+        _edges = findEdges();
+        for (int y = _groundLevel - 1; y > 0; y--)
+            for (int x = 0; x < _width; x++) {
+                if (!(_class[y][x] >= ICE && _class[y][x] <= STONE))
+                    continue;
+
+                if (_edges[y][x])
+                    _class[y][x] = EDGE;
+            }
+
+        // search for connected components
+        _components = new ArrayList<ConnectedComponent>();
+        boolean searched[][] = new boolean[_height][_width];
+
+        for (int x = 50; x < _width - 50; x++)
+            for (int y = _groundLevel - 1; y > _height * 0.2; y--) {
+                int cls = _class[y][x];
+                if (!searched[y][x] && cls > GROUND && cls < EDGE) {
+                    ConnectedComponent cc;
+
+                    // use 8-connect for birds and sling, 4-connect otherwise
+                    if (cls >= SLING && cls <= BLACK_BIRD)
+                        cc = new ConnectedComponent(_class, x, y, searched, true);
+                    else
+                        cc = new ConnectedComponent(_class, x, y, searched, false);
+
+                    // verify component has the correct size
+                    if (cc.getArea() >= MIN_SIZE[cls] && cc.getArea() <= MAX_SIZE[cls])
+                        _components.add(cc);
+                }
+            }
+        //_edges = null;
+        return _components;
+    }
+
+    /* find all connected components with type trajectory */
+    public ArrayList<ConnectedComponent> findTrajectory() {
+        ArrayList<ConnectedComponent> traj = new ArrayList<ConnectedComponent>();
+
+        boolean searched[][] = new boolean[_height][_width];
+        for (int x = 50; x < _width - 50; x++)
+            for (int y = _groundLevel - 1; y > _height * 0.1; y--) {
+                int cls = _class[y][x];
+                if (!searched[y][x] && cls == TRAJECTORY) {
+                    ConnectedComponent cc;
+                    cc = new ConnectedComponent(_class, x, y, searched, false);
+
+                    if (cc.getArea() >= MIN_SIZE[TRAJECTORY] && cc.getArea() <= MAX_SIZE[TRAJECTORY])
+                        traj.add(cc);
+                }
+            }
+        return traj;
+    }
+
+    /* find the ground level */
+    public int findGroundLevel() {
+        if (_groundLevel != 0)
+            return _groundLevel;
+
+        for (int y = _height - 1; y > 0; y--) {
+            int counter = 0;
+            for (int x = 0; x < _width; x++) {
+                if (_class[y][x] == GROUND)
+                    counter++;
+            }
+            if (counter < _width * 0.8) {
+                _groundLevel = y;
+                break;
+            }
+        }
+        return _groundLevel;
+    }
+
+    /* draw all found components
+     * @param   canvas to draw onto
+     *          if the corners should be indicated
+     */
+    public void drawComponents(BufferedImage canvas, boolean drawCorner) {
+        if (_components == null)
+            findComponents();
+
+        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < _width; x++)
+            for (int y = 0; y < _height; y++)
+                image.setRGB(x, y, 0xffffff);
+
+        // draw connected components
+        for (ConnectedComponent cc : _components)
+            cc.draw(image, true, drawCorner);
+
+        canvas.createGraphics().drawImage(image, 0, 0, null);
+    }
+
+    // draw the segmentation onto canvas
+    public void drawClassification(BufferedImage canvas) {
+        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
+
+        for (int y = 0; y < _height; y++) {
+            for (int x = 0; x < _width; x++) {
+                int c = _class[y][x];
+                image.setRGB(x, y, _drawColor[c]);
+            }
+        }
+        Graphics2D g = canvas.createGraphics();
+        g.drawImage(image, 0, 0, null);
+    }
+
+    // draw the edge image onto canvas
+    public void drawEdges(BufferedImage canvas) {
+        BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
+
+        _edges = findEdges();
+        for (int y = 0; y < _height; y++) {
+            for (int x = 0; x < _width; x++) {
+                if (_edges[y][x])
+                    image.setRGB(x, y, 0x000000);
+                else
+                    image.setRGB(x, y, 0xffffff);
+            }
+        }
+        Graphics2D g = canvas.createGraphics();
+        g.drawImage(image, 0, 0, null);
+    }
+
+    // draw the compressed image
+    public void drawImage(BufferedImage canvas) {
+        BufferedImage image = decompressImage(_image);
+        Graphics2D g = canvas.createGraphics();
+        g.drawImage(image, 0, 0, null);
+    }
 
     /* custom defined distance metric
      * @param   coordinates of the two point to compare

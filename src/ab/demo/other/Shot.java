@@ -15,20 +15,8 @@ public class Shot {
     private int y;
     private int dx;
     private int dy;
-
-    public int getDx() {
-        return dx;
-    }
-
-
-    public void setDx(int dx) {
-        this.dx = dx;
-    }
-
-
-    public int getDy() {
-        return dy;
-    }
+    private int t_shot;
+    private int t_tap;
 
 
     public Shot(int x, int y, int dx, int dy, int t_shot, int t_tap) {
@@ -41,6 +29,7 @@ public class Shot {
         this.t_tap = t_tap;
     }
 
+
     public Shot(int x, int y, int dx, int dy, int t_shot) {
         super();
         this.x = x;
@@ -49,14 +38,6 @@ public class Shot {
         this.dy = dy;
         this.t_shot = t_shot;
     }
-
-
-    public void setDy(int dy) {
-        this.dy = dy;
-    }
-
-    private int t_shot;
-    private int t_tap;
 
     public Shot() {
         x = 0;
@@ -76,6 +57,21 @@ public class Shot {
         this.t_tap = t_tap;
     }
 
+    public int getDx() {
+        return dx;
+    }
+
+    public void setDx(int dx) {
+        this.dx = dx;
+    }
+
+    public int getDy() {
+        return dy;
+    }
+
+    public void setDy(int dy) {
+        this.dy = dy;
+    }
 
     public int getX() {
         return x;
