@@ -62,7 +62,7 @@ public class NaiveAgent implements Runnable {
             GameState state = solve();
             if (state == GameState.WON) {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

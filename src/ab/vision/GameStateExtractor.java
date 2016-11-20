@@ -42,6 +42,7 @@ public class GameStateExtractor {
     private static BufferedImage _endGame7 = null;
     private static BufferedImage _endGame8 = null;
     private static BufferedImage _endGame9 = null;
+
     // create a game state extractor and load subimages
     public GameStateExtractor() {
         try {
