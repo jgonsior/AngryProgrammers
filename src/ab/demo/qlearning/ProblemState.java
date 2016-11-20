@@ -23,7 +23,7 @@ public class ProblemState {
 
         allObjects = new ArrayList<>(vison.findBirdsRealShape());
         allObjects.addAll(vison.findBlocksRealShape());
-        allObjects.addAll(vison.findBirdsRealShape());
+        allObjects.addAll(vison.findPigsRealShape());
     }
 
     /**
@@ -34,7 +34,7 @@ public class ProblemState {
     public String toString() {
         String string = "";
         for (ABObject object : allObjects) {
-            string += object.getType() + " " + String.valueOf(object.getCenterX() % 10) + " " + String.valueOf(object.getCenterY() % 10) + " " + String.valueOf(object.shape);
+            string += object.getType() + " " + String.valueOf(((int) object.getCenterX()) / 10) + " " + String.valueOf(((int) object.getCenterY()) / 10) + " " + String.valueOf(object.shape);
         }
         return string;
     }
