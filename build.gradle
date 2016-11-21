@@ -1,7 +1,5 @@
 apply plugin: 'java'
 
-version = '1.0'
-
 sourceSets {
     main.java.srcDir 'src'
 }
@@ -27,6 +25,8 @@ dependencies {
 }
 
 task uberjar(type: Jar) {
+	baseName = "ABSoftware"
+	destinationDir = file("$rootDir/")
     from files(sourceSets.main.output.classesDir)
     from {configurations.compile.collect {zipTree(it)}} {
         exclude "META-INF/*.SF"

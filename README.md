@@ -17,7 +17,7 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
 
 ## Get it running for the competition or on a development server (untested yet)
 1. Install gradle
-2. Run `gradle clean build uberjar` to build the jar file, then move it into main folder (automatization will follow) 
+2. Run `gradle clean build uberjar` to build the jar file 
 4. Execute `~/start.sh`
 
 <!--
