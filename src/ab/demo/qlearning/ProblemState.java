@@ -27,33 +27,40 @@ public class ProblemState {
     }
 
     /**
-     * Returns a deserialized problem state representation
+     * Returns a deserialized problem state representation,
+     * gets all objects from left upper corner to right lower corner.
      *
      * @return the problem state deserialized into a string
      */
     public String toString() {
         String string = "";
         for (ABObject object : allObjects) {
-            string += object.getType() + " " + String.valueOf(((int) object.getCenterX()) / 10) + " " + String.valueOf(((int) object.getCenterY()) / 10) + " " + String.valueOf(object.shape);
+            string += " "+object.getType() + " " + String.valueOf(((int) object.getCenterX()) / 10) + " " + String.valueOf(((int) object.getCenterY()) / 10) + " " + String.valueOf(object.shape);
         }
         return string;
     }
 
+    /**
+     * returns approximation of shootable objects
+     * @return list of approximation of shootable objects
+     */
     public List<ABObject> getShootableObjects(){
         List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
         shootableObjects.addAll(vison.findPigsRealShape());
+        // check for every object if its possibly blocked by a neighbour
         for (ABObject object : allObjects) {
             double x1 = object.getCenterX();
             double y1 = object.getCenterY();
+            innerloop:
             for (ABObject neighbor : allObjects) {
                 if  (!object.equals(neighbor) ){
                     double x2 = neighbor.getCenterX();
                     double y2 = neighbor.getCenterY();
-
-                    if ((x1 > x2) && ((x1-x2)<10) ){
-                        shootableObjects.remove(object);
-                    } else if ((y1 > y2) && ((y1-y2)<10)){
-                        shootableObjects.remove(object);
+                    if ((x2 < x1) && (y2 < y1)){
+                        if (((x1-x2)<20) && ((y1-y2)<20)){
+                            shootableObjects.remove(object);
+                            break innerloop;
+                        }
                     }
                 }
             }
