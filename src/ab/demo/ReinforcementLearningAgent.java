@@ -10,8 +10,8 @@ package ab.demo;
 
 import ab.demo.other.ClientActionRobot;
 import ab.demo.other.ClientActionRobotJava;
+import ab.demo.qlearning.ProblemState;
 import ab.demo.qlearning.QValuesDAO;
-import ab.demo.qlearning.State;
 import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
@@ -67,7 +67,7 @@ public class ReinforcementLearningAgent implements Runnable {
      * Constructor with a specified IP
      */
     public ReinforcementLearningAgent(String ip) {
-        this(ip, 0);
+        this(ip, 28888);
     }
 
     public ReinforcementLearningAgent(String ip, int id) {
@@ -79,13 +79,13 @@ public class ReinforcementLearningAgent implements Runnable {
         this.id = id;
 
         Properties properties = new Properties();
-        InputStream input = null;
+        InputStream configInputStream = null;
 
         try {
             //parse our configuration file
-            input = new FileInputStream("config.properties");
+            configInputStream = new FileInputStream("config.properties");
 
-            properties.load(input);
+            properties.load(configInputStream);
 
             dbPath = properties.getProperty("db_path");
             dbUser = properties.getProperty("db_user");
@@ -104,15 +104,15 @@ public class ReinforcementLearningAgent implements Runnable {
                 qValuesDAO.createQValuesTable();
             }
 
-            State s = new State("state1");
-            getNextAction(s);
+            //ProblemState s = new ProblemState("state1");
+            //getNextAction(s);
 
         } catch (IOException exception) {
             exception.printStackTrace();
         } finally {
-            if (input != null) {
+            if (configInputStream != null) {
                 try {
-                    input.close();
+                    configInputStream.close();
                 } catch (IOException exception) {
                     exception.printStackTrace();
                 }
@@ -185,7 +185,7 @@ public class ReinforcementLearningAgent implements Runnable {
 
         currentLevel = (byte) getNextLevel();
         clientActionRobotJava.loadLevel(currentLevel);
-        //clientActionRobotJava.loadLevel((byte)9);
+        //ar.loadLevel((byte)9);
         GameState state;
         while (true) {
 
@@ -196,10 +196,9 @@ public class ReinforcementLearningAgent implements Runnable {
                 ///System.out.println(" loading the level " + (currentLevel + 1) );
                 checkMyScore();
                 System.out.println();
-
                 currentLevel = (byte) getNextLevel();
                 clientActionRobotJava.loadLevel(currentLevel);
-                //clientActionRobotJava.loadLevel((byte)9);
+                //ar.loadLevel((byte)9);
                 //display the global best scores
                 int[] scores = clientActionRobotJava.checkScore();
                 System.out.println("Global best score: ");
@@ -224,7 +223,7 @@ public class ReinforcementLearningAgent implements Runnable {
                         currentLevel = (byte) getNextLevel();
                         clientActionRobotJava.loadLevel(currentLevel);
 
-                        //clientActionRobotJava.loadLevel((byte)9);
+                        //ar.loadLevel((byte)9);
                     } else {
                         System.out.println("restart");
                         clientActionRobotJava.restartLevel();
@@ -249,32 +248,35 @@ public class ReinforcementLearningAgent implements Runnable {
 
     }
 
+
     /**
      * Solve a particular level by shooting birds directly to pigs
      *
      * @return GameState: the game state after shots.
      */
-    private GameState solve() {
+    public GameState solve()
+
+    {
 
         // capture Image
         BufferedImage screenshot = clientActionRobotJava.doScreenShot();
 
-        // GameStateExtractor for currentScore inGame
-        gameStateExtractor = new GameStateExtractor();
-
-        // process images
+        // process image
         Vision vision = new Vision(screenshot);
+
+        ProblemState problemTestState = new ProblemState(vision);
+        System.out.println(problemTestState);
 
         Rectangle sling = vision.findSlingshotMBR();
 
-        //If the level is loaded (in PLAYING　state)but no slingshot detected, then the agent will request to fully zoom out.
+        //If the level is loaded (in PLAYINGãstate)but no slingshot detected, then the agent will request to fully zoom out.
         while (sling == null && clientActionRobotJava.checkState() == GameState.PLAYING) {
             System.out.println("no slingshot detected. Please remove pop up or zoom out");
 
             try {
-                //@todo 50, 500, 5000?!
-                Thread.sleep(50);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
+
                 e.printStackTrace();
             }
             clientActionRobotJava.fullyZoomOut();
@@ -290,6 +292,8 @@ public class ReinforcementLearningAgent implements Runnable {
         GameState state = clientActionRobotJava.checkState();
         // if there is a sling, then play, otherwise skip.
         if (sling != null) {
+
+
             //If there are pigs, we pick up a pig randomly and shoot it.
             if (!pigs.isEmpty()) {
                 Point releasePoint = null;
@@ -297,6 +301,7 @@ public class ReinforcementLearningAgent implements Runnable {
                 ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
 
                 Point _tpt = pig.getCenter();
+
 
                 // if the target is very close to before, randomly choose a
                 // point near it
@@ -379,7 +384,6 @@ public class ReinforcementLearningAgent implements Runnable {
                         if (dx < 0) {
                             long timer = System.currentTimeMillis();
                             clientActionRobotJava.shoot(refPoint.x, refPoint.y, dx, dy, 0, tapTime, false);
-                            System.out.println(getReward());
                             System.out.println("It takes " + (System.currentTimeMillis() - timer) + " ms to take a shot");
                             state = clientActionRobotJava.checkState();
                             if (state == GameState.PLAYING) {
@@ -400,9 +404,7 @@ public class ReinforcementLearningAgent implements Runnable {
         return state;
     }
 
-    private double getQValue(State s, String action) {
-        return qValuesDAO.getQValue(s.toString(),action);
-    }
+    private double getQValue(ProblemState s, String action) { return qValuesDAO.getQValue(s.toString(),action); }
 
     /*
     returns reward as highscore difference
@@ -412,7 +414,7 @@ public class ReinforcementLearningAgent implements Runnable {
         double reward = gameStateExtractor.getScoreEndGame(scoreScreenshot);
         //sometimes not correct so he interprets that he got 0 or 1
         if (reward < 10) {
-            return 0.0;
+            return 0;
         }
         return reward;
     }
@@ -420,33 +422,32 @@ public class ReinforcementLearningAgent implements Runnable {
     /*
     updates q-value in database when new information comes in
      */
-    private void updateQValue(State from, String action, State to) {
+    private void updateQValue(ProblemState from, String action, ProblemState to) {
         double oldValue = getQValue(from, action);
         double newValue = oldValue + learningRate * (getReward() + discountFactor * getMaxQValue(to) - oldValue);
         qValuesDAO.updateQValue(newValue, from.toString(), action);
     }
 
     /*
-    looks for best action,value pair with highest value
+    looks for highest value
      */
-    private double getMaxQValue(State s) { return qValuesDAO.getHighestQValue(s.toString()); }
+    private double getMaxQValue(ProblemState s) { return qValuesDAO.getHighestQValue(s.toString()); }
 
     /*
     returns action with maximum q-value for a given state
      */
-    private String getBestAction(State s) { return qValuesDAO.getBestAction(s.toString()); }
-
+    private String getBestAction(ProblemState s) { return qValuesDAO.getBestAction(s.toString()); }
 
     /*
     Returns next action, with explorationrate as probability of taking a random action
      and else look for the so far best action
      */
-    private String getNextAction(State s) {
+    private String getNextAction(ProblemState problemState) {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
-            return qValuesDAO.getRandomAction(s.toString());
+            return qValuesDAO.getRandomAction(problemState.toString());
         } else {
-            return getBestAction(s);
+            return getBestAction(problemState);
         }
     }
 

@@ -16,9 +16,8 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
 4. Execute it as usual
 
 ## Get it running for the competition or on a development server (untested yet)
-1. Install Apache Ant and Apache Ivy locally
-2. Run `ant resolve` to download all dependencies
-3. Run `ant jar` to build a jar
+1. Install gradle
+2. Run `gradle clean build uberjar` to build the jar file 
 4. Execute `~/start.sh`
 
 <!--
