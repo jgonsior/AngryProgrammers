@@ -49,7 +49,7 @@ public class ReinforcementLearningAgent implements Runnable {
     private Point prevTarget;
     private Random randomGenerator;
     private GameStateExtractor gameStateExtractor;
-    private Handle handle;
+    private QValuesDAO qValuesDAO;
     private String dbUser;
     private String dbPath;
     private String dbPass;
@@ -94,8 +94,7 @@ public class ReinforcementLearningAgent implements Runnable {
 
             DBI dbi = new DBI(dbPath, dbUser, dbPass);
 
-            QValuesDAO qValuesDAO = dbi.open(QValuesDAO.class);
-            handle = dbi.open();
+            qValuesDAO = dbi.open(QValuesDAO.class);
 
 
             //@todo: create new command line argument for this parameter
@@ -402,9 +401,7 @@ public class ReinforcementLearningAgent implements Runnable {
     }
 
     private double getQValue(State s, String action) {
-        Query<Map<String, Object>> q = handle.createQuery("select " + action + " from q_test where state='" + s.toString() + "';");
-        Map<String, Object> result = q.list().get(0);
-        return (Double) result.get(action);
+        return qValuesDAO.getQValue(s.toString(),action);
     }
 
     /*
@@ -425,45 +422,20 @@ public class ReinforcementLearningAgent implements Runnable {
      */
     private void updateQValue(State from, String action, State to) {
         double oldValue = getQValue(from, action);
-        double reward = getReward();
-        double newValue = oldValue + learningRate * (reward + discountFactor * getMaxQValue(to) - oldValue);
-
-        handle.execute("UPDATE q_test SET " + action + " = " + newValue + " where state = " + from.toString());
+        double newValue = oldValue + learningRate * (getReward() + discountFactor * getMaxQValue(to) - oldValue);
+        qValuesDAO.updateQValue(newValue, from.toString(), action);
     }
 
     /*
     looks for best action,value pair with highest value
      */
-    private Map.Entry<String, Object> getBestValue(State s) {
-        Map.Entry<String, Object> maxEntry = null;
-        Query<Map<String, Object>> q = handle.createQuery("select * from q_test where state='" + s.toString() + "';");
-        Map<String, Object> result = q.list().get(0);
-
-        for (Map.Entry<String, Object> entry : result.entrySet()) {
-            if (entry.getValue() instanceof Double) {
-                if (maxEntry == null) {
-                    maxEntry = entry;
-                } else if ((Double) entry.getValue() > (Double) maxEntry.getValue()) {
-                    maxEntry = entry;
-                }
-            }
-        }
-        return maxEntry;
-    }
+    private double getMaxQValue(State s) { return qValuesDAO.getHighestQValue(s.toString()); }
 
     /*
     returns action with maximum q-value for a given state
      */
-    private String getBestAction(State s) {
-        return getBestValue(s).getKey();
-    }
+    private String getBestAction(State s) { return qValuesDAO.getBestAction(s.toString()); }
 
-    /*
-    returns maximum q-value for a given state looking in all actions
-     */
-    private double getMaxQValue(State to) {
-        return (Double) getBestValue(to).getValue();
-    }
 
     /*
     Returns next action, with explorationrate as probability of taking a random action
@@ -472,15 +444,7 @@ public class ReinforcementLearningAgent implements Runnable {
     private String getNextAction(State s) {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
-            //why so complicated? :D
-            Query<Map<String, Object>> q = handle.createQuery("SELECT `COLUMN_NAME` \n" +
-                    "FROM `INFORMATION_SCHEMA`.`COLUMNS` \n" +
-                    "WHERE `TABLE_SCHEMA`='" + dbName + "' \n" +
-                    "    AND `TABLE_NAME`='q_test';");
-            List<Map<String, Object>> result = q.list();
-            // -1 +1 depends on how many columns exist for state
-            int randomAction = randomGenerator.nextInt(result.size() - 1) + 1;
-            return (String) result.get(randomAction).get("column_name");
+            return qValuesDAO.getRandomAction(s.toString());
         } else {
             return getBestAction(s);
         }
