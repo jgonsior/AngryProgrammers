@@ -38,4 +38,27 @@ public class ProblemState {
         }
         return string;
     }
+
+    public List<ABObject> getShootableObjects(){
+        List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
+        shootableObjects.addAll(vison.findPigsRealShape());
+        for (ABObject object : allObjects) {
+            double x1 = object.getCenterX();
+            double y1 = object.getCenterY();
+            for (ABObject neighbor : allObjects) {
+                if  (!object.equals(neighbor) ){
+                    double x2 = neighbor.getCenterX();
+                    double y2 = neighbor.getCenterY();
+
+                    if ((x1 > x2) && ((x1-x2)<10) ){
+                        shootableObjects.remove(object);
+                    } else if ((y1 > y2) && ((y1-y2)<10)){
+                        shootableObjects.remove(object);
+                    }
+                }
+            }
+        }
+
+        return shootableObjects;
+    }
 }
