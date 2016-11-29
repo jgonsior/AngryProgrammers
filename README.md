@@ -6,15 +6,17 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
 ## Get it running for development
 1. Run `gradle clean build uberjar`
 2. Create your own config.properties file:
+
  ```
  db_user=aibirds
  db_pass=secret
  db_path=jdbc:sqlite:database.db
  db_name=ai_test
  ```
+ 
 3. Execute it as usual
 
-## Get it running for the competition or on a development server (untested yet)
+## Get it running for the competition or on a development server
 1. Run `gradle clean build uberjar`
 2. Execute `~/start.sh`
 

@@ -31,6 +31,4 @@ public interface QValuesDAO {
      * closes the connection
      */
     void close();
-
-
 }

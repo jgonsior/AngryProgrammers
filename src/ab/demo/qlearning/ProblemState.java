@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
- *
+ * <p>
  * Example: RedBird 4.5 4.5 RectRedBird 2.5 5.0 RectRedBird 3.5 4.0 RectWood 1.0 9.5 RectWood 0.0 0.5 RectWood 3.5 1.0 RectWood 2.0 2.5 RectWood 3.5 2.0 RectWood 4.0 0.0 RectIce 5.0 6.0 RectWood 5.0 3.5 RectWood 4.0 4.0 RectStone 5.0 3.5 RectWood 5.0 0.5 RectIce 2.5 6.0 RectWood 7.0 2.5 RectWood 6.0 0.0 RectWood 5.0 9.5 RectRedBird 4.5 4.5 RectRedBird 2.5 5.0 RectRedBird 3.5 4.0 Rect
  *
  * @author jgonsior
@@ -35,29 +35,33 @@ public class ProblemState {
     public String toString() {
         String string = "";
         for (ABObject object : allObjects) {
-            string += " "+object.getType() + " " + String.valueOf(((int) object.getCenterX()) / 10) + " " + String.valueOf(((int) object.getCenterY()) / 10) + " " + String.valueOf(object.shape);
+            string += " " + object.getType()
+                    + " " + String.valueOf(((int) object.getCenterX()) / 10)
+                    + " " + String.valueOf(((int) object.getCenterY()) / 10)
+                    + " " + String.valueOf(object.shape);
         }
         return string;
     }
 
     /**
-     * returns approximation of shootable objects
+     * returns an approximation of shootable objects
+     *
      * @return list of approximation of shootable objects
      */
-    public List<ABObject> getShootableObjects(){
+    public List<ABObject> getShootableObjects() {
         List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
         shootableObjects.addAll(vison.findPigsRealShape());
-        // check for every object if its possibly blocked by a neighbour
+        // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {
             double x1 = object.getCenterX();
             double y1 = object.getCenterY();
             innerloop:
             for (ABObject neighbor : allObjects) {
-                if  (!object.equals(neighbor) ){
+                if (!object.equals(neighbor)) {
                     double x2 = neighbor.getCenterX();
                     double y2 = neighbor.getCenterY();
-                    if ((x2 < x1) && (y2 < y1)){
-                        if (((x1-x2)<20) && ((y1-y2)<20)){
+                    if ((x2 < x1) && (y2 < y1)) {
+                        if (((x1 - x2) < 20) && ((y1 - y2) < 20)) {
                             shootableObjects.remove(object);
                             break innerloop;
                         }
