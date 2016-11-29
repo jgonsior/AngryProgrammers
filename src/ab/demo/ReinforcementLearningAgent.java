@@ -20,6 +20,8 @@ import ab.vision.Vision;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.Query;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -54,13 +56,13 @@ public class ReinforcementLearningAgent implements Runnable {
     private String dbPath;
     private String dbPass;
     private String dbName;
-
+    final static Logger logger = LogManager.getLogger(ReinforcementLearningAgent.class);
 
     /**
      * Constructor using the default IP
      */
     public ReinforcementLearningAgent() {
-        this("127.0.0.1");
+        this("127.0.0.1", 28888);
     }
 
     /**
@@ -82,6 +84,7 @@ public class ReinforcementLearningAgent implements Runnable {
         InputStream configInputStream = null;
 
         try {
+            Class.forName("org.sqlite.JDBC");
             //parse our configuration file
             configInputStream = new FileInputStream("config.properties");
 
@@ -108,6 +111,8 @@ public class ReinforcementLearningAgent implements Runnable {
             //getNextAction(s);
 
         } catch (IOException exception) {
+            exception.printStackTrace();
+        } catch (ClassNotFoundException exception) {
             exception.printStackTrace();
         } finally {
             if (configInputStream != null) {
@@ -266,10 +271,11 @@ public class ReinforcementLearningAgent implements Runnable {
 
         ProblemState problemTestState = new ProblemState(vision);
         System.out.println(problemTestState);
+        logger.info(problemTestState);
 
         Rectangle sling = vision.findSlingshotMBR();
 
-        //If the level is loaded (in PLAYINGãstate)but no slingshot detected, then the agent will request to fully zoom out.
+        //If the level is loaded (in PLAYING state)but no slingshot detected, then the agent will request to fully zoom out.
         while (sling == null && clientActionRobotJava.checkState() == GameState.PLAYING) {
             System.out.println("no slingshot detected. Please remove pop up or zoom out");
 
