@@ -24,3 +24,7 @@ hs_err_pid*
 # config files
 config.properties
 database.db
+
+# gradle
+.gradle
+/build/
