@@ -20,10 +20,10 @@ public interface QValuesDAO {
     @SqlUpdate("SELECT MAX(q_value) FROM q_values WHERE state=:state;")
     double getHighestQValue(@Bind("state") String state);
 
-    @SqlUpdate("SELECT TOP 1 action FROM q_values WHERE state=:state ORDER BY q_value DESC;")
+    @SqlUpdate("SELECT action FROM q_values WHERE state=:state ORDER BY q_value DESC LIMIT 1;")
     String getBestAction(@Bind("state") String state);
 
-    @SqlUpdate("SELECT TOP 1 action FROM q_values WHERE state=:state ORDER BY NEWID();")
+    @SqlUpdate("SELECT action FROM q_values WHERE state=:state ORDER BY RAND() LIMIT 1;")
     String getRandomAction(@Bind("state") String state);
 
     /**
