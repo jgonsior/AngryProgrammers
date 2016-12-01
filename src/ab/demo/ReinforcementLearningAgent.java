@@ -8,6 +8,7 @@
  *****************************************************************************/
 package ab.demo;
 
+import ab.demo.logging.LoggingHandler;
 import ab.demo.other.ClientActionRobot;
 import ab.demo.other.ClientActionRobotJava;
 import ab.demo.qlearning.ProblemState;
@@ -17,25 +18,25 @@ import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+import org.apache.log4j.Logger;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.Query;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Random;
 
 /**
  * Server/Client Version of our agent which tries to play Angry Birds while learning using Reinforcement Learning
  */
 public class ReinforcementLearningAgent implements Runnable {
 
+    private static Logger logger = Logger.getLogger(ReinforcementLearningAgent.class);
 
     private byte currentLevel = -1;
     private int failedCounter = 0;
@@ -56,7 +57,6 @@ public class ReinforcementLearningAgent implements Runnable {
     private String dbPath;
     private String dbPass;
     private String dbName;
-    final static Logger logger = LogManager.getLogger(ReinforcementLearningAgent.class);
 
     /**
      * Constructor using the default IP
@@ -73,6 +73,9 @@ public class ReinforcementLearningAgent implements Runnable {
     }
 
     public ReinforcementLearningAgent(String ip, int id) {
+        LoggingHandler.initFileLog();
+        LoggingHandler.initConsoleLog();
+
         clientActionRobotJava = new ClientActionRobotJava(ip);
         trajectoryPlanner = new TrajectoryPlanner();
         randomGenerator = new Random();
@@ -169,10 +172,10 @@ public class ReinforcementLearningAgent implements Runnable {
 
     private void checkMyScore() {
         int[] scores = clientActionRobotJava.checkMyScore();
-        System.out.println(" My score: ");
+        logger.info(" My score: ");
         int level = 1;
         for (int i : scores) {
-            System.out.println(" level " + level + "  " + i);
+            logger.info(" level " + level + "  " + i);
             if (i > 0) {
                 solved[level - 1] = 1;
             }
@@ -200,18 +203,16 @@ public class ReinforcementLearningAgent implements Runnable {
 
                 ///System.out.println(" loading the level " + (currentLevel + 1) );
                 checkMyScore();
-                System.out.println();
                 currentLevel = (byte) getNextLevel();
                 clientActionRobotJava.loadLevel(currentLevel);
                 //ar.loadLevel((byte)9);
                 //display the global best scores
                 int[] scores = clientActionRobotJava.checkScore();
-                System.out.println("Global best score: ");
+                logger.info("Global best score: ");
                 for (int i = 0; i < scores.length; i++) {
 
-                    System.out.print(" level " + (i + 1) + ": " + scores[i]);
+                    logger.info(" level " + (i + 1) + ": " + scores[i]);
                 }
-                System.out.println();
 
                 // make a new trajectory planner whenever a new level is entered
                 trajectoryPlanner = new TrajectoryPlanner();
@@ -230,21 +231,20 @@ public class ReinforcementLearningAgent implements Runnable {
 
                         //ar.loadLevel((byte)9);
                     } else {
-                        System.out.println("restart");
+                        logger.info("restart");
                         clientActionRobotJava.restartLevel();
                     }
 
                 } else if (state == GameState.LEVEL_SELECTION) {
-                    System.out.println("unexpected level selection page, go to the last current level : "
+                    logger.warn("unexpected level selection page, go to the last current level : "
                             + currentLevel);
                     clientActionRobotJava.loadLevel(currentLevel);
                 } else if (state == GameState.MAIN_MENU) {
-                    System.out
-                            .println("unexpected main menu page, reload the level : "
+                    logger.warn("unexpected main menu page, reload the level : "
                                     + currentLevel);
                     clientActionRobotJava.loadLevel(currentLevel);
                 } else if (state == GameState.EPISODE_MENU) {
-                    System.out.println("unexpected episode menu page, reload the level: "
+                    logger.warn("unexpected episode menu page, reload the level: "
                             + currentLevel);
                     clientActionRobotJava.loadLevel(currentLevel);
                 }
@@ -270,14 +270,13 @@ public class ReinforcementLearningAgent implements Runnable {
         Vision vision = new Vision(screenshot);
 
         ProblemState problemTestState = new ProblemState(vision);
-        System.out.println(problemTestState);
         logger.info(problemTestState);
 
         Rectangle sling = vision.findSlingshotMBR();
 
         //If the level is loaded (in PLAYING state)but no slingshot detected, then the agent will request to fully zoom out.
         while (sling == null && clientActionRobotJava.checkState() == GameState.PLAYING) {
-            System.out.println("no slingshot detected. Please remove pop up or zoom out");
+            logger.info("no slingshot detected. Please remove pop up or zoom out");
 
             try {
                 Thread.sleep(1000);
@@ -315,7 +314,7 @@ public class ReinforcementLearningAgent implements Runnable {
                     double _angle = randomGenerator.nextDouble() * Math.PI * 2;
                     _tpt.x = _tpt.x + (int) (Math.cos(_angle) * 10);
                     _tpt.y = _tpt.y + (int) (Math.sin(_angle) * 10);
-                    System.out.println("Randomly changing to " + _tpt);
+                    logger.info("Randomly changing to " + _tpt);
                 }
 
                 prevTarget = new Point(_tpt.x, _tpt.y);
@@ -344,8 +343,8 @@ public class ReinforcementLearningAgent implements Runnable {
                 if (releasePoint != null) {
                     double releaseAngle = trajectoryPlanner.getReleaseAngle(sling,
                             releasePoint);
-                    System.out.println("Release Point: " + releasePoint);
-                    System.out.println("Release Angle: "
+                    logger.info("Release Point: " + releasePoint);
+                    logger.info("Release Angle: "
                             + Math.toDegrees(releaseAngle));
                     int tapInterval = 0;
                     switch (clientActionRobotJava.getBirdTypeOnSling()) {
@@ -390,7 +389,7 @@ public class ReinforcementLearningAgent implements Runnable {
                         if (dx < 0) {
                             long timer = System.currentTimeMillis();
                             clientActionRobotJava.shoot(refPoint.x, refPoint.y, dx, dy, 0, tapTime, false);
-                            System.out.println("It takes " + (System.currentTimeMillis() - timer) + " ms to take a shot");
+                            logger.info("It takes " + (System.currentTimeMillis() - timer) + " ms to take a shot");
                             state = clientActionRobotJava.checkState();
                             if (state == GameState.PLAYING) {
                                 screenshot = clientActionRobotJava.doScreenShot();
@@ -401,16 +400,18 @@ public class ReinforcementLearningAgent implements Runnable {
                             }
                         }
                     } else
-                        System.out.println("Scale is changed, can not execute the shot, will re-segement the image");
+                        logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
                 } else
-                    System.out.println("no sling detected, can not execute the shot, will re-segement the image");
+                    logger.warn("no sling detected, can not execute the shot, will re-segement the image");
 
             }
         }
         return state;
     }
 
-    private double getQValue(ProblemState s, String action) { return qValuesDAO.getQValue(s.toString(),action); }
+    private double getQValue(ProblemState s, String action) {
+        return qValuesDAO.getQValue(s.toString(), action);
+    }
 
     /*
     returns reward as highscore difference
@@ -437,12 +438,16 @@ public class ReinforcementLearningAgent implements Runnable {
     /*
     looks for highest value
      */
-    private double getMaxQValue(ProblemState s) { return qValuesDAO.getHighestQValue(s.toString()); }
+    private double getMaxQValue(ProblemState s) {
+        return qValuesDAO.getHighestQValue(s.toString());
+    }
 
     /*
     returns action with maximum q-value for a given state
      */
-    private String getBestAction(ProblemState s) { return qValuesDAO.getBestAction(s.toString()); }
+    private String getBestAction(ProblemState s) {
+        return qValuesDAO.getBestAction(s.toString());
+    }
 
     /*
     Returns next action, with explorationrate as probability of taking a random action
