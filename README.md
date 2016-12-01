@@ -4,8 +4,8 @@
 Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as part of the INF-PM-ANW module for their studies.
 
 ## Get it running for development
-1. Run `gradle clean build uberjar`
-2. Create your own config.properties file:
+1. `gradle clean build uberjar`
+2. Create your own config.properties file with the following content:
 
  ```
  db_user=aibirds
@@ -17,8 +17,9 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
 3. Execute it as usual
 
 ## Get it running for the competition or on a development server
-1. Run `gradle clean build uberjar`
-2. Execute `~/start.sh`
+1. `gradle clean build uberjar`
+2. `~/start.sh`
+3. `java -jar ABSoftware.jar -nasc`
 
 <!--
 @todo: merge gradle clean etc. into ~/start.sh
