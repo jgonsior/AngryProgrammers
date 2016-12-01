@@ -28,6 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Random;
+
 /**
  * Server/Client Version of our agent which tries to play Angry Birds while learning using Reinforcement Learning
  */
@@ -298,6 +301,11 @@ public class ReinforcementLearningAgent implements Runnable {
             //If there are pigs, we pick up a pig randomly and shoot it.
             if (!pigs.isEmpty()) {
                 Point releasePoint = null;
+
+
+                //@todo is this right?
+                ProblemState currentState = new ProblemState(vision);
+
                 // get Next best Action
                 int nextAction = getNextAction(currentState);
                 ABObject obj = currentState.getShootableObjects().get(nextAction);
@@ -404,7 +412,7 @@ public class ReinforcementLearningAgent implements Runnable {
     }
 
 
-    private double getQValue(ProblemState s, String action) {
+    private double getQValue(ProblemState s, int action) {
         return qValuesDAO.getQValue(s.toString(), action);
     }
 
@@ -436,7 +444,7 @@ public class ReinforcementLearningAgent implements Runnable {
             System.out.println(reward);
             return reward;
         }else {
-            return 0.0;
+            return 0;
         }
     }
 
@@ -466,7 +474,7 @@ public class ReinforcementLearningAgent implements Runnable {
     returns action with maximum q-value for a given state
      */
 
-    private String getBestAction(ProblemState s) {
+    private int getBestAction(ProblemState s) {
         return qValuesDAO.getBestAction(s.toString());
     }
 
