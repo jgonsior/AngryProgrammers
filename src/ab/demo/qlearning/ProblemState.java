@@ -17,6 +17,7 @@ public class ProblemState {
 
     private Vision vison;
     private List<ABObject> allObjects;
+    public List<ABObject> shootable;
 
     public ProblemState(Vision vision) {
         vison = vision;
@@ -24,6 +25,8 @@ public class ProblemState {
         allObjects = new ArrayList<>(vison.findBirdsRealShape());
         allObjects.addAll(vison.findBlocksRealShape());
         allObjects.addAll(vison.findPigsRealShape());
+
+        shootable = calculateShootableObjects();
     }
 
     /**
@@ -48,7 +51,7 @@ public class ProblemState {
      *
      * @return list of approximation of shootable objects
      */
-    public List<ABObject> getShootableObjects() {
+    private List<ABObject> calculateShootableObjects() {
         List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
         shootableObjects.addAll(vison.findPigsRealShape());
         // check for every object if is blocked by a neighbour
@@ -71,5 +74,9 @@ public class ProblemState {
         }
 
         return shootableObjects;
+    }
+
+    public List<ABObject> getShootableObjects(){
+        return shootable;
     }
 }
