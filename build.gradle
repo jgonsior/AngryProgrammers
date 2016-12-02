@@ -32,6 +32,8 @@ dependencies {
 task uberjar(type: Jar) {
 	baseName = "ABSoftware"
 	destinationDir = file("$rootDir/")
+    sourceSets.main.resouces.srcDirs = ["src/"]
+    sourceSets.main.resource.includes = ["**/*.png"]
     from files(sourceSets.main.output)
     from {configurations.compile.collect {zipTree(it)}} {
         exclude "META-INF/*.SF"

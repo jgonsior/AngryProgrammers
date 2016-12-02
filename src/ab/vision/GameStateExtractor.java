@@ -46,44 +46,48 @@ public class GameStateExtractor {
     // create a game state extractor and load subimages
     public GameStateExtractor() {
         try {
+            System.out.println(getClass().getResource("/mainmenu.png"));
             _mainmenu = ImageIO.read(getClass().getResource(
-                    "resources/mainmenu.png"));
+                    "/mainmenu.png"));
             _episodemenu = ImageIO.read(getClass().getResource(
-                    "resources/episodemenu.png"));
+                    "/episodemenu.png"));
             _levelselection = ImageIO.read(getClass().getResource(
-                    "resources/levelselection.png"));
+                    "/levelselection.png"));
             _loading = ImageIO.read(getClass().getResource(
-                    "resources/loading.png"));
+                    "/loading.png"));
             _loading2 = ImageIO.read(getClass().getResource(
-                    "resources/loading2.png"));
+                    "/loading2.png"));
             _gamewon1 = ImageIO.read(getClass().getResource(
-                    "resources/gamewon1.png"));
+                    "/gamewon1.png"));
             _gamewon2 = ImageIO.read(getClass().getResource(
-                    "resources/gamewon2.png"));
+                    "/gamewon2.png"));
             _gamelost = ImageIO.read(getClass().getResource(
-                    "resources/gamelost.png"));
+                    "/gamelost.png"));
             _endGame0 = ImageIO.read(getClass().getResource(
-                    "resources/0endScreen.png"));
+                    "/0endScreen.png"));
             _endGame1 = ImageIO.read(getClass().getResource(
-                    "resources/1endScreen.png"));
+                    "/1endScreen.png"));
             _endGame2 = ImageIO.read(getClass().getResource(
-                    "resources/2endScreen.png"));
+                    "/2endScreen.png"));
             _endGame3 = ImageIO.read(getClass().getResource(
-                    "resources/3endScreen.png"));
+                    "/3endScreen.png"));
             _endGame4 = ImageIO.read(getClass().getResource(
-                    "resources/4endScreen.png"));
+                    "/4endScreen.png"));
             _endGame5 = ImageIO.read(getClass().getResource(
-                    "resources/5endScreen.png"));
+                    "/5endScreen.png"));
             _endGame6 = ImageIO.read(getClass().getResource(
-                    "resources/6endScreen.png"));
+                    "/6endScreen.png"));
             _endGame7 = ImageIO.read(getClass().getResource(
-                    "resources/7endScreen.png"));
+                    "/7endScreen.png"));
             _endGame8 = ImageIO.read(getClass().getResource(
-                    "resources/8endScreen.png"));
+                    "/8endScreen.png"));
             _endGame9 = ImageIO.read(getClass().getResource(
-                    "resources/9endScreen.png"));
+                    "/9endScreen.png"));
 
         } catch (IOException e) {
+            System.err.println("failed to load resources");
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
             System.err.println("failed to load resources");
             e.printStackTrace();
         }
