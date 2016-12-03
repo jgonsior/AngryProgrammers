@@ -34,9 +34,9 @@ import java.util.Random;
 /**
  * Server/Client Version of our agent which tries to play Angry Birds while learning using Reinforcement Learning
  */
-public class ReinforcementLearningAgent implements Runnable {
+public class ReinforcementLearningAgentClient implements Runnable {
 
-    private static Logger logger = Logger.getLogger(ReinforcementLearningAgent.class);
+    private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
 
     private byte currentLevel = -1;
     private int failedCounter = 0;
@@ -62,18 +62,18 @@ public class ReinforcementLearningAgent implements Runnable {
     /**
      * Constructor using the default IP
      */
-    public ReinforcementLearningAgent() {
+    public ReinforcementLearningAgentClient() {
         this("127.0.0.1", 28888);
     }
 
     /**
      * Constructor with a specified IP
      */
-    public ReinforcementLearningAgent(String ip) {
+    public ReinforcementLearningAgentClient(String ip) {
         this(ip, 28888);
     }
 
-    public ReinforcementLearningAgent(String ip, int id) {
+    public ReinforcementLearningAgentClient(String ip, int id) {
         LoggingHandler.initFileLog();
         LoggingHandler.initConsoleLog();
 
@@ -135,13 +135,13 @@ public class ReinforcementLearningAgent implements Runnable {
      */
     public static void main(String args[]) {
 
-        ReinforcementLearningAgent reinforcementLearningAgent;
+        ReinforcementLearningAgentClient reinforcementLearningAgentClient;
         if (args.length > 0) {
-            reinforcementLearningAgent = new ReinforcementLearningAgent(args[0]);
+            reinforcementLearningAgentClient = new ReinforcementLearningAgentClient(args[0]);
         } else {
-            reinforcementLearningAgent = new ReinforcementLearningAgent();
+            reinforcementLearningAgentClient = new ReinforcementLearningAgentClient();
         }
-        reinforcementLearningAgent.run();
+        reinforcementLearningAgentClient.run();
 
     }
 
@@ -261,7 +261,7 @@ public class ReinforcementLearningAgent implements Runnable {
      * @return GameState: the game state after shots.
      */
     public GameState solve(){
-        
+
         //gameStateExtractor = new GameStateExtractor();
             // capture Image
         BufferedImage screenshot = clientActionRobotJava.doScreenShot();

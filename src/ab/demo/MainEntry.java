@@ -28,14 +28,14 @@ public class MainEntry {
             } else if (command.equalsIgnoreCase("-pshoot")) {
                 ShootingAgent.shoot(args, false);
             } else if (args.length == 1 && command.equalsIgnoreCase("-nasc")) {
-                ReinforcementLearningAgent na = new ReinforcementLearningAgent();
+                ReinforcementLearningAgentClient na = new ReinforcementLearningAgentClient();
                 na.run();
             } else if (args.length == 2 && command.equalsIgnoreCase("-nasc")) {
-                ReinforcementLearningAgent na = new ReinforcementLearningAgent(args[1]);
+                ReinforcementLearningAgentClient na = new ReinforcementLearningAgentClient(args[1]);
                 na.run();
             } else if (args.length == 3 && command.equalsIgnoreCase("-nasc")) {
                 int id = Integer.parseInt(args[2]);
-                ReinforcementLearningAgent na = new ReinforcementLearningAgent(args[1], id);
+                ReinforcementLearningAgentClient na = new ReinforcementLearningAgentClient(args[1], id);
                 na.run();
             } else if (args.length == 2 && command.equalsIgnoreCase("-na")) {
                 NaiveAgent na = new NaiveAgent();
