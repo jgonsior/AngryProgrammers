@@ -38,7 +38,7 @@ public class MainEntry {
                 ReinforcementLearningAgentClient na = new ReinforcementLearningAgentClient(args[1], id);
                 na.run();
             } else if (args.length == 2 && command.equalsIgnoreCase("-na")) {
-                NaiveAgent na = new NaiveAgent();
+                ReinforcementLearningAgentStandalone na = new ReinforcementLearningAgentStandalone();
                 if (!(args[1].equalsIgnoreCase("-showMBR") || args[1].equals("-showReal"))) {
                     int initialLevel = 1;
                     try {
@@ -57,7 +57,7 @@ public class MainEntry {
                     thre.start();
                 }
             } else if (args.length == 3 && (args[2].equalsIgnoreCase("-showMBR") || args[2].equalsIgnoreCase("-showReal")) && command.equalsIgnoreCase("-na")) {
-                NaiveAgent na = new NaiveAgent();
+                ReinforcementLearningAgentStandalone na = new ReinforcementLearningAgentStandalone();
                 int initialLevel = 1;
                 try {
                     initialLevel = Integer.parseInt(args[1]);
