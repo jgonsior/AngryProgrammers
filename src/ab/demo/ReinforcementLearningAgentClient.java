@@ -242,7 +242,7 @@ public class ReinforcementLearningAgentClient implements Runnable {
                     clientActionRobotJava.loadLevel(currentLevel);
                 } else if (state == GameState.MAIN_MENU) {
                     logger.warn("unexpected main menu page, reload the level : "
-                                    + currentLevel);
+                            + currentLevel);
                     clientActionRobotJava.loadLevel(currentLevel);
                 } else if (state == GameState.EPISODE_MENU) {
                     logger.warn("unexpected episode menu page, reload the level: "
@@ -260,12 +260,12 @@ public class ReinforcementLearningAgentClient implements Runnable {
      *
      * @return GameState: the game state after shots.
      */
-    public GameState solve(){
+    public GameState solve() {
 
         //gameStateExtractor = new GameStateExtractor();
-            // capture Image
+        // capture Image
         BufferedImage screenshot = clientActionRobotJava.doScreenShot();
-            // process image
+        // process image
         Vision vision = new Vision(screenshot);
 
         ProblemState problemTestState = new ProblemState(vision);
@@ -396,9 +396,9 @@ public class ReinforcementLearningAgentClient implements Runnable {
                                 trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
                                 firstShot = false;
                                 // get our new "to" State to update old q_value
-                                updateQValue(currentState, nextAction, new ProblemState(vision),reward, false);
-                            } else if (state == GameState.WON || state == GameState.LOST){
-                                updateQValue(currentState, nextAction, currentState,reward, true);
+                                updateQValue(currentState, nextAction, new ProblemState(vision), reward, false);
+                            } else if (state == GameState.WON || state == GameState.LOST) {
+                                updateQValue(currentState, nextAction, currentState, reward, true);
                             }
                         }
                     } else
@@ -417,19 +417,20 @@ public class ReinforcementLearningAgentClient implements Runnable {
     }
 
     /**
-    * checks if highest q_value is 0.0 which means that we have never been in this state,
-    * so we need to initialize all possible actions to 0.0
-    */
-    private void initProblemState(ProblemState s){
+     * checks if highest q_value is 0.0 which means that we have never been in this state,
+     * so we need to initialize all possible actions to 0.0
+     */
+    private void initProblemState(ProblemState s) {
         int counter = 0;
         // We have not been in this state then
-        if (qValuesDAO.getActionAmount(s.toString()) == 0){
-            for (ABObject obj : s.getShootableObjects()){
+        if (qValuesDAO.getActionAmount(s.toString()) == 0) {
+            for (ABObject obj : s.getShootableObjects()) {
                 qValuesDAO.insertNewAction(0.0, s.toString(), counter);
                 counter += 1;
             }
         }
     }
+
     /*
     returns reward as highscore difference
      */
@@ -443,7 +444,7 @@ public class ReinforcementLearningAgentClient implements Runnable {
             double reward = gameStateExtractor.getScoreEndGame(scoreScreenshot);
             System.out.println(reward);
             return reward;
-        }else {
+        } else {
             return 0;
         }
     }
@@ -454,10 +455,10 @@ public class ReinforcementLearningAgentClient implements Runnable {
     private void updateQValue(ProblemState from, int action, ProblemState to, double reward, boolean end) {
         double oldValue = getQValue(from, action);
         double newValue;
-        if (end){
+        if (end) {
             newValue = oldValue + learningRate * (reward - oldValue);
 
-        }else{
+        } else {
             newValue = oldValue + learningRate * (reward + discountFactor * getMaxQValue(to) - oldValue);
         }
         qValuesDAO.updateQValue(newValue, from.toString(), action);

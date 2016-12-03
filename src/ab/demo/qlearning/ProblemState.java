@@ -15,9 +15,9 @@ import java.util.List;
  */
 public class ProblemState {
 
+    public List<ABObject> shootable;
     private Vision vison;
     private List<ABObject> allObjects;
-    public List<ABObject> shootable;
 
     public ProblemState(Vision vision) {
         vison = vision;
@@ -76,7 +76,7 @@ public class ProblemState {
         return shootableObjects;
     }
 
-    public List<ABObject> getShootableObjects(){
+    public List<ABObject> getShootableObjects() {
         return shootable;
     }
 }

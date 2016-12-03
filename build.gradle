@@ -1,11 +1,11 @@
 apply plugin: 'java'
 
 sourceSets {
-	main{
-		java.srcDir 'src'
-    	resources.srcDirs = ["src/ab/vision/resources"]
-    	resources.include '**'
-	}
+    main {
+        java.srcDir 'src'
+        resources.srcDirs = ["src/ab/vision/resources"]
+        resources.include '**'
+    }
 }
 
 repositories {
@@ -30,12 +30,12 @@ dependencies {
 }
 
 task uberjar(type: Jar) {
-	baseName = "ABSoftware"
-	destinationDir = file("$rootDir/")
+    baseName = "ABSoftware"
+    destinationDir = file("$rootDir/")
     sourceSets.main.resources.srcDirs = ["src/"]
     sourceSets.main.resources.includes = ["**/*.png"]
     from files(sourceSets.main.output)
-    from {configurations.compile.collect {zipTree(it)}} {
+    from { configurations.compile.collect { zipTree(it) } } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
         exclude "META-INF/*.RSA"
