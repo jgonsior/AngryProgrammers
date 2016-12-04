@@ -2,12 +2,9 @@
 *.properties
 *.jar
 
-lib/
+!/external/WebSocket.jar
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
 
-# Package Files #
 *.war
 *.ear
 
