@@ -108,6 +108,7 @@ public class ReinforcementLearningAgentClient implements Runnable {
             boolean createDatabaseTables = false;
 
             if (createDatabaseTables) {
+                logger.info("Created database");
                 qValuesDAO.createQValuesTable();
             }
 

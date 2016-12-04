@@ -31,7 +31,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable {
 
     public static int time_limit = 12;
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
-    public int currentLevel = -1;
+    public int currentLevel = 1;
     private int failedCounter = 0;
     private int[] solved;
     private TrajectoryPlanner trajectoryPlanner;
@@ -102,7 +102,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable {
                 }
             }
         }
-        //ActionRobot.GoFromMainMenuToLevelSelection();
+        ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
     public static void main(String args[]) {

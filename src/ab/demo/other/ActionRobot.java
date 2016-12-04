@@ -40,7 +40,7 @@ public class ActionRobot {
         if (proxy == null) {
             try {
                 //avoid port confusion with peter
-                proxy = new Proxy(9001) {
+                proxy = new Proxy(9000) {
                     @Override
                     public void onOpen() {
                         System.out.println("Client connected");
@@ -74,6 +74,10 @@ public class ActionRobot {
     // A java util class for the standalone version. It provides common
     // functions an agent would use. E.g. get the screenshot
     public ActionRobot() {
+
+        proxy.send(new ProxyClickMessage(305, 277));
+
+
         lls = new LoadLevelSchema(proxy);
         rls = new RestartLevelSchema(proxy);
     }
