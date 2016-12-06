@@ -39,7 +39,7 @@ public class GameImageRecorder {
         // connect to game proxy
         Proxy proxy = null;
         try {
-            proxy = new Proxy(9000) {
+            proxy = new Proxy() {
                 @Override
                 public void onOpen() {
                     System.out.println("Connected to game proxy");

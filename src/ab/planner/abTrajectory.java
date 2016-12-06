@@ -32,7 +32,7 @@ public class abTrajectory {
     public abTrajectory() {
         if (server == null) {
             try {
-                server = new Proxy(9000) {
+                server = new Proxy() {
                     @Override
                     public void onOpen() {
                         System.out.println("Client connected");

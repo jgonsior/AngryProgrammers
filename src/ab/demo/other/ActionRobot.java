@@ -40,7 +40,7 @@ public class ActionRobot {
         if (proxy == null) {
             try {
                 //avoid port confusion with peter
-                proxy = new Proxy(9000) {
+                proxy = new Proxy() {
                     @Override
                     public void onOpen() {
                         System.out.println("Client connected");

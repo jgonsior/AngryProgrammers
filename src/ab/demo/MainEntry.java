@@ -2,6 +2,7 @@ package ab.demo;
 
 import ab.demo.logging.LoggingHandler;
 import ab.planner.abTrajectory;
+import ab.server.Proxy;
 import ab.utils.GameImageRecorder;
 import ab.vision.ShowSeg;
 import org.apache.commons.cli.*;
@@ -28,6 +29,8 @@ import java.io.FileNotFoundException;
 
 public class MainEntry {
 
+    private static Logger logger = Logger.getLogger(MainEntry.class);
+
     public static void main(String args[]) {
 
         //args = new String[] {"s", "-proxyPort 9000"};
@@ -42,6 +45,9 @@ public class MainEntry {
         CommandLine cmd;
         Agent agent;
 
+        LoggingHandler.initFileLog();
+        LoggingHandler.initConsoleLog();
+
         try {
             cmd = parser.parse(options, args);
             if (cmd.hasOption("help")) {
@@ -49,9 +55,15 @@ public class MainEntry {
                 formatter.printHelp("help", options);
                 return;
             }
+
+            int proxyPort = 9000;
             if(cmd.hasOption("proxyPort")) {
-                //needs to be implemented
+                proxyPort = Integer.parseInt(cmd.getOptionValue("proxyPort"));
+                logger.info("Set proxy port to " + proxyPort);
             }
+            Proxy.setPort(proxyPort);
+
+
             if (cmd.hasOption("standalone")) {
                 agent = new ReinforcementLearningAgentStandalone();
             } else if (cmd.hasOption("naiveAgent")) {

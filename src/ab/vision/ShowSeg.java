@@ -37,7 +37,7 @@ public class ShowSeg implements Runnable {
     static public Proxy getGameConnection(int port) {
         Proxy proxy = null;
         try {
-            proxy = new Proxy(port) {
+            proxy = new Proxy() {
                 @Override
                 public void onOpen() {
                     System.out.println("...connected to game proxy");

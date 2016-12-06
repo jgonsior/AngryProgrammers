@@ -26,8 +26,13 @@ import java.util.concurrent.SynchronousQueue;
 public class Proxy extends WebSocketServer {
     private Long id = 0L;
     private HashMap<Long, ProxyResult<?>> results = new HashMap<Long, ProxyResult<?>>();
+    static private int port;
 
-    public Proxy(int port) throws UnknownHostException {
+    static public void setPort(int port) {
+        Proxy.port = port;
+    }
+
+    public Proxy() throws UnknownHostException {
         super(new InetSocketAddress(port));
     }
 
