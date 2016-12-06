@@ -24,7 +24,7 @@ dependencies {
            // [group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.3.0'],
             [group: 'org.postgresql', name: 'postgresql', version: '9.4.1212'],
             [group: 'commons-lang', name: 'commons-lang', version: '2.0'],
-            [group: 'commons-cli', name: 'commons-cli', version: '1.0'],
+            [group: 'commons-cli', name: 'commons-cli', version: '1.3.1'],
             [group: 'log4j', name: 'log4j', version: '1.2.17'],
             files('external/WebSocket.jar'),
     )

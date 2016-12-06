@@ -27,7 +27,7 @@ import java.io.InputStream;
 /**
  * @author jgonsior
  */
-public class ReinforcementLearningAgentStandalone implements Runnable {
+public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
     public static int time_limit = 12;
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);

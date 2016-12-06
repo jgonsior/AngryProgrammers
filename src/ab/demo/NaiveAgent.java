@@ -21,7 +21,7 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
-public class NaiveAgent implements Runnable {
+public class NaiveAgent implements Runnable, Agent {
 
     public static int time_limit = 12;
     public int currentLevel = 1;

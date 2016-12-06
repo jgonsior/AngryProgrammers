@@ -34,7 +34,7 @@ import java.util.Random;
 /**
  * Server/Client Version of our agent which tries to play Angry Birds while learning using Reinforcement Learning
  */
-public class ReinforcementLearningAgentClient implements Runnable {
+public class ReinforcementLearningAgentClient implements Runnable, Agent {
 
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
 

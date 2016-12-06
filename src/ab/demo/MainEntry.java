@@ -1,8 +1,21 @@
 package ab.demo;
 
+import ab.demo.logging.LoggingHandler;
 import ab.planner.abTrajectory;
 import ab.utils.GameImageRecorder;
 import ab.vision.ShowSeg;
+import org.apache.commons.cli.*;
+import org.apache.log4j.Level;
+
+
+import org.apache.commons.cli.*;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+
+import java.io.FileNotFoundException;
+
+
 
 /*****************************************************************************
  ** ANGRYBIRDS AI AGENT FRAMEWORK
@@ -14,9 +27,60 @@ import ab.vision.ShowSeg;
  *****************************************************************************/
 
 public class MainEntry {
-    // the entry of the software.
+
     public static void main(String args[]) {
-        //@todo: redo this here using commons-cli
+
+        //args = new String[] {"s", "-proxyPort 9000"};
+        Options options = new Options();
+        options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
+        options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
+        options.addOption("h", "help", false, "displays this help");
+        options.addOption("n", "naiveAgent", false, "runs the naive agent in standalone mode");
+        options.addOption("c", "competition", false, "runs the naive agent in the server/client competition mode");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd;
+        Agent agent;
+
+        try {
+            cmd = parser.parse(options, args);
+            if (cmd.hasOption("help")) {
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("help", options);
+                return;
+            }
+            if(cmd.hasOption("proxyPort")) {
+                //needs to be implemented
+            }
+            if (cmd.hasOption("standalone")) {
+                agent = new ReinforcementLearningAgentStandalone();
+            } else if (cmd.hasOption("naiveAgent")) {
+                agent = new NaiveAgent();
+            } else if (cmd.hasOption("competition")) {
+                agent = new ReinforcementLearningAgentClient();
+            } else {
+                System.out.println("Please specify which agent we should be running.");
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("help", options);
+                return;
+            }
+
+        } catch (UnrecognizedOptionException e) {
+            System.out.println("Unrecognized commandline option: " + e.getOption());
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("help", options);
+            return;
+        }
+        catch (ParseException e) {
+            System.out.println("There was an error while parsing your command line input. Did you rechecked your syntax before running?");
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("help", options);
+            return;
+        }
+
+        agent.run();
+
+        /*
         String command = "";
         if (args.length > 0) {
             command = args[0];
@@ -95,7 +159,7 @@ public class MainEntry {
                 System.out.println("Please input the correct command");
         } else
             System.out.println("Please input the correct command");
-
+        */
 
     }
 }
