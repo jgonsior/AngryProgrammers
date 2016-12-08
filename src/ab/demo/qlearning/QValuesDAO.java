@@ -12,6 +12,12 @@ public interface QValuesDAO {
     @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE, state VARCHAR(8000), action int, PRIMARY KEY(state, action))")
     void createQValuesTable();
 
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS all_games (fromState VARCHAR(8000), action int, toState VARCHAR(8000), reward double)")
+    void createAllGamesTable();
+
+    @SqlUpdate("INSERT INTO all_games (fromState, action, toState, reward) VALUES (:fromState, :action, :toState, :reward);")
+    void saveMove(@Bind("fromState") String fromState,@Bind("action") int action,@Bind("toState") String toState,@Bind("reward") double reward);
+
     @SqlUpdate("UPDATE q_values SET q_value=:q_value WHERE state=:state AND action=:action;")
     void updateQValue(@Bind("q_value") double qValue, @Bind("state") String state, @Bind("action") int action);
 

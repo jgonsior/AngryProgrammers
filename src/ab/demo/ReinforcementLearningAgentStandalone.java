@@ -83,10 +83,11 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             qValuesDAO = dbi.open(QValuesDAO.class);
 
             //@todo: create new command line argument for this parameter
-            boolean createDatabaseTables = false;
+            boolean createDatabaseTables = true;
 
             if (createDatabaseTables) {
                 qValuesDAO.createQValuesTable();
+                qValuesDAO.createAllGamesTable();
             }
 
         } catch (IOException exception) {
@@ -349,6 +350,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.toString()) - oldValue);
         }
         qValuesDAO.updateQValue(newValue, from.toString(), action);
+        qValuesDAO.saveMove(from.toString(), action, to.toString(), reward);
     }
 
     /*
