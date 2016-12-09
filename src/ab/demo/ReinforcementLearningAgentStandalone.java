@@ -198,6 +198,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 int dx, dy;
 
                 ProblemState currentState = new ProblemState(vision);
+                initProblemState(currentState);
 
                 // get Next best Action
                 int nextAction = getNextAction(currentState);
@@ -333,7 +334,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             double reward = gameStateExtractor.getScoreEndGame(scoreScreenshot);
             return reward;
         } else {
-            return 0;
+            return -1;
         }
     }
 
