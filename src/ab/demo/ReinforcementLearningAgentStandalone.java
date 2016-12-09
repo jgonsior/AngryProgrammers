@@ -42,7 +42,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private double explorationRate = 0.3;
     private int id = 28888;
     private boolean firstShot;
-    private Point prevTarget;
     private Random randomGenerator;
     private QValuesDAO qValuesDAO;
     private String dbUser;
@@ -60,7 +59,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         actionRobot = new ActionRobot();
         trajectoryPlanner = new TrajectoryPlanner();
         randomGenerator = new Random();
-        prevTarget = null;
         firstShot = true;
 
         Properties properties = new Properties();
@@ -203,12 +201,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 // get Next best Action
                 int nextAction = getNextAction(currentState);
                 ABObject obj = currentState.getShootableObjects().get(nextAction);
-
-                Point _tpt = obj.getCenter();// if the target is very close to before, randomly choose a
-                // point near it
+                Point _tpt = obj.getCenter();
                 
-                prevTarget = new Point(_tpt.x, _tpt.y);
-
                 // estimate the trajectory
                 ArrayList<Point> pts = trajectoryPlanner.estimateLaunchPoint(sling, _tpt);
 
@@ -285,7 +279,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
                             state = actionRobot.getState();
-
                             double reward = getReward(state);
                             if (state == GameStateExtractor.GameState.PLAYING) {
                                 screenshot = ActionRobot.doScreenShot();
