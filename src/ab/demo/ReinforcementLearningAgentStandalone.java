@@ -181,6 +181,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             screenshot = ActionRobot.doScreenShot();
             vision = new Vision(screenshot);
             sling = vision.findSlingshotMBR();
+            ActionRobot.skipPopUp();
         }
         // get all the pigs
         java.util.List<ABObject> pigs = vision.findPigsMBR();
