@@ -17,7 +17,7 @@ public class TimestampFileAppender extends FileAppender {
     public final void setFile(String file) {
         Date d = new Date();
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        file.replaceAll("%timestamp", "");
+        //file.replaceAll("%tim1estamp", "");
         super.setFile(file.replaceAll("%timestamp", format.format(d)));
     }
 }

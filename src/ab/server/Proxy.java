@@ -32,6 +32,10 @@ public class Proxy extends WebSocketServer {
         Proxy.port = port;
     }
 
+    static public int getProxyPort() {
+        return Proxy.port;
+    }
+
     public Proxy() throws UnknownHostException {
         super(new InetSocketAddress(port));
     }

@@ -45,15 +45,6 @@ public class NaiveAgent implements Runnable, Agent {
 
     }
 
-    public static void main(String args[]) {
-
-        NaiveAgent na = new NaiveAgent();
-        if (args.length > 0)
-            na.currentLevel = Integer.parseInt(args[0]);
-        na.run();
-
-    }
-
     // run the client
     public void run() {
 

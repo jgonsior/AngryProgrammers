@@ -1,5 +1,6 @@
 package ab.demo.logging;
 
+import ab.server.Proxy;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -23,7 +24,7 @@ public final class LoggingHandler {
      * Method for initiating a file log with default parameters.
      */
     public static void initFileLog() {
-        initFileLog("logs/general.%timestamp.log", Level.ALL);
+        initFileLog("logs/" + Proxy.getProxyPort()+  ".%timestamp.log", Level.ALL);
     }
 
     /**
@@ -34,7 +35,7 @@ public final class LoggingHandler {
     public static void initFileLog(String fileToWrite, Level levelToWrite) {
         TimestampFileAppender fileAppender = new TimestampFileAppender();
         fileAppender.setName("FileLogger");
-        fileAppender.setLayout(new PatternLayout("%-4r [%t] %-5p %c %x - %m%n"));
+        fileAppender.setLayout(new PatternLayout("[%-5p]\t%d\t%c\t%x\t-\t%m%n"));
         fileAppender.setFile(fileToWrite);
         fileAppender.setThreshold(levelToWrite);
         fileAppender.activateOptions();
@@ -47,9 +48,8 @@ public final class LoggingHandler {
     public static void initConsoleLog() {
         ConsoleAppender consoleAppender = new ConsoleAppender();
         consoleAppender.setName("ConsoleLogger");
-        consoleAppender.setLayout(new PatternLayout("%-4r [%t] %-5p %c %x - %m%n"));
+        consoleAppender.setLayout(new PatternLayout("[%-5p]\t%d\t%c\t%x\t-\t%m%n"));
         LevelRangeFilter levelRangeFilter = new LevelRangeFilter();
-        //levelRangeFilter.setLevelMin(Level.INFO);
         consoleAppender.addFilter(levelRangeFilter);
         consoleAppender.activateOptions();
         Logger.getRootLogger().addAppender(consoleAppender);

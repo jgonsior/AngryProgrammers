@@ -130,22 +130,6 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
         }
     }
 
-    /**
-     * @param args
-     * @todo move this method to another place -> it doesn't belong into this class
-     */
-    public static void main(String args[]) {
-
-        ReinforcementLearningAgentClient reinforcementLearningAgentClient;
-        if (args.length > 0) {
-            reinforcementLearningAgentClient = new ReinforcementLearningAgentClient(args[0]);
-        } else {
-            reinforcementLearningAgentClient = new ReinforcementLearningAgentClient();
-        }
-        reinforcementLearningAgentClient.run();
-
-    }
-
     private int getNextLevel() {
         int level = 0;
         boolean unsolved = false;

@@ -33,7 +33,7 @@ public class MainEntry {
 
     public static void main(String args[]) {
 
-        //args = new String[] {"s", "-proxyPort 9000"};
+        args = new String[] {"-s"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
@@ -45,7 +45,6 @@ public class MainEntry {
         CommandLine cmd;
         Agent agent;
 
-        LoggingHandler.initFileLog();
         LoggingHandler.initConsoleLog();
 
         try {
@@ -62,6 +61,7 @@ public class MainEntry {
                 logger.info("Set proxy port to " + proxyPort);
             }
             Proxy.setPort(proxyPort);
+            LoggingHandler.initFileLog();
 
 
             if (cmd.hasOption("standalone")) {

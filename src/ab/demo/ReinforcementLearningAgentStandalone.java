@@ -104,13 +104,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
-    public static void main(String args[]) {
-        ReinforcementLearningAgentStandalone rla = new ReinforcementLearningAgentStandalone();
-        if (args.length > 0)
-            rla.currentLevel = Integer.parseInt(args[0]);
-        rla.run();
-    }
-
     // run the client
     public void run() {
         actionRobot.loadLevel(currentLevel);
