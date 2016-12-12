@@ -9,10 +9,10 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
  */
 public interface QValuesDAO {
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE, state VARCHAR(8000), action int, PRIMARY KEY(state, action))")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, state VARCHAR(8000), action int, PRIMARY KEY(state, action))")
     void createQValuesTable();
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS all_games (fromState VARCHAR(8000), action int, toState VARCHAR(8000), reward double)")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS all_games (fromState VARCHAR(8000), action INT, toState VARCHAR(8000), reward DOUBLE PRECISION)")
     void createAllGamesTable();
 
     @SqlUpdate("INSERT INTO all_games (fromState, action, toState, reward) VALUES (:fromState, :action, :toState, :reward);")
