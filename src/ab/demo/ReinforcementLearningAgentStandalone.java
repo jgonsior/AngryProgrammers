@@ -32,23 +32,19 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     public static int time_limit = 12;
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
     public int currentLevel = 1;
-    private int failedCounter = 0;
-    private int[] solved;
     private TrajectoryPlanner trajectoryPlanner;
     //Wrapper of the communicating messages
     private ActionRobot actionRobot;
     private double discountFactor = 0.9;
     private double learningRate = 0.1;
     private double explorationRate = 0.3;
-    private int id = 28888;
     private boolean firstShot;
     private Random randomGenerator;
     private QValuesDAO qValuesDAO;
     private String dbUser;
     private String dbPath;
     private String dbPass;
-    private String dbName;
-    private GameStateExtractor gameStateExtractor;
+
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
     // a standalone implementation of the Reinforcement Agent
@@ -74,7 +70,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             dbPath = properties.getProperty("db_path");
             dbUser = properties.getProperty("db_user");
             dbPass = properties.getProperty("db_pass");
-            dbName = properties.getProperty("db_name");
 
             DBI dbi = new DBI(dbPath, dbUser, dbPass);
 

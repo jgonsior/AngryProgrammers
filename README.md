@@ -11,19 +11,15 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
  db_user=aibirds
  db_pass=secret
  db_path=jdbc:sqlite:database.db
- db_name=ai_test
  ```
  
 3. Execute it as usual
 
 ## Get it running for the competition or on a development server
 1. `gradle clean build uberjar`
-2. `~/start.sh`
-3. `java -jar ABSoftware.jar -nasc`
+2. `~/start.sh 9042`
 
-<!--
-@todo: merge gradle clean etc. into ~/start.sh
--->
+The last shell script starts a new tmux session, named after the port number the, and attaches the chrome window to a xpra session, using the same port number.
 
 ## License
 Unless explicitly noted otherwise, the content of this package is released under the [GNU Affero General Public License version 3 (AGPLv3)](http://www.gnu.org/licenses/agpl.html)
