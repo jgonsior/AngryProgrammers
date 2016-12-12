@@ -15,11 +15,13 @@ Julius and Richard's take on the [AI Birds](http://aibirds.org/) competition as 
  
 3. Execute it as usual
 
-## Get it running for the competition or on a development server
-1. `gradle clean build uberjar`
-2. `~/start.sh 9042`
+## Get it running on a development server
+1. `cd ~/angryprogrammers/github.git`
+2. `gradle clean build uberjar`
+3. `cd ~`
+4. `~/start.sh 9042`
 
-The last shell script starts a new tmux session, named after the port number the, and attaches the chrome window to a xpra session, using the same port number.
+The last shell script starts a new tmux session, named after the port number, and attaches the chrome window to a xpra session, using the same port number.
 
 ## License
 Unless explicitly noted otherwise, the content of this package is released under the [GNU Affero General Public License version 3 (AGPLv3)](http://www.gnu.org/licenses/agpl.html)
