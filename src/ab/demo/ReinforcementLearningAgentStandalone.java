@@ -29,7 +29,6 @@ import java.io.InputStream;
  */
 public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
-    public static int time_limit = 12;
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
     public int currentLevel = 1;
     private TrajectoryPlanner trajectoryPlanner;
@@ -37,7 +36,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private ActionRobot actionRobot;
     private double discountFactor = 0.9;
     private double learningRate = 0.1;
-    private double explorationRate = 0.3;
+    private double explorationRate = 0.7;
     private boolean firstShot;
     private Random randomGenerator;
     private QValuesDAO qValuesDAO;
@@ -290,10 +289,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         return state;
     }
 
-
     /**
      * checks if highest q_value is 0.0 which means that we have never been in this state,
      * so we need to initialize all possible actions to 0.0
+     * @param s
      */
     private void initProblemState(ProblemState s) {
         int counter = 0;
@@ -306,45 +305,55 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
     }
 
-    /*
-    returns reward as highscore difference
+    /**
+     * returns reward as highscore difference
+     * @param state
+     * @return if the game is lost the reward is -1, else it is the highscore of the current level
      */
     private double getReward(GameStateExtractor.GameState state) {
         if (state == GameStateExtractor.GameState.WON) {
             GameStateExtractor gameStateExtractor = new GameStateExtractor();
             BufferedImage scoreScreenshot = actionRobot.doScreenShot();
-            double reward = gameStateExtractor.getScoreEndGame(scoreScreenshot);
-            return reward;
+            return gameStateExtractor.getScoreEndGame(scoreScreenshot);
         } else {
             return -1;
         }
     }
 
-    /*
-    updates q-value in database when new information comes in
+    /**
+     * updates q-value in database when new information comes in
+     * @param from
+     * @param action
+     * @param to
+     * @param reward
+     * @param end true if the current level was finished (could be either won or lost)
      */
     private void updateQValue(ProblemState from, int action, ProblemState to, double reward, boolean end) {
         double oldValue = qValuesDAO.getQValue(from.toString(), action);
         double newValue;
         if (end) {
             newValue = oldValue + learningRate * (reward - oldValue);
-
         } else {
+            //possible error: highest Q value could have been different compared to when the action was selected with qValuesDAO.getBestAction
             newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.toString()) - oldValue);
         }
         qValuesDAO.updateQValue(newValue, from.toString(), action);
         qValuesDAO.saveMove(from.toString(), action, to.toString(), reward);
     }
 
-    /*
-    Returns next action, with explorationrate as probability of taking a random action
-     and else look for the so far best action
+    /**
+     * Returns next action, with explorationrate as probability of taking a random action
+     * and else look for the so far best action
+     * @param problemState
+     * @return
      */
     private int getNextAction(ProblemState problemState) {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
+            logger.info("Picked random action");
             return qValuesDAO.getRandomAction(problemState.toString());
         } else {
+            logger.info("Picked currently best available action");
             return qValuesDAO.getBestAction(problemState.toString());
         }
     }
