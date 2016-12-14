@@ -10,6 +10,7 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
+import ab.server.Proxy;
 import org.apache.log4j.Logger;
 import org.skife.jdbi.v2.DBI;
 
@@ -43,6 +44,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private String dbUser;
     private String dbPath;
     private String dbPass;
+    // id which will be generated randomly every lvl that we can connect moves to one game
+    private int gameId;
+    private int moveCounter;
+    private boolean lowTrajectory = false;
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
@@ -80,6 +85,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             if (createDatabaseTables) {
                 qValuesDAO.createQValuesTable();
                 qValuesDAO.createAllGamesTable();
+                qValuesDAO.createAllMovesTable();
             }
 
         } catch (IOException exception) {
@@ -101,8 +107,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     // run the client
     public void run() {
         actionRobot.loadLevel(currentLevel);
+        gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
         while (true) {
             GameStateExtractor.GameState state = solve();
+            moveCounter = moveCounter + 1;
             if (state == GameStateExtractor.GameState.WON) {
                 try {
                     Thread.sleep(3000);
@@ -130,9 +138,14 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
                 // first shot on this level, try high shot first
                 firstShot = true;
+
+                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                moveCounter = 0;
             } else if (state == GameStateExtractor.GameState.LOST) {
                 logger.info("Restart");
                 actionRobot.restartLevel();
+                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                moveCounter = 0;
             } else if (state == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
                                 + currentLevel);
@@ -187,7 +200,9 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 initProblemState(currentState);
 
                 // get Next best Action
-                int nextAction = getNextAction(currentState);
+                ActionPair nextActionPair = getNextAction(currentState);
+                int nextAction = nextActionPair.value;
+
                 ABObject obj = currentState.getShootableObjects().get(nextAction);
                 Point _tpt = obj.getCenter();
                 
@@ -196,16 +211,21 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
                 // do a high shot when entering a level to find an accurate velocity
                 if (firstShot && pts.size() > 1) {
+                    lowTrajectory = false;
                     releasePoint = pts.get(1);
-                } else if (pts.size() == 1)
+                } else if (pts.size() == 1){
+                    // TODO: find out if low or high trajectory????
                     releasePoint = pts.get(0);
-                else if (pts.size() == 2) {
+                } else if (pts.size() == 2) {
                     // randomly choose between the trajectories, with a 1 in
                     // 6 chance of choosing the high one
-                    if (randomGenerator.nextInt(6) == 0)
+                    if (randomGenerator.nextInt(6) == 0){
+                        lowTrajectory = false;
                         releasePoint = pts.get(1);
-                    else
+                    } else{
+                        lowTrajectory = true;
                         releasePoint = pts.get(0);
+                    }
                 } else if (pts.isEmpty()) {
                     logger.info("No release point found for the target");
                     logger.info("Try a shot with 45 degree");
@@ -274,9 +294,9 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                 java.util.List<Point> traj = vision.findTrajPoints();
                                 trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
                                 firstShot = false;
-                                updateQValue(currentState, nextAction, new ProblemState(vision), reward, false);
+                                updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
                             } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
-                                updateQValue(currentState, nextAction, currentState, reward, true);
+                                updateQValue(currentState, nextActionPair, currentState, reward, true);
                             }
                         }
                     } else
@@ -308,7 +328,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     /**
      * returns reward as highscore difference
      * @param state
-     * @return if the game is lost the reward is -1, else it is the highscore of the current level
+     * @return if the game is lost or the move was not the finishing one the reward is -1, else it is the highscore of the current level
      */
     private double getReward(GameStateExtractor.GameState state) {
         if (state == GameStateExtractor.GameState.WON) {
@@ -328,7 +348,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * @param reward
      * @param end true if the current level was finished (could be either won or lost)
      */
-    private void updateQValue(ProblemState from, int action, ProblemState to, double reward, boolean end) {
+    private void updateQValue(ProblemState from, ActionPair nextAction, ProblemState to, double reward, boolean end) {
+        int action = nextAction.value;
         double oldValue = qValuesDAO.getQValue(from.toString(), action);
         double newValue;
         if (end) {
@@ -338,7 +359,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.toString()) - oldValue);
         }
         qValuesDAO.updateQValue(newValue, from.toString(), action);
-        qValuesDAO.saveMove(from.toString(), action, to.toString(), reward);
+        qValuesDAO.saveMove(gameId, moveCounter, from.toString(), action, to.toString(), reward, nextAction.rand, lowTrajectory);
+        
     }
 
     /**
@@ -347,14 +369,25 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * @param problemState
      * @return
      */
-    private int getNextAction(ProblemState problemState) {
+    private ActionPair getNextAction(ProblemState problemState) {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
             logger.info("Picked random action");
-            return qValuesDAO.getRandomAction(problemState.toString());
+            return new ActionPair(true, qValuesDAO.getRandomAction(problemState.toString()));
         } else {
             logger.info("Picked currently best available action");
-            return qValuesDAO.getBestAction(problemState.toString());
+            return new ActionPair(false, qValuesDAO.getBestAction(problemState.toString()));
         }
+    }
+
+    private class ActionPair{
+        public final boolean rand;
+        public final int value;
+
+        public ActionPair(boolean rand, int value) {
+        this.rand = rand;
+        this.value = value;
+      }
+
     }
 }
