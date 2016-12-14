@@ -13,10 +13,10 @@ public interface QValuesDAO {
     @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, state VARCHAR(8000), action INT, PRIMARY KEY(state, action))")
     void createQValuesTable();
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS games (ID SERIAL, level INT, proxyPort INT, expl DOUBLE PRECISION, learn DOUBLE PRECISION, disc DOUBLE PRECISION)")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS games (ID SERIAL PRIMARY KEY, level INT, proxyPort INT, expl DOUBLE PRECISION, learn DOUBLE PRECISION, disc DOUBLE PRECISION)")
     void createAllGamesTable();
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS moves (ID SERIAL, gameId INT, birdNumber INT, fromState VARCHAR(8000), action INT, toState VARCHAR(8000), reward DOUBLE PRECISION, randomAction boolean, lowTrajectory boolean)")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS moves (ID SERIAL PRIMARY KEY, gameId INT REFERENCES games(ID), birdNumber INT, fromState VARCHAR(8000), action INT, toState VARCHAR(8000), reward DOUBLE PRECISION, randomAction boolean, lowTrajectory boolean)")
     void createAllMovesTable();
 
     @SqlUpdate("INSERT INTO moves (gameId, birdNumber, fromState, action, toState, reward, randomAction, lowTrajectory) VALUES (:gameId, :birdNumber, :fromState, :action, :toState, :reward, :randAction, :lowTrajectory);")
