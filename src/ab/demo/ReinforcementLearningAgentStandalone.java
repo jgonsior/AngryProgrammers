@@ -300,7 +300,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                             screenshot = ActionRobot.doScreenShot();
                             while (!screenshot.equals(screenshot_before)){
                                 try {
-                                    Thread.sleep(1000);
+                                    Thread.sleep(500);
                                     screenshot_before = screenshot;
                                     screenshot = ActionRobot.doScreenShot();
                                 } catch (InterruptedException e) {
