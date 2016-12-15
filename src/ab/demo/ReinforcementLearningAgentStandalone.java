@@ -296,14 +296,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                     if (scale_diff < 25) {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
-                            if (birdsLeft == 1 || pigs.size() == 1 ){
-                                //sometimes after last shot better wait longer
-                                try {
-                                    Thread.sleep(10000);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
                             state = actionRobot.getState();
                             double reward = getReward(state);
                             if (state == GameStateExtractor.GameState.PLAYING) {
