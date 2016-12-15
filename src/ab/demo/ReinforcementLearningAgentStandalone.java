@@ -30,7 +30,7 @@ import java.io.InputStream;
  */
 public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
-    private static Logger logger = Logger.getLogger(ReinforcementLearningAgentClient.class);
+    private static Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
     public int currentLevel = 1;
     private TrajectoryPlanner trajectoryPlanner;
     //Wrapper of the communicating messages
@@ -203,7 +203,11 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 ActionPair nextActionPair = getNextAction(currentState);
                 int nextAction = nextActionPair.value;
 
-                ABObject obj = currentState.getShootableObjects().get(nextAction);
+                List<ABObject> shootables = currentState.getShootableObjects();
+                if (shootables.size() > nextAction){
+                    nextAction = shootables.size() - 1;
+                }
+                ABObject obj = shootables.get(nextAction);
                 Point _tpt = obj.getCenter();
                 
                 // estimate the trajectory
@@ -343,7 +347,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     /**
      * updates q-value in database when new information comes in
      * @param from
-     * @param action
+     * @param nextAction
      * @param to
      * @param reward
      * @param end true if the current level was finished (could be either won or lost)
