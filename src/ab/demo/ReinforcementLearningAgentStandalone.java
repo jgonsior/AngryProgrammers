@@ -296,7 +296,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                     if (scale_diff < 25) {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
-                            if (birdsLeft == 1){
+                            if (birdsLeft == 1 || pigs.size() == 1 ){
                                 //sometimes after last shot better wait longer
                                 try {
                                     Thread.sleep(10000);
