@@ -204,7 +204,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 int nextAction = nextActionPair.value;
 
                 java.util.List<ABObject> shootables = currentState.getShootableObjects();
-                if (shootables.size() > nextAction){
+                if (shootables.size() - 1 > nextAction){
                     nextAction = shootables.size() - 1;
                 }
                 ABObject obj = shootables.get(nextAction);
