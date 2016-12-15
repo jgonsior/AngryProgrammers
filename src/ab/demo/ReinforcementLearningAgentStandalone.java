@@ -288,28 +288,47 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
                 
                 ActionRobot.fullyZoomOut();
-                screenshot = ActionRobot.doScreenShot();
-                vision = new Vision(screenshot);
+                BufferedImage screenshot_before = ActionRobot.doScreenShot();
+                vision = new Vision(screenshot_before);
                 Rectangle _sling = vision.findSlingshotMBR();
                 if (_sling != null) {
                     double scale_diff = Math.pow((sling.width - _sling.width), 2) + Math.pow((sling.height - _sling.height), 2);
                     if (scale_diff < 25) {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
+                            // make screenshots as long as 2 following screenshots are equal
+                            screenshot = ActionRobot.doScreenShot();
+                            while (!screenshot.equals(screenshot_before)){
+                                try {
+                                    Thread.sleep(1000);
+                                    screenshot_before = screenshot;
+                                    screenshot = ActionRobot.doScreenShot();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+
+                            if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0){
+                                // if we have no pigs left or birds, wait for winning screen
+                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING){
+                                    try {
+                                        Thread.sleep(10000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }   
+                                }  
+                            }
+
                             state = actionRobot.getState();
                             double reward = getReward(state);
                             if (state == GameStateExtractor.GameState.PLAYING) {
                                 screenshot = ActionRobot.doScreenShot();
                                 vision = new Vision(screenshot);
-                                if (vision.findBirdsRealShape().size() > 0){
-                                    // no birds to shoot so its the end and we are here by accident
-                                    updateQValue(currentState, nextActionPair, currentState, reward, true);
-                                }else{
-                                    java.util.List<Point> traj = vision.findTrajPoints();
-                                    trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
-                                    firstShot = false;
-                                    updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
-                                }
+                                java.util.List<Point> traj = vision.findTrajPoints();
+                                trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
+                                firstShot = false;
+                                updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
                             } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
                                 updateQValue(currentState, nextActionPair, currentState, reward, true);
                             }
