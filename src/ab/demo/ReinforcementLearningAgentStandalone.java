@@ -185,6 +185,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
         // get all the pigs
         java.util.List<ABObject> pigs = vision.findPigsMBR();
+        int birdsLeft = vision.findBirdsMBR().size();
         GameStateExtractor.GameState state = actionRobot.getState();
 
         if (state != GameStateExtractor.GameState.PLAYING){
@@ -295,6 +296,14 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                     if (scale_diff < 25) {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
+                            if (birdsLeft == 1){
+                                //sometimes after last shot better wait longer
+                                try {
+                                    Thread.sleep(10000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                             state = actionRobot.getState();
                             double reward = getReward(state);
                             if (state == GameStateExtractor.GameState.PLAYING) {
