@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Properties;
+import java.util.List;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -288,43 +289,43 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
                 
                 ActionRobot.fullyZoomOut();
-                BufferedImage screenshot_before = ActionRobot.doScreenShot();
-                vision = new Vision(screenshot_before);
-                Rectangle _sling = vision.findSlingshotMBR();
+                BufferedImage screenshotBefore = ActionRobot.doScreenShot();
+                Vision visionBefore = new Vision(screenshotBefore);
+                List<ABObject> bnbBefore = getBlocksAndBirds(visionBefore);
+                Rectangle _sling = visionBefore.findSlingshotMBR();
                 if (_sling != null) {
                     double scale_diff = Math.pow((sling.width - _sling.width), 2) + Math.pow((sling.height - _sling.height), 2);
                     if (scale_diff < 25) {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
                             // make screenshots as long as 2 following screenshots are equal
-                            /*
-                            screenshot = ActionRobot.doScreenShot();
-                            while (!screenshot.equals(screenshot_before)){
+                            while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING){
                                 try {
                                     Thread.sleep(500);
-                                    screenshot_before = screenshot;
                                     screenshot = ActionRobot.doScreenShot();
+                                    vision = new Vision(screenshot);
+                                    List<ABObject> bnbAfter = getBlocksAndBirds(vision);
+                                    if (bnbBefore.equals(bnbAfter)){
+                                        break;
+                                    } else {
+                                        bnbBefore = bnbAfter;
+                                    }
+
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
-
                             }
 
                             if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0){
                                 // if we have no pigs left or birds, wait for winning screen
                                 while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING){
                                     try {
-                                        Thread.sleep(10000);
+                                        Thread.sleep(1500);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }   
                                 }  
-                            }*/
-                            try {
-                                Thread.sleep(15000);
-                            } catch (InterruptedException e) {
 
-                                e.printStackTrace();
                             }
 
                             state = actionRobot.getState();
@@ -364,6 +365,17 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 counter += 1;
             }
         }
+    }
+    /**
+     * returns List of current birds and blocks
+     * @param vision
+     * @return List of current birds and blocks
+     */
+    private List<ABObject> getBlocksAndBirds(Vision vision){
+        List<ABObject> allObjs = new ArrayList<>();
+        allObjs.addAll(vision.findPigsMBR());
+        allObjs.addAll(vision.findBlocksMBR());
+        return allObjs;
     }
 
     /**
