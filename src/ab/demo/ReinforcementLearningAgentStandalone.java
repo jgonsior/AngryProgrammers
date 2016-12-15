@@ -295,10 +295,15 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                             if (state == GameStateExtractor.GameState.PLAYING) {
                                 screenshot = ActionRobot.doScreenShot();
                                 vision = new Vision(screenshot);
-                                java.util.List<Point> traj = vision.findTrajPoints();
-                                trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
-                                firstShot = false;
-                                updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
+                                if (vision.findBirdsRealShape().size() > 0){
+                                    // no birds to shoot so its the end and we are here by accident
+                                    updateQValue(currentState, nextActionPair, currentState, reward, true);
+                                }else{
+                                    java.util.List<Point> traj = vision.findTrajPoints();
+                                    trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
+                                    firstShot = false;
+                                    updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
+                                }
                             } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
                                 updateQValue(currentState, nextActionPair, currentState, reward, true);
                             }

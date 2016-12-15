@@ -24,11 +24,12 @@ public class ProblemState {
     public ProblemState(Vision vision) {
         ActionRobot actionRobot = new ActionRobot();
         GameStateExtractor.GameState state = actionRobot.getState();
+        allObjects = new ArrayList<>();
 
         if (state == GameStateExtractor.GameState.PLAYING){
             vison = vision;
 
-            allObjects = new ArrayList<>(vison.findBirdsRealShape());
+            allObjects.addAll(vison.findBirdsRealShape());
             allObjects.addAll(vison.findBlocksRealShape());
             allObjects.addAll(vison.findPigsRealShape());
 
