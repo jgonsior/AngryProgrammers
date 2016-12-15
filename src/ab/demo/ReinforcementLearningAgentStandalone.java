@@ -187,6 +187,11 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         java.util.List<ABObject> pigs = vision.findPigsMBR();
         GameStateExtractor.GameState state = actionRobot.getState();
 
+        if (state != GameStateExtractor.GameState.PLAYING){
+            logger.warn("Accidentally in solving method without being in PLAYINg state");
+            return state;
+        }
+
         // if there is a sling, then play, otherwise just skip.
         if (sling != null) {
 
