@@ -297,6 +297,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
                             // make screenshots as long as 2 following screenshots are equal
+                            /*
                             screenshot = ActionRobot.doScreenShot();
                             while (!screenshot.equals(screenshot_before)){
                                 try {
@@ -318,6 +319,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                         e.printStackTrace();
                                     }   
                                 }  
+                            }*/
+                            try {
+                                Thread.sleep(15000);
+                            } catch (InterruptedException e) {
+
+                                e.printStackTrace();
                             }
 
                             state = actionRobot.getState();
