@@ -1,9 +1,9 @@
 package ab.demo.qlearning;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
+import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 
 /**
  * @author jgonsior
@@ -20,11 +20,11 @@ public interface QValuesDAO {
     void createAllMovesTable();
 
     @SqlUpdate("INSERT INTO moves (gameId, birdNumber, fromState, action, toState, reward, randomAction, lowTrajectory) VALUES (:gameId, :birdNumber, :fromState, :action, :toState, :reward, :randAction, :lowTrajectory);")
-    void saveMove(@Bind("gameId") int gameId,@Bind("birdNumber") int birdNumber,@Bind("fromState") String fromState,@Bind("action") int action,@Bind("toState") String toState,@Bind("reward") double reward,@Bind("randAction") boolean randomAction, @Bind("lowTrajectory") boolean lowTrajectory);
+    void saveMove(@Bind("gameId") int gameId, @Bind("birdNumber") int birdNumber, @Bind("fromState") String fromState, @Bind("action") int action, @Bind("toState") String toState, @Bind("reward") double reward, @Bind("randAction") boolean randomAction, @Bind("lowTrajectory") boolean lowTrajectory);
 
     @SqlUpdate("INSERT INTO games (level, proxyPort, expl, learn, disc) VALUES (:level, :proxyPort, :expl, :learn, :disc)")
     @GetGeneratedKeys
-    int saveGame(@Bind("level") int level,@Bind("proxyPort") int proxyPort,@Bind("expl") double expl,@Bind("learn") double learn,@Bind("disc") double disc);
+    int saveGame(@Bind("level") int level, @Bind("proxyPort") int proxyPort, @Bind("expl") double expl, @Bind("learn") double learn, @Bind("disc") double disc);
 
     @SqlUpdate("UPDATE q_values SET q_value=:q_value WHERE state=:state AND action=:action;")
     void updateQValue(@Bind("q_value") double qValue, @Bind("state") String state, @Bind("action") int action);

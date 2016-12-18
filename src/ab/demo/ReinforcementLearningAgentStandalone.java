@@ -1,30 +1,22 @@
 package ab.demo;
 
-import ab.demo.other.ActionRobot;
 import ab.demo.logging.LoggingHandler;
+import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
-import ab.demo.qlearning.QValuesDAO;
 import ab.demo.qlearning.ProblemState;
+import ab.demo.qlearning.QValuesDAO;
 import ab.planner.TrajectoryPlanner;
+import ab.server.Proxy;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
-import ab.server.Proxy;
 import org.apache.log4j.Logger;
-import org.skife.jdbi.v2.DBI;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Properties;
+import java.util.*;
 import java.util.List;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * @author jgonsior
@@ -42,9 +34,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private boolean firstShot;
     private Random randomGenerator;
     private QValuesDAO qValuesDAO;
-    private String dbUser;
-    private String dbPath;
-    private String dbPass;
     // id which will be generated randomly every lvl that we can connect moves to one game
     private int gameId;
     private int moveCounter;
@@ -53,55 +42,17 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
     // a standalone implementation of the Reinforcement Agent
-    public ReinforcementLearningAgentStandalone() {
+    public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO) {
         LoggingHandler.initFileLog();
         LoggingHandler.initConsoleLog();
 
-        actionRobot = new ActionRobot();
-        trajectoryPlanner = new TrajectoryPlanner();
-        randomGenerator = new Random();
-        firstShot = true;
+        this.actionRobot = new ActionRobot();
+        this.trajectoryPlanner = new TrajectoryPlanner();
+        this.randomGenerator = new Random();
+        this.firstShot = true;
 
-        Properties properties = new Properties();
-        InputStream configInputStream = null;
+        this.qValuesDAO = qValuesDAO;
 
-        try {
-            Class.forName("org.sqlite.JDBC");
-            //parse our configuration file
-            configInputStream = new FileInputStream("config.properties");
-
-            properties.load(configInputStream);
-
-            dbPath = properties.getProperty("db_path");
-            dbUser = properties.getProperty("db_user");
-            dbPass = properties.getProperty("db_pass");
-
-            DBI dbi = new DBI(dbPath, dbUser, dbPass);
-
-            qValuesDAO = dbi.open(QValuesDAO.class);
-
-            //@todo: create new command line argument for this parameter
-            boolean createDatabaseTables = true;
-
-            if (createDatabaseTables) {
-                qValuesDAO.createQValuesTable();
-                qValuesDAO.createAllGamesTable();
-                qValuesDAO.createAllMovesTable();
-            }
-
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        } catch (ClassNotFoundException exception) {
-            exception.printStackTrace();
-        } finally {
-            if (configInputStream != null) {
-                try {
-                    configInputStream.close();
-                } catch (IOException exception) {
-                    exception.printStackTrace();
-                }
-            }
-        }
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
@@ -149,16 +100,16 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 moveCounter = 0;
             } else if (state == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
-                                + currentLevel);
+                        + currentLevel);
                 actionRobot.loadLevel(currentLevel);
             } else if (state == GameStateExtractor.GameState.MAIN_MENU) {
                 logger.warn("Unexpected main menu page, go to the last current level : "
-                                + currentLevel);
+                        + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
             } else if (state == GameStateExtractor.GameState.EPISODE_MENU) {
                 logger.warn("Unexpected episode menu page, go to the last current level : "
-                                + currentLevel);
+                        + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
             }
@@ -189,7 +140,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         int birdsLeft = vision.findBirdsMBR().size();
         GameStateExtractor.GameState state = actionRobot.getState();
 
-        if (state != GameStateExtractor.GameState.PLAYING){
+        if (state != GameStateExtractor.GameState.PLAYING) {
             logger.warn("Accidentally in solving method without being in PLAYINg state");
             return state;
         }
@@ -211,12 +162,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 int nextAction = nextActionPair.value;
 
                 java.util.List<ABObject> shootables = currentState.getShootableObjects();
-                if (shootables.size() - 1 > nextAction){
+                if (shootables.size() - 1 > nextAction) {
                     nextAction = shootables.size() - 1;
                 }
                 ABObject obj = shootables.get(nextAction);
                 Point _tpt = obj.getCenter();
-                
+
                 // estimate the trajectory
                 ArrayList<Point> pts = trajectoryPlanner.estimateLaunchPoint(sling, _tpt);
 
@@ -224,16 +175,16 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 if (firstShot && pts.size() > 1) {
                     lowTrajectory = false;
                     releasePoint = pts.get(1);
-                } else if (pts.size() == 1){
+                } else if (pts.size() == 1) {
                     // TODO: find out if low or high trajectory????
                     releasePoint = pts.get(0);
                 } else if (pts.size() == 2) {
                     // randomly choose between the trajectories, with a 1 in
                     // 6 chance of choosing the high one
-                    if (randomGenerator.nextInt(6) == 0){
+                    if (randomGenerator.nextInt(6) == 0) {
                         lowTrajectory = false;
                         releasePoint = pts.get(1);
-                    } else{
+                    } else {
                         lowTrajectory = true;
                         releasePoint = pts.get(0);
                     }
@@ -284,10 +235,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                     logger.error("No Release Point Found");
                     return state;
                 }
-                
+
 
                 // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
-                
+
                 ActionRobot.fullyZoomOut();
                 BufferedImage screenshotBefore = ActionRobot.doScreenShot();
                 Vision visionBefore = new Vision(screenshotBefore);
@@ -299,13 +250,13 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                         if (dx < 0) {
                             actionRobot.cshoot(shot);
                             // make screenshots as long as 2 following screenshots are equal
-                            while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING){
+                            while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                 try {
                                     Thread.sleep(500);
                                     screenshot = ActionRobot.doScreenShot();
                                     vision = new Vision(screenshot);
                                     List<ABObject> bnbAfter = getBlocksAndBirds(vision);
-                                    if (bnbBefore.equals(bnbAfter)){
+                                    if (bnbBefore.equals(bnbAfter)) {
                                         break;
                                     } else {
                                         bnbBefore = bnbAfter;
@@ -316,15 +267,15 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                 }
                             }
 
-                            if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0){
+                            if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
                                 // if we have no pigs left or birds, wait for winning screen
-                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING){
+                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                     try {
                                         Thread.sleep(1500);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
-                                    }   
-                                }  
+                                    }
+                                }
 
                             }
 
@@ -354,6 +305,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     /**
      * checks if highest q_value is 0.0 which means that we have never been in this state,
      * so we need to initialize all possible actions to 0.0
+     *
      * @param s
      */
     private void initProblemState(ProblemState s) {
@@ -366,12 +318,14 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             }
         }
     }
+
     /**
      * returns List of current birds and blocks
+     *
      * @param vision
      * @return List of current birds and blocks
      */
-    private List<ABObject> getBlocksAndBirds(Vision vision){
+    private List<ABObject> getBlocksAndBirds(Vision vision) {
         List<ABObject> allObjs = new ArrayList<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
@@ -380,6 +334,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
     /**
      * returns reward as highscore difference
+     *
      * @param state
      * @return if the game is lost or the move was not the finishing one the reward is -1, else it is the highscore of the current level
      */
@@ -395,11 +350,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
     /**
      * updates q-value in database when new information comes in
+     *
      * @param from
      * @param nextAction
      * @param to
      * @param reward
-     * @param end true if the current level was finished (could be either won or lost)
+     * @param end        true if the current level was finished (could be either won or lost)
      */
     private void updateQValue(ProblemState from, ActionPair nextAction, ProblemState to, double reward, boolean end) {
         int action = nextAction.value;
@@ -413,12 +369,13 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
         qValuesDAO.updateQValue(newValue, from.toString(), action);
         qValuesDAO.saveMove(gameId, moveCounter, from.toString(), action, to.toString(), reward, nextAction.rand, lowTrajectory);
-        
+
     }
 
     /**
      * Returns next action, with explorationrate as probability of taking a random action
      * and else look for the so far best action
+     *
      * @param problemState
      * @return
      */
@@ -433,14 +390,14 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
     }
 
-    private class ActionPair{
+    private class ActionPair {
         public final boolean rand;
         public final int value;
 
         public ActionPair(boolean rand, int value) {
-        this.rand = rand;
-        this.value = value;
-      }
+            this.rand = rand;
+            this.value = value;
+        }
 
     }
 }

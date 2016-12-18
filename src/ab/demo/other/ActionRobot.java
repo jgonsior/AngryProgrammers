@@ -168,6 +168,10 @@ public class ActionRobot {
 
     }
 
+    public static void skipPopUp() {
+        proxy.send(new ProxyClickMessage(255, 350));
+    }
+
     public void restartLevel() {
         rls.restartLevel();
     }
@@ -234,10 +238,6 @@ public class ActionRobot {
 
     public void click() {
         proxy.send(new ProxyClickMessage(100, 100));
-    }
-
-    public static void skipPopUp(){
-        proxy.send(new ProxyClickMessage(255, 350));
     }
 
     public void drag() {

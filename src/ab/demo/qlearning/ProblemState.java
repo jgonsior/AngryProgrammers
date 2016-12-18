@@ -1,9 +1,9 @@
 package ab.demo.qlearning;
 
-import ab.vision.ABObject;
-import ab.vision.Vision;
 import ab.demo.other.ActionRobot;
+import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
+import ab.vision.Vision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,7 @@ public class ProblemState {
         GameStateExtractor.GameState state = actionRobot.getState();
         allObjects = new ArrayList<>();
 
-        if (state == GameStateExtractor.GameState.PLAYING){
+        if (state == GameStateExtractor.GameState.PLAYING) {
             vison = vision;
 
             allObjects.addAll(vison.findBirdsRealShape());
@@ -37,7 +37,7 @@ public class ProblemState {
 
         }
 
-        
+
     }
 
     /**

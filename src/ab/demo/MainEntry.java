@@ -1,21 +1,16 @@
 package ab.demo;
 
 import ab.demo.logging.LoggingHandler;
-import ab.planner.abTrajectory;
+import ab.demo.qlearning.QValuesDAO;
 import ab.server.Proxy;
-import ab.utils.GameImageRecorder;
-import ab.vision.ShowSeg;
 import org.apache.commons.cli.*;
-import org.apache.log4j.Level;
-
-
-import org.apache.commons.cli.*;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.skife.jdbi.v2.DBI;
 
-
-import java.io.FileNotFoundException;
-
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 
 /*****************************************************************************
@@ -33,19 +28,53 @@ public class MainEntry {
 
     public static void main(String args[]) {
 
-       // args = new String[] {"-s"};
+        // args = new String[] {"-su"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
         options.addOption("h", "help", false, "displays this help");
         options.addOption("n", "naiveAgent", false, "runs the naive agent in standalone mode");
         options.addOption("c", "competition", false, "runs the naive agent in the server/client competition mode");
+        options.addOption("u", "updateDatabaseTables", false, "runs CREATE TABLE IF NOT EXIST commands");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
         Agent agent;
 
         LoggingHandler.initConsoleLog();
+
+
+        Properties properties = new Properties();
+        InputStream configInputStream = null;
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+            //parse configuration file
+            configInputStream = new FileInputStream("config.properties");
+
+            properties.load(configInputStream);
+
+
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        } catch (ClassNotFoundException exception) {
+            exception.printStackTrace();
+        } finally {
+            if (configInputStream != null) {
+                try {
+                    configInputStream.close();
+                } catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+            }
+        }
+
+        String dbPath = properties.getProperty("db_path");
+        String dbUser = properties.getProperty("db_user");
+        String dbPass = properties.getProperty("db_pass");
+        DBI dbi = new DBI(dbPath, dbUser, dbPass);
+
+        QValuesDAO qValuesDAO = dbi.open(QValuesDAO.class);
 
         try {
             cmd = parser.parse(options, args);
@@ -56,7 +85,7 @@ public class MainEntry {
             }
 
             int proxyPort = 9000;
-            if(cmd.hasOption("proxyPort")) {
+            if (cmd.hasOption("proxyPort")) {
                 proxyPort = Integer.parseInt(cmd.getOptionValue("proxyPort"));
                 logger.info("Set proxy port to " + proxyPort);
             }
@@ -65,7 +94,7 @@ public class MainEntry {
 
 
             if (cmd.hasOption("standalone")) {
-                agent = new ReinforcementLearningAgentStandalone();
+                agent = new ReinforcementLearningAgentStandalone(qValuesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveAgent();
             } else if (cmd.hasOption("competition")) {
@@ -77,13 +106,18 @@ public class MainEntry {
                 return;
             }
 
+            if (cmd.hasOption("updateDatabaseTables")) {
+                qValuesDAO.createQValuesTable();
+                qValuesDAO.createAllGamesTable();
+                qValuesDAO.createAllMovesTable();
+            }
+
         } catch (UnrecognizedOptionException e) {
             System.out.println("Unrecognized commandline option: " + e.getOption());
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("help", options);
             return;
-        }
-        catch (ParseException e) {
+        } catch (ParseException e) {
             System.out.println("There was an error while parsing your command line input. Did you rechecked your syntax before running?");
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("help", options);

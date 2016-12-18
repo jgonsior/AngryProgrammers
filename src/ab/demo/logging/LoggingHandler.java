@@ -24,7 +24,7 @@ public final class LoggingHandler {
      * Method for initiating a file log with default parameters.
      */
     public static void initFileLog() {
-        initFileLog("logs/" + Proxy.getProxyPort()+  ".%timestamp.log", Level.ALL);
+        initFileLog("logs/" + Proxy.getProxyPort() + ".%timestamp.log", Level.ALL);
     }
 
     /**
