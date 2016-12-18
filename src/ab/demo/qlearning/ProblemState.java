@@ -19,7 +19,7 @@ public class ProblemState {
 
     public List<ABObject> shootable;
     private Vision vison;
-    private List<ABObject> allObjects;
+    public List<ABObject> allObjects;
 
     public ProblemState(Vision vision) {
         ActionRobot actionRobot = new ActionRobot();
