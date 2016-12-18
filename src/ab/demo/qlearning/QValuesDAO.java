@@ -43,7 +43,7 @@ public interface QValuesDAO {
     @SqlQuery("SELECT stateId FROM states WHERE objectId=:objectId")
     List<String> getStates(@Bind("objectId") int objectId);
 
-    @SqlUpdate("INSERT INTO states (stateId, objectId) VALUES (:stateId, :objectId)")
+    @SqlUpdate("INSERT INTO states (stateId, objectId) VALUES (:stateId, :objectId) ON CONFLICT ON CONSTRAINT states_pkey DO NOTHING")
     @GetGeneratedKeys
     int insertState(@Bind("stateId") int stateId, @Bind("objectId") int objectId);
 
