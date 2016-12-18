@@ -33,7 +33,7 @@ public interface QValuesDAO {
     @GetGeneratedKeys
     int insertStateId();
 
-    @SqlUpdate("INSERT INTO objects (x, y, type, material) VALUES (:x, :y, :type, :material) ON CONFLICT ON CONSTRAINT object_pkey DO UPDATE SET x=excluded.x RETURNING ID")
+    @SqlUpdate("INSERT INTO objects (x, y, type, material) VALUES (:x, :y, :type, :material) ON CONFLICT ON CONSTRAINT objects_pkey DO UPDATE SET x=excluded.x RETURNING ID")
     @GetGeneratedKeys
     int insertObject(@Bind("x") int x, @Bind("y") int y, @Bind("type") String type, @Bind("material") String material);
 
