@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface QValuesDAO {
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, state VARCHAR(8000), action INT, PRIMARY KEY(state, action))")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, state INT, action INT, PRIMARY KEY(state, action))")
     void createQValuesTable();
 
     @SqlUpdate("CREATE TABLE IF NOT EXISTS games (ID SERIAL PRIMARY KEY, level INT, proxyPort INT, expl DOUBLE PRECISION, learn DOUBLE PRECISION, disc DOUBLE PRECISION)")
