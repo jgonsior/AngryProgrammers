@@ -20,6 +20,7 @@ import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 import org.skife.jdbi.v2.DBI;
+import ab.server.Proxy;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -56,6 +57,10 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
     private String dbPath;
     private String dbPass;
     private String dbName;
+    private int gameId;
+    private int moveCounter;
+    private boolean lowTrajectory = false;
+
     private GameStateExtractor gameStateExtractor;
 
 
@@ -205,6 +210,9 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
 
                 // first shot on this level, try high shot first
                 firstShot = true;
+                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                moveCounter = 0;
+            
 
             } else
                 //If lost, then restart the level
@@ -220,6 +228,10 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
                         logger.info("restart");
                         clientActionRobotJava.restartLevel();
                     }
+
+                    gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                    moveCounter = 0;
+            
 
                 } else if (state == GameState.LEVEL_SELECTION) {
                     logger.warn("unexpected level selection page, go to the last current level : "
@@ -288,11 +300,13 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
                 Point releasePoint = null;
 
 
-                //@todo is this right?
                 ProblemState currentState = new ProblemState(vision);
+                int stateId = getStateId(currentState);
 
                 // get Next best Action
-                int nextAction = getNextAction(currentState);
+                ActionPair nextActionPair = getNextAction(stateId);
+                int nextAction = nextActionPair.value;
+
                 ABObject obj = currentState.getShootableObjects().get(nextAction);
                 System.out.println(obj);
 
@@ -381,9 +395,9 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
                                 trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
                                 firstShot = false;
                                 // get our new "to" State to update old q_value
-                                updateQValue(currentState, nextAction, new ProblemState(vision), reward, false);
+                                updateQValue(stateId, nextActionPair, new ProblemState(vision), reward, false);
                             } else if (state == GameState.WON || state == GameState.LOST) {
-                                updateQValue(currentState, nextAction, currentState, reward, true);
+                                updateQValue(stateId, nextActionPair, currentState, reward, true);
                             }
                         }
                     } else
@@ -396,88 +410,118 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
         return state;
     }
 
-
-    private double getQValue(ProblemState s, int action) {
-        return qValuesDAO.getQValue(s.toString(), action);
-    }
-
     /**
      * checks if highest q_value is 0.0 which means that we have never been in this state,
      * so we need to initialize all possible actions to 0.0
      */
-    private void initProblemState(ProblemState s) {
-        int counter = 0;
-        // We have not been in this state then
-        if (qValuesDAO.getActionAmount(s.toString()) == 0) {
+    private int initProblemState(ProblemState s) {
+        int counter = 0; 
+        // 1. get new StateId
+        int stateId = (int)qValuesDAO.insertStateId();
+        // 2. create all Objects and link them to this state
+        for (ABObject obj : s.allObjects) {
+            int objectId = qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape));
+            qValuesDAO.insertState(stateId, objectId);
+        }
+        // 3. Generate actions in q_values if we have no actions initialised yet
+        if (qValuesDAO.getActionAmount(stateId) == 0) {
             for (ABObject obj : s.getShootableObjects()) {
-                qValuesDAO.insertNewAction(0.0, s.toString(), counter);
+                qValuesDAO.insertNewAction(0.0, stateId, counter);
                 counter += 1;
             }
         }
+        return stateId;
     }
 
     /*
     returns reward as highscore difference
      */
-    private double getReward(GameState state) {
-        System.out.println(state);
-        if (state == GameState.WON) {
+    private double getReward(GameStateExtractor.GameState state) {
+        if (state == GameStateExtractor.GameState.WON) {
             GameStateExtractor gameStateExtractor = new GameStateExtractor();
-            System.out.println(state);
             BufferedImage scoreScreenshot = clientActionRobotJava.doScreenShot();
-            System.out.println(state);
-            double reward = gameStateExtractor.getScoreEndGame(scoreScreenshot);
-            System.out.println(reward);
-            return reward;
+            return gameStateExtractor.getScoreEndGame(scoreScreenshot);
         } else {
-            return 0;
+            return -1;
+        }
+    }
+
+    private int getStateId(ProblemState s) {
+        // check if one state has all these objects, return -1 if nothing found
+        // option 1: check for every object in which states its contained and intersect them all
+        boolean first = true;
+        List<String> possibleStates = new ArrayList<>();
+        for (ABObject obj : s.allObjects) {
+            int objectId = qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape));
+            List<String> states = qValuesDAO.getStates(objectId);
+            if (first) {
+                possibleStates.addAll(states);
+                first = false;
+            } else {
+                possibleStates.retainAll(states);
+            }
+            //check every round if still possible states exist
+            if (possibleStates.size() == 0){
+                return initProblemState(s);
+            }
+        }
+        
+        if (possibleStates.size() == 1){
+            // what if our state is subset of this possible state??
+            List<String> posStateObjs = qValuesDAO.getObjects(Integer.valueOf(possibleStates.get(0)));
+            if (posStateObjs.size() == s.allObjects.size()){
+                return Integer.valueOf(possibleStates.get(0));
+            } else {
+                return initProblemState(s);
+            }
+            
+        } else {
+            return initProblemState(s);
         }
     }
 
     /*
     updates q-value in database when new information comes in
      */
-    private void updateQValue(ProblemState from, int action, ProblemState to, double reward, boolean end) {
-        double oldValue = getQValue(from, action);
+    private void updateQValue(int fromId, ActionPair nextAction, ProblemState to, double reward, boolean end) {
+        int action = nextAction.value;
+        int toId = getStateId(to);
+        double oldValue = qValuesDAO.getQValue(fromId, action);
         double newValue;
         if (end) {
             newValue = oldValue + learningRate * (reward - oldValue);
-
         } else {
-            newValue = oldValue + learningRate * (reward + discountFactor * getMaxQValue(to) - oldValue);
+            //possible error: highest Q value could have been different compared to when the action was selected with qValuesDAO.getBestAction
+            newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(toId) - oldValue);
         }
-        qValuesDAO.updateQValue(newValue, from.toString(), action);
-    }
+        qValuesDAO.updateQValue(newValue, fromId, action);
+        qValuesDAO.saveMove(gameId, moveCounter, fromId, action, toId, reward, nextAction.rand, lowTrajectory);
 
-    /*
-    looks for highest value
-     */
-    private double getMaxQValue(ProblemState s) {
-        return qValuesDAO.getHighestQValue(s.toString());
-    }
-
-    /*
-    returns action with maximum q-value for a given state
-     */
-
-    private int getBestAction(ProblemState s) {
-        return qValuesDAO.getBestAction(s.toString());
     }
 
     /*
     Returns next action, with explorationrate as probability of taking a random action
      and else look for the so far best action
      */
-    private int getNextAction(ProblemState problemState) {
+    private ActionPair getNextAction(int stateId) {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
-            return qValuesDAO.getRandomAction(problemState.toString());
+            logger.info("Picked random action");
+            return new ActionPair(true, qValuesDAO.getRandomAction(stateId));
         } else {
-            return getBestAction(problemState);
+            logger.info("Picked currently best available action");
+            return new ActionPair(false, qValuesDAO.getBestAction(stateId));
         }
     }
 
-    private double calculateDistance(Point p1, Point p2) {
-        return Math.sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)));
+    private class ActionPair {
+        public final boolean rand;
+        public final int value;
+
+        public ActionPair(boolean rand, int value) {
+            this.rand = rand;
+            this.value = value;
+        }
+
     }
 }
