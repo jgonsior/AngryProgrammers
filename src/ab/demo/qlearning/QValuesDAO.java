@@ -20,10 +20,10 @@ public interface QValuesDAO {
     @SqlUpdate("CREATE TABLE IF NOT EXISTS moves (ID SERIAL PRIMARY KEY, gameId INT REFERENCES games(ID), birdNumber INT, fromState VARCHAR(8000), action INT, toState VARCHAR(8000), reward DOUBLE PRECISION, randomAction boolean, lowTrajectory boolean)")
     void createAllMovesTable();
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS objects (ID SERIAL UNIQUE, x INT, y INT, type VARCHAR(20), material VARCHAR(20), PRIMARY KEY (x,y,type,material))")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS objects (ID SERIAL, x INT, y INT, type VARCHAR(20), material VARCHAR(20), PRIMARY KEY (x,y,type,material))")
     void createAllObjectsTable();
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS states (stateId INT, objectId INT REFERENCES objects(ID), PRIMARY KEY (stateId, objectId))")
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS states (stateId INT, objectId INT, PRIMARY KEY (stateId, objectId))")
     void createAllStatesTable();
 
     @SqlUpdate("CREATE TABLE IF NOT EXISTS stateIds (ID SERIAL PRIMARY KEY)")
