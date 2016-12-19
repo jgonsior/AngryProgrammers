@@ -358,9 +358,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 difference.removeAll(intersection);
                 if (difference.size() < 3){
                     candidates.add(obj.stateId);
+                    logger.info("Candidate: " + targetObjecIds);
+                    logger.info("difference was: " + difference);
                 }
-                logger.info("Candidate: " + targetObjecIds);
-                logger.info("difference was: " + difference);
+
             }
         }
         if (candidates.size() == 0){
