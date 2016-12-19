@@ -340,20 +340,21 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         List<Integer> candidates = new ArrayList<>();
         logger.info(objectIds);
         for (StateObject obj : stateObjects){
-            Set targetObjecIds = obj.objectIds;
+            Set<Integer> targetObjecIds = obj.objectIds;
             logger.info(targetObjecIds);
 
             // if they are the same, return objectId
             if (objectIds.equals(targetObjecIds)){
                 logger.info("same");
                 return obj.stateId;
-            } else {
-                //else look for symmetric difference
+            } else if (objectIds.size() == targetObjecIds.size()){
+                //else look for symmetric difference if same length 
+                //(we assume the vision can count correctly, just had problems between rect and circle)
                 //@todo: maybe replace this with function from Guava or similar
-                Set<String> intersection = new HashSet<String>(objectIds);
+                Set<Integer> intersection = new HashSet<Integer>(objectIds);
                 intersection.retainAll(targetObjecIds);
 
-                Set<String> difference = new HashSet<String>();
+                Set<Integer> difference = new HashSet<Integer>();
                 difference.addAll(objectIds);
                 difference.addAll(targetObjecIds);
                 difference.removeAll(intersection);
