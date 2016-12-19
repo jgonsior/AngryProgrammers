@@ -338,12 +338,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
         List<StateObject> stateObjects = qValuesDAO.getObjectListByStates();
         List<Integer> candidates = new ArrayList<>();
-        logger.info("Current object IDs: " + objectIds);
         for (StateObject obj : stateObjects){
             Set<Integer> targetObjecIds = obj.objectIds;
 
             // if they are the same, return objectId
             if (objectIds.equals(targetObjecIds)){
+                logger.info("Found known state " + obj.stateId);
                 return obj.stateId;
             } else if (objectIds.size() == targetObjecIds.size()){
                 //else look for symmetric difference if same length 
@@ -358,13 +358,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 difference.removeAll(intersection);
                 if (difference.size() < 3){
                     candidates.add(obj.stateId);
-                    logger.info("Candidate: " + targetObjecIds);
-                    logger.info("difference was: " + difference);
+                    logger.info("Candidate state: " + obj.stateId);
                 }
-
             }
         }
         if (candidates.size() == 0){
+            logger.info("Init new state");
             return this.initProblemState(s);
         } else {
             return candidates.get(0);
