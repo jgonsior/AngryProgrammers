@@ -6,5 +6,5 @@ package ab.demo;
  * @author jgonsior
  */
 public interface Agent {
-    public void run();
+    void run();
 }

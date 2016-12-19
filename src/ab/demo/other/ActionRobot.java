@@ -8,6 +8,7 @@
  *****************************************************************************/
 package ab.demo.other;
 
+import ab.demo.ReinforcementLearningAgentStandalone;
 import ab.server.Proxy;
 import ab.server.proxy.message.ProxyClickMessage;
 import ab.server.proxy.message.ProxyDragMessage;
@@ -18,6 +19,7 @@ import ab.vision.ABObject;
 import ab.vision.ABType;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -36,6 +38,8 @@ import java.util.List;
 public class ActionRobot {
     public static Proxy proxy;
 
+    private static Logger logger = Logger.getLogger(ActionRobot.class);
+
     static {
         if (proxy == null) {
             try {
@@ -43,25 +47,23 @@ public class ActionRobot {
                 proxy = new Proxy() {
                     @Override
                     public void onOpen() {
-                        System.out.println("Client connected");
+                        logger.info("Client connected");
                     }
 
                     @Override
                     public void onClose() {
-                        System.out.println("Client disconnected");
+                        logger.info("Client disconnected");
                     }
                 };
                 proxy.start();
 
-                System.out
-                        .println("Server started on port: " + proxy.getPort());
+                logger.info("Server started on port: " + proxy.getPort());
 
-                System.out.println("Waiting for client to connect");
+                logger.info("Waiting for client to connect");
                 proxy.waitForClients(1);
 
             } catch (UnknownHostException e) {
-
-                e.printStackTrace();
+                logger.error(e);
             }
         }
     }
@@ -87,8 +89,9 @@ public class ActionRobot {
         GameState state = StateUtil.getGameState(proxy);
         while (state == GameState.MAIN_MENU) {
 
-            System.out.println("Go to the Episode Menu");
+            logger.info("Go to the Episode Menu");
             proxy.send(new ProxyClickMessage(305, 277));
+            logger.info("Wait 1000");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -99,9 +102,10 @@ public class ActionRobot {
         }
         // --- go from the episode menu to the level selection menu
         while (state == GameState.EPISODE_MENU) {
-            System.out.println("Select the Poached Eggs Episode");
+            logger.info("Select the Poached Eggs Episode");
             proxy.send(new ProxyClickMessage(150, 300));
             state = StateUtil.getGameState(proxy);
+            logger.info("Wait 1000");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -118,6 +122,8 @@ public class ActionRobot {
 
             proxy.send(new ProxyMouseWheelMessage(-1));
         }
+
+        logger.info("Wait 2000 after fully zooming out");
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -127,9 +133,10 @@ public class ActionRobot {
 
     public static void fullyZoomIn() {
         for (int k = 0; k < 15; k++) {
-
             proxy.send(new ProxyMouseWheelMessage(1));
         }
+
+        logger.info("Wait 2000 after fully zooming in");
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -154,7 +161,7 @@ public class ActionRobot {
         long time = System.currentTimeMillis();
         ActionRobot.doScreenShot();
         time = System.currentTimeMillis() - time;
-        System.out.println(" cost: " + time);
+        logger.info(" cost: " + time);
         time = System.currentTimeMillis();
         int count = 0;
         while (count < 40) {
@@ -162,7 +169,7 @@ public class ActionRobot {
             count++;
         }
 
-        System.out.println(" time to take 40 screenshots"
+        logger.info(" time to take 40 screenshots"
                 + (System.currentTimeMillis() - time));
         System.exit(0);
 
@@ -179,7 +186,7 @@ public class ActionRobot {
     public GameState shootWithStateInfoReturned(List<Shot> csc) {
         ShootingSchema ss = new ShootingSchema();
         ss.shoot(proxy, csc);
-        System.out.println("Shooting Completed");
+        logger.info("Shooting Completed");
         GameState state = StateUtil.getGameState(proxy);
         return state;
 
@@ -194,9 +201,8 @@ public class ActionRobot {
         ShootingSchema ss = new ShootingSchema();
 
         ss.shoot(proxy, csc);
-        System.out.println("Shooting Completed");
-        System.out
-                .println("wait 15 seconds to ensure all objects in the scene static");
+        logger.info("Shooting Completed");
+        logger.info("Wait 15 seconds to ensure all objects in the scene static");
         try {
             Thread.sleep(15000);
         } catch (InterruptedException e) {
@@ -205,16 +211,14 @@ public class ActionRobot {
 
     }
 
-    public void cshoot(Shot shot) {
-        ShootingSchema ss = new ShootingSchema();
-        LinkedList<Shot> shots = new LinkedList<Shot>();
-        shots.add(shot);
-        ss.shoot(proxy, shots);
-        System.out.println("Shooting Completed");
+    public void cshoot(Shot shot) {        
+        this.cFastshoot(shot);
+        logger.info("Shooting Completed");
+
+        logger.info("Wait 10000 after shooting");
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
-
             e.printStackTrace();
         }
     }
@@ -224,16 +228,6 @@ public class ActionRobot {
         LinkedList<Shot> shots = new LinkedList<Shot>();
         shots.add(shot);
         ss.shoot(proxy, shots);
-    }
-
-    public void fshoot(Shot shot) {
-        ShootingSchema ss = new ShootingSchema();
-        LinkedList<Shot> shots = new LinkedList<Shot>();
-        shots.add(shot);
-        ss.shoot(proxy, shots);
-        // System.out.println(" tap time : " + shot.getT_tap());
-        System.out.println("Shooting Completed");
-
     }
 
     public void click() {
