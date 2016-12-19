@@ -340,13 +340,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         List<Integer> candidates = new ArrayList<>();
         logger.info(objectIds);
         for (StateObject obj : stateObjects){
-            Set targetObjecIds = new HashSet();
-            String objIdString = obj.objectIds;
-            String[] parts = objIdString.split(" ");
-
-            for (String part : parts){
-                targetObjecIds.add(part.replaceAll("\\D+", ""));
-            }
+            Set targetObjecIds = obj.objectIds;
             logger.info(targetObjecIds);
 
             // if they are the same, return objectId

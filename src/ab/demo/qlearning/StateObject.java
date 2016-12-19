@@ -1,15 +1,20 @@
 package ab.demo.qlearning;
+import java.util.*;
 
 public class StateObject {
     public int stateId;
-    public String objectIds;
+    public Set<Integer> objectIds;
 
     public StateObject(int stateId, String objectIds) {
-      this.stateId = stateId;
-      this.objectIds = objectIds;
+    	this.objectIds = new HashSet<Integer>();
+      	this.stateId = stateId;
+      	String[] parts = objectIds.replaceAll("[^\\d.]", "").split(" ");
+      	for (String part : parts){
+      		this.objectIds.add(Integer.valueOf(part));
+      	}
    }
 
-   public String toString(){
-   	return String.valueOf(stateId) + " " + String.valueOf(objectIds);
-   }
+    public String toString(){
+   		return String.valueOf(stateId) + " " + String.valueOf(objectIds);
+    }
 }
