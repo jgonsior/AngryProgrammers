@@ -270,6 +270,9 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                 }
                             }
 
+                            logger.info("Birds Left: " + vision.findBirdsMBR().size());
+                            logger.info("Pigs Left: " + vision.findPigsMBR().size());
+
                             if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
                                 // if we have no pigs left or birds, wait for winning screen
                                 while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
