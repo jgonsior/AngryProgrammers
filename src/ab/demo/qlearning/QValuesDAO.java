@@ -43,6 +43,9 @@ public interface QValuesDAO {
     @SqlQuery("SELECT stateId FROM states WHERE objectId=:objectId")
     List<String> getStates(@Bind("objectId") int objectId);
 
+    @SqlQuery("SELECT stateId, array_agg(objectId) FROM states GROUP BY stateId")
+    List<String> getObjectListByStates();
+
     @SqlUpdate("INSERT INTO states (stateId, objectId) VALUES (:stateId, :objectId) ON CONFLICT ON CONSTRAINT states_pkey DO NOTHING")
     @GetGeneratedKeys
     int insertState(@Bind("stateId") int stateId, @Bind("objectId") int objectId);

@@ -330,36 +330,23 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     }
 
     private int getStateId(ProblemState s) {
-        // check if one state has all these objects, return -1 if nothing found
-        // option 1: check for every object in which states its contained and intersect them all
-        boolean first = true;
-        List<String> possibleStates = new ArrayList<>();
+        Set objectIds = new HashSet();
         for (ABObject obj : s.allObjects) {
-            int objectId = qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape));
-            List<String> states = qValuesDAO.getStates(objectId);
-            if (first) {
-                possibleStates.addAll(states);
-                first = false;
-            } else {
-                possibleStates.retainAll(states);
-            }
-            //check every round if still possible states exist
-            if (possibleStates.size() == 0){
-                return initProblemState(s);
-            }
+            objectIds.add(qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape)));
         }
-        
-        if (possibleStates.size() == 1){
-            // what if our state is subset of this possible state??
-            List<String> posStateObjs = qValuesDAO.getObjects(Integer.valueOf(possibleStates.get(0)));
-            if (posStateObjs.size() == s.allObjects.size()){
-                return Integer.valueOf(possibleStates.get(0));
-            } else {
-                return initProblemState(s);
-            }
-            
+
+        List<String> stateObjects = qValuesDAO.getObjectListByStates();
+        List<Integer> candidates = new ArrayList<>();
+        for (String obj : stateObjects){
+            logger.info(obj);
+            // parse objects to set
+            // if same -> return id
+            // else if length same and symmetric_distance < 3 -> kandidat
+        }
+        if (candidates.size() == 0){
+            return this.initProblemState(s);
         } else {
-            return initProblemState(s);
+            return candidates.get(0);
         }
     }
 
