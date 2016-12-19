@@ -138,7 +138,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
         // get all the pigs
         java.util.List<ABObject> pigs = vision.findPigsMBR();
-        int birdsLeft = vision.findBirdsMBR().size();
         GameStateExtractor.GameState state = actionRobot.getState();
 
         if (state != GameStateExtractor.GameState.PLAYING) {
@@ -289,6 +288,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
                             state = actionRobot.getState();
                             double reward = getReward(state);
+                            logger.info("After wait in state: " + state);
+                            logger.info("Reward was " + String.valueOf(reward));
                             if (state == GameStateExtractor.GameState.PLAYING) {
                                 screenshot = ActionRobot.doScreenShot();
                                 vision = new Vision(screenshot);
@@ -311,9 +312,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     }
 
     /**
-     * checks if highest q_value is 0.0 which means that we have never been in this state,
-     * so we need to initialize all possible actions to 0.0
-     *
+     * initializes new stateid, creates all objects and links them to state
+     * and generate all actions from shootable objects
      * @param s
      */
     private int initProblemState(ProblemState s) {
@@ -332,9 +332,17 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 counter += 1;
             }
         }
+        logger.info("state with id " + String.valueOf(stateId) + "initialized");
         return stateId;
     }
 
+    /**
+    * returns stateId from database to given problemstate by object comparison. 
+    * all objects equal -> stateid accepted, if less then 3 objects different but sam length -> candidate
+    * if not even candidate found init new state
+    * @param s
+    * @return stateId
+    */
     private int getStateId(ProblemState s) {
         Set objectIds = new HashSet();
         for (ABObject obj : s.allObjects) {
@@ -363,12 +371,11 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 difference.removeAll(intersection);
                 if (difference.size() < 3){
                     candidates.add(obj.stateId);
-                    logger.info("Candidate state: " + obj.stateId);
+                    logger.info("Candidate state: " + obj.stateId + " (difference: " + difference + ")");
                 }
             }
         }
         if (candidates.size() == 0){
-            logger.info("Init new state");
             return this.initProblemState(s);
         } else {
             //@todo: take the one with lowest number?
@@ -416,6 +423,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      */
     private void updateQValue(int fromId, ActionPair nextAction, ProblemState to, double reward, boolean end) {
         int action = nextAction.value;
+        logger.info("Search for to State");
         int toId = getStateId(to);
         double oldValue = qValuesDAO.getQValue(fromId, action);
         double newValue;
@@ -434,8 +442,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * Returns next action, with explorationrate as probability of taking a random action
      * and else look for the so far best action
      *
-     * @param problemState
-     * @return
+     * @param stateId
+     * @return ActionPair with value and boolean for random decision
      */
     private ActionPair getNextAction(int stateId) {
         int randomValue = randomGenerator.nextInt(100);
