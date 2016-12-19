@@ -8,14 +8,10 @@ public class StateObject {
     public StateObject(int stateId, String objectIds) {
     	this.objectIds = new HashSet<Integer>();
       	this.stateId = stateId;
-      	String[] parts = objectIds.split(" ");
+      	String[] parts = objectIds.split(",");
       	for (String part : parts){
       		System.out.println(part);
       		this.objectIds.add(Integer.valueOf(part));
       	}
    }
-
-    public String toString(){
-   		return String.valueOf(stateId) + " " + String.valueOf(objectIds);
-    }
 }
