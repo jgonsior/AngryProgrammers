@@ -338,11 +338,36 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
         List<StateObject> stateObjects = qValuesDAO.getObjectListByStates();
         List<Integer> candidates = new ArrayList<>();
+        logger.info(objectIds);
         for (StateObject obj : stateObjects){
-            logger.info(obj);
-            // parse objects to set
-            // if same -> return id
-            // else if length same and symmetric_distance < 3 -> kandidat
+            Set targetObjecIds = new HashSet();
+            String objIdString = obj.objectIds;
+            String[] parts = objIdString.split(" ");
+
+            for (String part : parts){
+                targetObjecIds.add(part);
+            }
+            logger.info(targetObjecIds);
+
+            // if they are the same, return objectId
+            if (objectIds.equals(targetObjecIds)){
+                logger.info("same");
+                return obj.stateId;
+            } else {
+                //else look for symmetric difference
+                //@todo: maybe replace this with function from Guava or similar
+                Set<String> intersection = new HashSet<String>(objectIds);
+                intersection.retainAll(targetObjecIds);
+
+                Set<String> difference = new HashSet<String>();
+                difference.addAll(objectIds);
+                difference.addAll(targetObjecIds);
+                difference.removeAll(intersection);
+                if (difference.size() < 3){
+                    candidates.add(obj.stateId);
+                }
+                logger.info("candidate");
+            }
         }
         if (candidates.size() == 0){
             return this.initProblemState(s);
