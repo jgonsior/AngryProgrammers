@@ -8,9 +8,9 @@ public class StateObject {
     public StateObject(int stateId, String objectIds) {
     	this.objectIds = new HashSet<Integer>();
       	this.stateId = stateId;
-      	String[] parts = objectIds.replaceAll("[^\\d.]", "").split(" ");
+      	String[] parts = objectIds.split(" ");
       	for (String part : parts){
-      		this.objectIds.add(Integer.valueOf(part));
+      		this.objectIds.add(Integer.valueOf(part.replaceAll("[^\\d.]", "")));
       	}
    }
 
