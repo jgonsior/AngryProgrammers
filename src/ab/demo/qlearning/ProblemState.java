@@ -48,10 +48,16 @@ public class ProblemState {
      */
     public String toString() {
         String string = "";
+        String y_coordinate;
         for (ABObject object : allObjects) {
+            if (String.valueOf(object.getType()).contains("Bird")){
+               y_coordinate  = "-1";
+            } else {
+                y_coordinate = String.valueOf(((int) object.getCenterY()) / 10);
+            }
             string += " " + object.getType()
                     + " " + String.valueOf(((int) object.getCenterX()) / 10)
-                    + " " + String.valueOf(((int) object.getCenterY()) / 10)
+                    + " " + y_coordinate
                     + " " + String.valueOf(object.shape);
         }
         return string;
