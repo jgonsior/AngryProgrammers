@@ -345,7 +345,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             String[] parts = objIdString.split(" ");
 
             for (String part : parts){
-                targetObjecIds.add(part);
+                targetObjecIds.add(part.replaceAll("\\D+", ""));
             }
             logger.info(targetObjecIds);
 
