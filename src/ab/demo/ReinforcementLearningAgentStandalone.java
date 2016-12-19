@@ -5,6 +5,7 @@ import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.demo.qlearning.ProblemState;
 import ab.demo.qlearning.QValuesDAO;
+import ab.demo.qlearning.StateObject;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.utils.StateUtil;
@@ -335,9 +336,9 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             objectIds.add(qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape)));
         }
 
-        List<String> stateObjects = qValuesDAO.getObjectListByStates();
+        List<StateObject> stateObjects = qValuesDAO.getObjectListByStates();
         List<Integer> candidates = new ArrayList<>();
-        for (String obj : stateObjects){
+        for (StateObject obj : stateObjects){
             logger.info(obj);
             // parse objects to set
             // if same -> return id
