@@ -256,6 +256,8 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                     screenshot = ActionRobot.doScreenShot();
                                     vision = new Vision(screenshot);
                                     List<ABObject> bnbAfter = getBlocksAndBirds(vision);
+                                    logger.info("bnbBefore: " + bnbBefore);
+                                    logger.info("bnbAfter: " + bnbAfter);
                                     if (bnbBefore.equals(bnbAfter)) {
                                         break;
                                     } else {
