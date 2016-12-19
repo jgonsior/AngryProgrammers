@@ -10,7 +10,8 @@ public class StateObject {
       	this.stateId = stateId;
       	String[] parts = objectIds.split(" ");
       	for (String part : parts){
-      		this.objectIds.add(Integer.valueOf(part.replaceAll("[^\\d.]", "")));
+      		System.out.println(part);
+      		this.objectIds.add(Integer.valueOf(part));
       	}
    }
 
