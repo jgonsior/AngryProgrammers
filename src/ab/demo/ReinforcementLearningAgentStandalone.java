@@ -276,12 +276,29 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                             logger.info("Birds Left: " + vision.findBirdsMBR().size());
                             logger.info("Pigs Left: " + vision.findPigsMBR().size());
 
+                            boolean gameOver = false;
+
                             if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
+                                gameOver = true;
                                 // if we have no pigs left or birds, wait for winning screen
                                 while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                     try {
-                                        logger.info("Wait 1500");
-                                        Thread.sleep(1500);
+                                        logger.info("Wait 2500, right now in state " + actionRobot.getState());
+                                        Thread.sleep(2500);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+
+
+                            
+                            // should be redundant but somehow we are sometimes after above wait in playing state 
+                            if (gameOver && actionRobot.getState()==GameStateExtractor.GameState.PLAYING){
+                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
+                                    try {
+                                        logger.info("Wait redundant 2500, right now in state " + actionRobot.getState());
+                                        Thread.sleep(2500);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }
@@ -289,11 +306,12 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
                             }
 
+
                             state = actionRobot.getState();
                             double reward = getReward(state);
                             logger.info("After wait in state: " + state);
                             logger.info("Reward was " + String.valueOf(reward));
-                            if (state == GameStateExtractor.GameState.PLAYING) {
+                            if (state == GameStateExtractor.GameState.PLAYING && !gameOver) {
                                 screenshot = ActionRobot.doScreenShot();
                                 vision = new Vision(screenshot);
                                 java.util.List<Point> traj = vision.findTrajPoints();
