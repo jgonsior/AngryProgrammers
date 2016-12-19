@@ -44,8 +44,8 @@ public interface QValuesDAO {
     @SqlQuery("SELECT action FROM q_values WHERE state=:state ORDER BY RANDOM() LIMIT 1;")
     int getRandomAction(@Bind("state") String state);
 
-    @SqlQuery("SELECT Count(action) as amount FROM q_values WHERE state=:state;")
-    int getActionAmount(@Bind("state") String state);
+    @SqlQuery("SELECT COUNT(action) FROM q_values WHERE state=:state;")
+    int getActionCount(@Bind("state") String state);
 
     /**
      * closes the connection

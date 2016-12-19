@@ -408,7 +408,7 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
     private void initProblemState(ProblemState s) {
         int counter = 0;
         // We have not been in this state then
-        if (qValuesDAO.getActionAmount(s.toString()) == 0) {
+        if (qValuesDAO.getActionCount(s.toString()) == 0) {
             for (ABObject obj : s.getShootableObjects()) {
                 qValuesDAO.insertNewAction(0.0, s.toString(), counter);
                 counter += 1;

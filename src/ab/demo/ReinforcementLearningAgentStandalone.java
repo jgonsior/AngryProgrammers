@@ -24,19 +24,19 @@ import java.util.List;
 public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
     private static Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
-    public int currentLevel = 1;
-    private TrajectoryPlanner trajectoryPlanner;
-    //Wrapper of the communicating messages
+
     private ActionRobot actionRobot;
+
     private double discountFactor = 0.9;
     private double learningRate = 0.1;
     private double explorationRate = 0.7;
+
     private boolean firstShot;
+
     private Random randomGenerator;
+
     private QValuesDAO qValuesDAO;
-    // id which will be generated randomly every lvl that we can connect moves to one game
-    private int gameId;
-    private int moveCounter;
+
     private boolean lowTrajectory = false;
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
@@ -47,7 +47,6 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         LoggingHandler.initConsoleLog();
 
         this.actionRobot = new ActionRobot();
-        this.trajectoryPlanner = new TrajectoryPlanner();
         this.randomGenerator = new Random();
         this.firstShot = true;
 
@@ -56,36 +55,43 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
-    // run the client
     public void run() {
+        int currentLevel = 1;
         actionRobot.loadLevel(currentLevel);
-        gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        TrajectoryPlanner trajectoryPlanner = new TrajectoryPlanner();
+        int moveCounter = 0;
+        int score;
+
+        // id which will be generated randomly every lvl that we can connect moves to one game
+        int gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+
+        //play until the server crashes…
         while (true) {
-            GameStateExtractor.GameState state = solve();
-            moveCounter = moveCounter + 1;
+            GameStateExtractor.GameState state = this.solve(trajectoryPlanner);
+            moveCounter++;
+
             if (state == GameStateExtractor.GameState.WON) {
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error("Sleep thread was being interrupted" + e);
                 }
-                int score = StateUtil.getScore(ActionRobot.proxy);
-                if (!scores.containsKey(currentLevel))
+
+                score = StateUtil.getScore(ActionRobot.proxy);
+
+                // update the local list of highscores
+                if (!scores.containsKey(currentLevel)) {
                     scores.put(currentLevel, score);
-                else {
+                } else {
                     if (scores.get(currentLevel) < score)
                         scores.put(currentLevel, score);
                 }
-                int totalScore = 0;
-                for (Integer key : scores.keySet()) {
 
-                    totalScore += scores.get(key);
-                    logger.info(" Level " + key
-                            + " Score: " + scores.get(key) + " ");
-                }
-                logger.info("Total Score: " + totalScore);
-                actionRobot.loadLevel(++currentLevel);
-                // make a new trajectory planner whenever a new level is entered
+                this.logScores();
+
+                currentLevel++;
+                actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
+                // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
 
                 // first shot on this level, try high shot first
@@ -94,7 +100,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 moveCounter = 0;
             } else if (state == GameStateExtractor.GameState.LOST) {
-                logger.info("Restart");
+                logger.info("Restart level");
                 actionRobot.restartLevel();
                 gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 moveCounter = 0;
@@ -118,188 +124,208 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
     }
 
-    public GameStateExtractor.GameState solve() {
-        // capture Image
-        BufferedImage screenshot = ActionRobot.doScreenShot();
-        // process image
-        Vision vision = new Vision(screenshot);
-        // find the slingshot
-        Rectangle sling = vision.findSlingshotMBR();
+    /**
+     * logs the current higscores for each level
+     */
+    private void logScores() {
+        int totalScore = 0;
 
-        // confirm the slingshot
-        while (sling == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-            logger.warn("No slingshot detected. Please remove pop up or zoom out");
-            ActionRobot.fullyZoomOut();
-            screenshot = ActionRobot.doScreenShot();
-            vision = new Vision(screenshot);
-            sling = vision.findSlingshotMBR();
-            ActionRobot.skipPopUp();
+        for (Integer key : scores.keySet()) {
+            totalScore += scores.get(key);
+            logger.info(" Level " + key
+                    + " Score: " + scores.get(key) + " ");
         }
+        logger.info("Total Score: " + totalScore);
+    }
+
+    public GameStateExtractor.GameState solve(TrajectoryPlanner trajectoryPlanner) {
+        BufferedImage screenshot = ActionRobot.doScreenShot();
+        Vision vision = new Vision(screenshot);
+
+        Rectangle slingshot = this.findSlingshot(vision, screenshot);
+
         // get all the pigs
-        java.util.List<ABObject> pigs = vision.findPigsMBR();
-        int birdsLeft = vision.findBirdsMBR().size();
+        List<ABObject> pigs = vision.findPigsMBR();
+
         GameStateExtractor.GameState state = actionRobot.getState();
 
         if (state != GameStateExtractor.GameState.PLAYING) {
-            logger.warn("Accidentally in solving method without being in PLAYINg state");
+            logger.warn("Accidentally in solving method without being in PLAYING state");
             return state;
         }
 
-        // if there is a sling, then play, otherwise just skip.
-        if (sling != null) {
 
-            if (!pigs.isEmpty()) {
+        if (!pigs.isEmpty()) {
 
-                Point releasePoint = null;
-                Shot shot = new Shot();
-                int dx, dy;
+            Point releasePoint = null;
+            Shot shot;
+            int dx, dy;
 
-                ProblemState currentState = new ProblemState(vision);
-                initProblemState(currentState);
+            ProblemState currentState = new ProblemState(vision);
+            initProblemState(currentState);
 
-                // get Next best Action
-                ActionPair nextActionPair = getNextAction(currentState);
-                int nextAction = nextActionPair.value;
+            // get Next best Action
+            ActionPair nextActionPair = getNextAction(currentState);
+            int nextAction = nextActionPair.value;
 
-                java.util.List<ABObject> shootables = currentState.getShootableObjects();
-                if (shootables.size() - 1 > nextAction) {
-                    nextAction = shootables.size() - 1;
-                }
-                ABObject obj = shootables.get(nextAction);
-                Point _tpt = obj.getCenter();
+            List<ABObject> shootableObjects = currentState.getShootableObjects();
 
-                // estimate the trajectory
-                ArrayList<Point> pts = trajectoryPlanner.estimateLaunchPoint(sling, _tpt);
 
-                // do a high shot when entering a level to find an accurate velocity
-                if (firstShot && pts.size() > 1) {
+            //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
+            if (shootableObjects.size() - 1 > nextAction) {
+                nextAction = shootableObjects.size() - 1;
+            }
+
+            ABObject targetObject = shootableObjects.get(nextAction);
+            Point targetPoint = targetObject.getCenter();
+
+            // estimate the trajectory
+            ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
+
+            // do a high shot when entering a level to find an accurate velocity
+            if (firstShot && estimateLaunchPoints.size() > 1) {
+                lowTrajectory = false;
+                releasePoint = estimateLaunchPoints.get(1);
+            } else if (estimateLaunchPoints.size() == 1) {
+                // TODO: find out if low or high trajectory????
+                releasePoint = estimateLaunchPoints.get(0);
+            } else if (estimateLaunchPoints.size() == 2) {
+                // randomly choose between the trajectories, with a 1 in
+                // 6 chance of choosing the high one
+                if (randomGenerator.nextInt(6) == 0) {
                     lowTrajectory = false;
-                    releasePoint = pts.get(1);
-                } else if (pts.size() == 1) {
-                    // TODO: find out if low or high trajectory????
-                    releasePoint = pts.get(0);
-                } else if (pts.size() == 2) {
-                    // randomly choose between the trajectories, with a 1 in
-                    // 6 chance of choosing the high one
-                    if (randomGenerator.nextInt(6) == 0) {
-                        lowTrajectory = false;
-                        releasePoint = pts.get(1);
-                    } else {
-                        lowTrajectory = true;
-                        releasePoint = pts.get(0);
-                    }
-                } else if (pts.isEmpty()) {
-                    logger.info("No release point found for the target");
-                    logger.info("Try a shot with 45 degree");
-                    releasePoint = trajectoryPlanner.findReleasePoint(sling, Math.PI / 4);
-                }
-
-                // Get the reference point
-                Point refPoint = trajectoryPlanner.getReferencePoint(sling);
-
-
-                //Calculate the tapping time according the bird type
-                if (releasePoint != null) {
-                    double releaseAngle = trajectoryPlanner.getReleaseAngle(sling,
-                            releasePoint);
-                    logger.info("Release Point: " + releasePoint);
-                    logger.info("Release Angle: "
-                            + Math.toDegrees(releaseAngle));
-                    int tapInterval = 0;
-                    switch (actionRobot.getBirdTypeOnSling()) {
-
-                        case RedBird:
-                            tapInterval = 0;
-                            break;               // start of trajectory
-                        case YellowBird:
-                            tapInterval = 65 + randomGenerator.nextInt(25);
-                            break; // 65-90% of the way
-                        case WhiteBird:
-                            tapInterval = 70 + randomGenerator.nextInt(20);
-                            break; // 70-90% of the way
-                        case BlackBird:
-                            tapInterval = 70 + randomGenerator.nextInt(20);
-                            break; // 70-90% of the way
-                        case BlueBird:
-                            tapInterval = 65 + randomGenerator.nextInt(20);
-                            break; // 65-85% of the way
-                        default:
-                            tapInterval = 60;
-                    }
-
-                    int tapTime = trajectoryPlanner.getTapTime(sling, releasePoint, _tpt, tapInterval);
-                    dx = (int) releasePoint.getX() - refPoint.x;
-                    dy = (int) releasePoint.getY() - refPoint.y;
-                    shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
+                    releasePoint = estimateLaunchPoints.get(1);
                 } else {
-                    logger.error("No Release Point Found");
-                    return state;
+                    lowTrajectory = true;
+                    releasePoint = estimateLaunchPoints.get(0);
+                }
+            } else if (estimateLaunchPoints.isEmpty()) {
+                logger.info("No release point found for the target");
+                logger.info("Try a shot with 45 degree");
+                releasePoint = trajectoryPlanner.findReleasePoint(slingshot, Math.PI / 4);
+            }
+
+            // Get the reference point
+            Point refPoint = trajectoryPlanner.getReferencePoint(slingshot);
+
+
+            //Calculate the tapping time according the bird type
+            if (releasePoint != null) {
+                double releaseAngle = trajectoryPlanner.getReleaseAngle(slingshot,
+                        releasePoint);
+                logger.info("Release Point: " + releasePoint);
+                logger.info("Release Angle: "
+                        + Math.toDegrees(releaseAngle));
+                int tapInterval = 0;
+                switch (actionRobot.getBirdTypeOnSling()) {
+
+                    case RedBird:
+                        tapInterval = 0;
+                        break;               // start of trajectory
+                    case YellowBird:
+                        tapInterval = 65 + randomGenerator.nextInt(25);
+                        break; // 65-90% of the way
+                    case WhiteBird:
+                        tapInterval = 70 + randomGenerator.nextInt(20);
+                        break; // 70-90% of the way
+                    case BlackBird:
+                        tapInterval = 70 + randomGenerator.nextInt(20);
+                        break; // 70-90% of the way
+                    case BlueBird:
+                        tapInterval = 65 + randomGenerator.nextInt(20);
+                        break; // 65-85% of the way
+                    default:
+                        tapInterval = 60;
                 }
 
+                int tapTime = trajectoryPlanner.getTapTime(slingshot, releasePoint, targetPoint, tapInterval);
+                dx = (int) releasePoint.getX() - refPoint.x;
+                dy = (int) releasePoint.getY() - refPoint.y;
+                shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
+            } else {
+                logger.error("No Release Point Found");
+                return state;
+            }
 
-                // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 
-                ActionRobot.fullyZoomOut();
-                BufferedImage screenshotBefore = ActionRobot.doScreenShot();
-                Vision visionBefore = new Vision(screenshotBefore);
-                List<ABObject> bnbBefore = getBlocksAndBirds(visionBefore);
-                Rectangle _sling = visionBefore.findSlingshotMBR();
-                if (_sling != null) {
-                    double scale_diff = Math.pow((sling.width - _sling.width), 2) + Math.pow((sling.height - _sling.height), 2);
-                    if (scale_diff < 25) {
-                        if (dx < 0) {
-                            actionRobot.cshoot(shot);
-                            // make screenshots as long as 2 following screenshots are equal
+            // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
+
+            ActionRobot.fullyZoomOut();
+            BufferedImage screenshotBefore = ActionRobot.doScreenShot();
+            Vision visionBefore = new Vision(screenshotBefore);
+            List<ABObject> bnbBefore = getBlocksAndBirds(visionBefore);
+            Rectangle _sling = visionBefore.findSlingshotMBR();
+            if (_sling != null) {
+                double scale_diff = Math.pow((slingshot.width - _sling.width), 2) + Math.pow((slingshot.height - _sling.height), 2);
+                if (scale_diff < 25) {
+                    if (dx < 0) {
+                        actionRobot.cshoot(shot);
+                        // make screenshots as long as 2 following screenshots are equal
+                        while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
+                            try {
+                                Thread.sleep(500);
+                                screenshot = ActionRobot.doScreenShot();
+                                vision = new Vision(screenshot);
+                                List<ABObject> bnbAfter = getBlocksAndBirds(vision);
+                                if (bnbBefore.equals(bnbAfter)) {
+                                    break;
+                                } else {
+                                    bnbBefore = bnbAfter;
+                                }
+
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
+                            // if we have no pigs left or birds, wait for winning screen
                             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                 try {
-                                    Thread.sleep(500);
-                                    screenshot = ActionRobot.doScreenShot();
-                                    vision = new Vision(screenshot);
-                                    List<ABObject> bnbAfter = getBlocksAndBirds(vision);
-                                    if (bnbBefore.equals(bnbAfter)) {
-                                        break;
-                                    } else {
-                                        bnbBefore = bnbAfter;
-                                    }
-
+                                    Thread.sleep(1500);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
                             }
 
-                            if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
-                                // if we have no pigs left or birds, wait for winning screen
-                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-                                    try {
-                                        Thread.sleep(1500);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-
-                            }
-
-                            state = actionRobot.getState();
-                            double reward = getReward(state);
-                            if (state == GameStateExtractor.GameState.PLAYING) {
-                                screenshot = ActionRobot.doScreenShot();
-                                vision = new Vision(screenshot);
-                                java.util.List<Point> traj = vision.findTrajPoints();
-                                trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
-                                firstShot = false;
-                                updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
-                            } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
-                                updateQValue(currentState, nextActionPair, currentState, reward, true);
-                            }
                         }
-                    } else
-                        logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
-                } else
-                    logger.warn("no sling detected, can not execute the shot, will re-segement the image");
-            }
 
+                        state = actionRobot.getState();
+                        double reward = getReward(state);
+                        if (state == GameStateExtractor.GameState.PLAYING) {
+                            screenshot = ActionRobot.doScreenShot();
+                            vision = new Vision(screenshot);
+                            java.util.List<Point> traj = vision.findTrajPoints();
+                            trajectoryPlanner.adjustTrajectory(traj, slingshot, releasePoint);
+                            firstShot = false;
+                            updateQValue(currentState, nextActionPair, new ProblemState(vision), reward, false);
+                        } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
+                            updateQValue(currentState, nextActionPair, currentState, reward, true);
+                        }
+                    }
+                } else
+                    logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
+            } else
+                logger.warn("no sling detected, can not execute the shot, will re-segement the image");
         }
+
+
         return state;
+    }
+
+    private Rectangle findSlingshot(Vision vision, BufferedImage screenshot) {
+        Rectangle slingshot = vision.findSlingshotMBR();
+
+        // confirm the slingshot
+        while (slingshot == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
+            logger.warn("No slingshot detected. Please remove pop up or zoom out");
+            ActionRobot.fullyZoomOut();
+            screenshot = ActionRobot.doScreenShot();
+            vision = new Vision(screenshot);
+            slingshot = vision.findSlingshotMBR();
+            ActionRobot.skipPopUp();
+        }
+        return slingshot;
     }
 
     /**
@@ -311,7 +337,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
     private void initProblemState(ProblemState s) {
         int counter = 0;
         // We have not been in this state then
-        if (qValuesDAO.getActionAmount(s.toString()) == 0) {
+        if (qValuesDAO.getActionCount(s.toString()) == 0) {
             for (ABObject obj : s.getShootableObjects()) {
                 qValuesDAO.insertNewAction(0.0, s.toString(), counter);
                 counter += 1;
