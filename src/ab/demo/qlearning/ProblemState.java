@@ -73,15 +73,15 @@ public class ProblemState {
         shootableObjects.addAll(vison.findPigsRealShape());
         // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {
-            double x1 = object.getCenterX();
-            double y1 = object.getCenterY();
+            int x1 = (int)object.getCenterX()/10;
+            int y1 = (int)object.getCenterY()/10;
             innerloop:
             for (ABObject neighbor : allObjects) {
                 if (!object.equals(neighbor)) {
-                    double x2 = neighbor.getCenterX();
-                    double y2 = neighbor.getCenterY();
+                    int x2 = (int)neighbor.getCenterX()/10;
+                    int y2 = (int)neighbor.getCenterY()/10;
                     if ((x2 < x1) && (y2 < y1)) {
-                        if (((x1 - x2) < 20) && ((y1 - y2) < 20)) {
+                        if (((x1 - x2) < 2) && ((y1 - y2) < 2)) {
                             shootableObjects.remove(object);
                             break innerloop;
                         }
