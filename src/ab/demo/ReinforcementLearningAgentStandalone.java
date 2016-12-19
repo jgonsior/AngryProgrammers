@@ -253,6 +253,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                             // make screenshots as long as 2 following screenshots are equal
                             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                 try {
+                                    logger.info("Wait 500");
                                     Thread.sleep(500);
                                     screenshot = ActionRobot.doScreenShot();
                                     vision = new Vision(screenshot);
@@ -277,6 +278,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                                 // if we have no pigs left or birds, wait for winning screen
                                 while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                                     try {
+                                        logger.info("Wait 1500");
                                         Thread.sleep(1500);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
@@ -369,6 +371,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
             logger.info("Init new state");
             return this.initProblemState(s);
         } else {
+            //@todo: take the one with lowest number?
             return candidates.get(0);
         }
     }
