@@ -58,7 +58,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     // a standalone implementation of the Reinforcement Agent
     public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO) {
         LoggingHandler.initFileLog();
-        LoggingHandler.initConsoleLog();
 
         this.actionRobot = new ActionRobot();
         this.randomGenerator = new Random();
@@ -136,24 +135,31 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         //one cycle means one shot was being executed
         while (true) {
+            logger.info("Next iteration of the allmighty while loop");
+
             this.updateCurrentVision();
             this.updateCurrentProblemState();
-            currentGameState = actionRobot.getState();
 
+            currentGameState = actionRobot.getState();
             previousProblemState = currentProblemState;
+
             if (this.currentGameState == GameStateExtractor.GameState.PLAYING) {
+
+                // früher wurde hier erst die slingshot confirmed!
+                Rectangle slingshot = this.findSlingshot();
+
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
+
                 if (!pigs.isEmpty()) {
-                    System.out.println("ready for next shot");
+                    this.updateCurrentVision();
+
                     // get next action
                     ActionPair nextActionPair = getNextAction();
 
-                    this.updateCurrentVision();
-
                     List<ABObject> blocksAndBirdsBeforeShot = getBlocksAndBirds(currentVision);
 
-                    HashMap<Rectangle, Point> slingshotAndReleasePoint = this.shootOneBird(this.calculateTargetPointFromActionPair(nextActionPair));
+                    Point releasePoint = this.shootOneBird(this.calculateTargetPointFromActionPair(nextActionPair), slingshot);
 
                     logger.info("done shooting");
 
@@ -165,8 +171,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     //save the information about the current zooming for the next shot
                     //could be deleted if we don't zoom anymore
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
-                    Rectangle slingshot = (Rectangle) slingshotAndReleasePoint.keySet().toArray()[0];
-                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, slingshotAndReleasePoint.get(slingshot));
+                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
 
 
 
@@ -239,8 +244,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
-            } else {
-                logger.info("I'm confused");
             }
         }
     }
@@ -265,8 +268,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void updateCurrentProblemState() {
-        ProblemState problemState = new ProblemState(currentVision);
-        this.initProblemState(problemState);
+        ProblemState problemState = new ProblemState(currentVision, actionRobot);
+        this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
         this.currentProblemState = problemState;
     }
 
@@ -365,9 +368,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      *
      * @param targetPoint
      */
-    public HashMap<Rectangle, Point> shootOneBird(Point targetPoint) {
+    public Point shootOneBird(Point targetPoint, Rectangle slingshot) {
 
-        Rectangle slingshot = this.findSlingshot();
+        ABObject pig = currentVision.findPigsMBR().get(0);
+        targetPoint = pig.getCenter();
 
         Point releasePoint = this.calculateMaybeTheReleasePoint(slingshot, targetPoint);
 
@@ -390,6 +394,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         ActionRobot.fullyZoomOut();
 
+        this.updateCurrentVision();
+
         Rectangle _sling = currentVision.findSlingshotMBR();
 
         if (_sling != null) {
@@ -405,9 +411,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             logger.warn("no sling detected, can not execute the shot, will re-segement the image");
         }
 
-        HashMap<Rectangle, Point> result = new HashMap<>();
-        result.put(slingshot, releasePoint);
-        return result;
+        return releasePoint;
     }
 
     private Rectangle findSlingshot() {
@@ -430,7 +434,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      *
      * @param problemState
      */
-    private void initProblemState(ProblemState problemState) {
+    private void insertsPossibleActionsForProblemStateIntoDatabase(ProblemState problemState) {
         int counter = 0;
         // We have not been in this state then
         if (qValuesDAO.getActionCount(problemState.toString()) == 0) {

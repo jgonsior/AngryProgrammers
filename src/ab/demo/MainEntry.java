@@ -27,7 +27,9 @@ public class MainEntry {
     private static final Logger logger = Logger.getLogger(MainEntry.class);
 
     public static void main(String args[]) {
-        logger.setAdditivity(false);
+
+        LoggingHandler.initConsoleLog();
+        LoggingHandler.initFileLog();
 
         args = new String[]{"-su"};
         Options options = new Options();
@@ -41,10 +43,6 @@ public class MainEntry {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
         Agent agent;
-
-        LoggingHandler.initConsoleLog();
-        LoggingHandler.initFileLog();
-
 
         Properties properties = new Properties();
         InputStream configInputStream = null;

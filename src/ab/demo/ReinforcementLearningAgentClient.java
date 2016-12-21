@@ -75,7 +75,6 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
 
     public ReinforcementLearningAgentClient(String ip, int id) {
         LoggingHandler.initFileLog();
-        LoggingHandler.initConsoleLog();
 
         clientActionRobotJava = new ClientActionRobotJava(ip);
         trajectoryPlanner = new TrajectoryPlanner();
@@ -253,7 +252,7 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
         // process image
         Vision vision = new Vision(screenshot);
 
-        ProblemState problemTestState = new ProblemState(vision);
+        ProblemState problemTestState = new ProblemState(vision, null);
         logger.info(problemTestState);
 
         Rectangle sling = vision.findSlingshotMBR();
@@ -289,7 +288,7 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
 
 
                 //@todo is this right?
-                ProblemState currentState = new ProblemState(vision);
+                ProblemState currentState = new ProblemState(vision, null);
 
                 // get Next best Action
                 int nextAction = getNextAction(currentState);
@@ -381,7 +380,7 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
                                 trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
                                 firstShot = false;
                                 // get our new "to" State to update old q_value
-                                updateQValue(currentState, nextAction, new ProblemState(vision), reward, false);
+                                updateQValue(currentState, nextAction, new ProblemState(vision, null), reward, false);
                             } else if (state == GameState.WON || state == GameState.LOST) {
                                 updateQValue(currentState, nextAction, currentState, reward, true);
                             }

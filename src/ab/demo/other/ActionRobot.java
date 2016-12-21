@@ -37,7 +37,7 @@ import java.util.List;
 public class ActionRobot {
     public static Proxy proxy;
 
-    private static Logger logger = Logger.getLogger(ActionRobot.class);
+    private static final Logger logger = Logger.getLogger(ActionRobot.class);
 
     static {
         if (proxy == null) {
