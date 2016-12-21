@@ -13,6 +13,7 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -21,9 +22,9 @@ import java.util.List;
 /**
  * @author jgonsior
  */
-public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
+public class ReinforcementLearningAgentStandalone implements Agent {
 
-    private static Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
+    private static final Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
 
     private ActionRobot actionRobot;
 
@@ -73,7 +74,9 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * make screenshots as long as 2 following screenshots are equal
      * @param blocksAndBirdsBefore
      */
-    private void waitUntilDone(List<ABObject> blocksAndBirdsBefore) {
+    private void waitUntilBlocksHaveBeenFallenDown(List<ABObject> blocksAndBirdsBefore) {
+        this.updateCurrentVision();
+
         List<ABObject> blocksAndBirdsAfter = getBlocksAndBirds(currentVision);
 
         while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndBirdsBefore.equals(blocksAndBirdsAfter)) {
@@ -107,6 +110,18 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         }
     }
 
+    private void displayCurrentScreenshot() {
+        JDialog frame = new JDialog();
+        frame.setModal(true);
+        frame.getContentPane().setLayout(new FlowLayout());
+        frame.getContentPane().add(new JLabel(new ImageIcon(currentScreenshot)));
+        frame.pack();
+        frame.setVisible(true);
+        //frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+
+    }
+
     public void run() {
         currentLevel = 1;
         actionRobot.loadLevel(currentLevel);
@@ -130,6 +145,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
                 if (!pigs.isEmpty()) {
+                    System.out.println("ready for next shot");
                     // get next action
                     ActionPair nextActionPair = getNextAction();
 
@@ -137,11 +153,22 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
 
                     List<ABObject> blocksAndBirdsBeforeShot = getBlocksAndBirds(currentVision);
 
-                    this.shootOneBird(this.calculateTargetPointFromActionPair(nextActionPair));
+                    HashMap<Rectangle, Point> slingshotAndReleasePoint = this.shootOneBird(this.calculateTargetPointFromActionPair(nextActionPair));
 
-                    this.waitUntilDone(blocksAndBirdsBeforeShot);
+                    logger.info("done shooting");
 
-                    this.checkIfDonePlayingAndWaitForWinningScreen();
+                    this.waitUntilBlocksHaveBeenFallenDown(blocksAndBirdsBeforeShot);
+
+                    logger.info("done waiting for blocks to fall down");
+
+
+                    //save the information about the current zooming for the next shot
+                    //could be deleted if we don't zoom anymore
+                    List<Point> trajectoryPoints = currentVision.findTrajPoints();
+                    Rectangle slingshot = (Rectangle) slingshotAndReleasePoint.keySet().toArray()[0];
+                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, slingshotAndReleasePoint.get(slingshot));
+
+
 
                     //update currentGameState
                     currentGameState = actionRobot.getState();
@@ -149,11 +176,14 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
                     this.updateCurrentProblemState();
 
                     currentReward = getReward(currentGameState);
+
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, moveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, moveCounter);
                     }
+
+                    this.checkIfDonePlayingAndWaitForWinningScreen();
 
                     moveCounter++;
                 } else {
@@ -335,7 +365,7 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      *
      * @param targetPoint
      */
-    public void shootOneBird(Point targetPoint) {
+    public HashMap<Rectangle, Point> shootOneBird(Point targetPoint) {
 
         Rectangle slingshot = this.findSlingshot();
 
@@ -374,6 +404,10 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         } else {
             logger.warn("no sling detected, can not execute the shot, will re-segement the image");
         }
+
+        HashMap<Rectangle, Point> result = new HashMap<>();
+        result.put(slingshot, releasePoint);
+        return result;
     }
 
     private Rectangle findSlingshot() {

@@ -8,7 +8,6 @@
  *****************************************************************************/
 package ab.demo.other;
 
-import ab.demo.ReinforcementLearningAgentStandalone;
 import ab.server.Proxy;
 import ab.server.proxy.message.ProxyClickMessage;
 import ab.server.proxy.message.ProxyDragMessage;
@@ -115,6 +114,8 @@ public class ActionRobot {
             state = StateUtil.getGameState(proxy);
         }
 
+        logger.info("selected level");
+
     }
 
     public static void fullyZoomOut() {
@@ -215,9 +216,9 @@ public class ActionRobot {
         this.cFastshoot(shot);
         logger.info("Shooting Completed");
 
-        logger.info("Wait 10000 after shooting");
+        logger.info("Wait 5000 after shooting");
         try {
-            Thread.sleep(10000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
