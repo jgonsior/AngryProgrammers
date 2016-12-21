@@ -216,9 +216,9 @@ public class ActionRobot {
         this.cFastshoot(shot);
         logger.info("Shooting Completed");
 
-        logger.info("Wait 5000 after shooting");
+        logger.info("Wait 500 after shooting");
         try {
-            Thread.sleep(5000);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

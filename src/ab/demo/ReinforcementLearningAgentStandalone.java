@@ -76,10 +76,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * make screenshots as long as 2 following screenshots are equal
      * @param blocksAndPigsBefore
      */
-    private void waitUntilBlocksHaveBeenFallenDown(Set<ABObject> blocksAndPigsBefore) {
+    private void waitUntilBlocksHaveBeenFallenDown(Set<Object> blocksAndPigsBefore) {
         this.updateCurrentVision();
 
-        Set<ABObject> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+        Set<Object> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+        saveCurrentScreenshot();
+        logger.info("bef:" + blocksAndPigsBefore);
+        logger.info("aftd" + blocksAndPigsAfter);
 
         while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {
@@ -93,9 +96,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 blocksAndPigsAfter = getBlocksAndPigs(currentVision);
 
-                /*saveCurrentScreenshot();
+                saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
-                logger.info("aftd" + blocksAndPigsAfter);*/
+                logger.info("aftd" + blocksAndPigsAfter);
 
 
             } catch (InterruptedException e) {
@@ -162,7 +165,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
             if (currentGameState == GameStateExtractor.GameState.PLAYING) {
 
-                // früher wurde hier erst die slingshot confirmed!
                 Rectangle slingshot = this.findSlingshot();
 
                 // check if there are still pigs available
@@ -174,13 +176,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     // get next action
                     ActionPair nextActionPair = getNextAction();
 
-                    Set<ABObject> blocksAndPigsBeforShot = getBlocksAndPigs(currentVision);
+                    Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
 
                     Point releasePoint = shootOneBird(calculateTargetPointFromActionPair(nextActionPair), slingshot);
 
                     logger.info("done shooting");
 
-                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforShot);
+                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot);
 
                     logger.info("done waiting for blocks to fall down");
 
@@ -402,7 +404,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         int dx = (int) releasePoint.getX() - referencePoint.x;
         int dy = (int) releasePoint.getY() - referencePoint.y;
 
-        Shot shot = new Shot(referencePoint.x, referencePoint.y, dx, dy, 0, tappingTime);
+        Shot shot = new Shot(referencePoint.x, referencePoint.y, dx, dy, 1, tappingTime);
 
 
         // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
@@ -466,10 +468,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * @param vision
      * @return List of current birds and blocks
      */
-    private Set<ABObject> getBlocksAndPigs(Vision vision) {
-        Set<ABObject> allObjs = new HashSet<>();
+    private Set<Object> getBlocksAndPigs(Vision vision) {
+        Set<Object> allObjs = new HashSet<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
+        allObjs.addAll(vision.findTrajPoints());
         return allObjs;
     }
 
