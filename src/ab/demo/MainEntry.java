@@ -97,7 +97,8 @@ public class MainEntry {
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveAgent();
             } else if (cmd.hasOption("competition")) {
-                agent = new ReinforcementLearningAgentClient();
+                System.out.println("We haven't implemented a competition ready agent yet.");
+                return;
             } else {
                 System.out.println("Please specify which agent we should be running.");
                 HelpFormatter formatter = new HelpFormatter();

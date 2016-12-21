@@ -5,6 +5,7 @@ import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.demo.qlearning.ProblemState;
 import ab.demo.qlearning.QValuesDAO;
+import ab.demo.qlearning.StateObject;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.utils.StateUtil;
@@ -308,10 +309,81 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void updateCurrentProblemState() {
-        ProblemState problemState = new ProblemState(currentVision, actionRobot);
+
+        int counter = 0;
+        // 1. get new StateId
+
+        int stateId = qValuesDAO.insertStateId();
+        ProblemState problemState = new ProblemState(currentVision, actionRobot, stateId);
+
+        int objectId;
+        // 2. create all Objects and link them to this state
+        for (ABObject object : problemState.getAllObjects()) {
+            objectId = qValuesDAO.insertObject((int) object.getCenterX() / 10,
+                    (int) object.getCenterX() / 10,
+                    String.valueOf(object.getType()),
+                    String.valueOf(object.shape));
+            qValuesDAO.insertState(stateId, objectId);
+        }
+
+        // 3. Generate actions in q_values if we have no actions initialised yet
         this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
+
         this.currentProblemState = problemState;
     }
+
+    /**
+     * ?!
+     *
+     * @return
+     */
+    private int getStateId() {
+        Set objectIds = new HashSet();
+
+        for (ABObject object : currentProblemState.getAllObjects()) {
+            objectIds.add(qValuesDAO.insertObject((int) object.getCenterX() / 10,
+                    (int) object.getCenterX() / 10,
+                    String.valueOf(object.getType()),
+                    String.valueOf(object.shape)));
+        }
+
+        List<StateObject> stateObjects = qValuesDAO.getObjectIdsForAllStates();
+        List<Integer> similarStateIds = new ArrayList<>();
+        for (StateObject stateObject : stateObjects) {
+            Set<Integer> targetObjectIds = stateObject.objectIds;
+
+            // if they are the same, return objectId
+            if (objectIds.equals(targetObjectIds)) {
+                logger.info("Found known state " + stateObject.stateId);
+                return stateObject.stateId;
+            } else if (objectIds.size() == targetObjectIds.size()) {
+                //else look for symmetric difference if same length
+                //(we assume the vision can count correctly, just had problems between rect and circle)
+                Set<Integer> intersection = new HashSet<Integer>(objectIds);
+                intersection.retainAll(targetObjectIds);
+
+                Set<Integer> difference = new HashSet<Integer>();
+                difference.addAll(objectIds);
+                difference.addAll(targetObjectIds);
+                difference.removeAll(intersection);
+
+                if (difference.size() < 3) {
+                    similarStateIds.add(stateObject.stateId);
+                    logger.info("Candidate state: " + stateObject.stateId);
+                }
+            }
+        }
+
+        if (similarStateIds.size() == 0) {
+            logger.info("Init new state");
+            this.updateCurrentProblemState();
+            return currentProblemState.getId();
+        } else {
+            //@todo in the case of multiple similar states we should use the one which is the most similar one to our own one
+            return similarStateIds.get(0);
+        }
+    }
+
 
     private Point calculateTargetPointFromActionPair(ActionPair actionPair) {
         int nextAction = actionPair.value;
@@ -476,10 +548,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      */
     private void insertsPossibleActionsForProblemStateIntoDatabase(ProblemState problemState) {
         int counter = 0;
-        // We have not been in this state then
-        if (qValuesDAO.getActionCount(problemState.toString()) == 0) {
-            for (ABObject obj : problemState.getShootableObjects()) {
-                qValuesDAO.insertNewAction(0.0, problemState.toString(), counter);
+        if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
+            for (ABObject object : problemState.getShootableObjects()) {
+                qValuesDAO.insertNewAction(0, problemState.getId(), counter);
                 counter += 1;
             }
         }
@@ -526,16 +597,18 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      */
     private void updateQValue(ProblemState from, ProblemState to, ActionPair nextAction, double reward, boolean end, int gameId, int moveCounter) {
         int action = nextAction.value;
-        double oldValue = qValuesDAO.getQValue(from.toString(), action);
+        double oldValue = qValuesDAO.getQValue(from.getId(), action);
         double newValue;
+
         if (end) {
             newValue = oldValue + learningRate * (reward - oldValue);
         } else {
             //possible error: highest Q value could have been different compared to when the action was selected with qValuesDAO.getBestAction
-            newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.toString()) - oldValue);
+            newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.getId()) - oldValue);
         }
-        qValuesDAO.updateQValue(newValue, from.toString(), action);
-        qValuesDAO.saveMove(gameId, moveCounter, from.toString(), action, to.toString(), reward, nextAction.rand, lowTrajectory);
+
+        qValuesDAO.updateQValue(newValue, from.getId(), action);
+        qValuesDAO.saveMove(gameId, moveCounter, from.getId(), action, to.getId(), reward, nextAction.rand, lowTrajectory);
 
     }
 
@@ -549,10 +622,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
             logger.info("Picked random action");
-            return new ActionPair(true, qValuesDAO.getRandomAction(currentProblemState.toString()));
+            return new ActionPair(true, qValuesDAO.getRandomAction(currentProblemState.getId()));
         } else {
             logger.info("Picked currently best available action");
-            return new ActionPair(false, qValuesDAO.getBestAction(currentProblemState.toString()));
+            return new ActionPair(false, qValuesDAO.getBestAction(currentProblemState.getId()));
         }
     }
 

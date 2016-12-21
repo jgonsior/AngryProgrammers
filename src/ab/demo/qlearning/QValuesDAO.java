@@ -5,12 +5,12 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
-import ab.demo.qlearning.StateObjectsMapper;
-import ab.demo.qlearning.StateObject;
+
 import java.util.List;
 
 /**
  * @author jgonsior
+ * @todo separate into multiple DAOs!
  */
 public interface QValuesDAO {
 
@@ -48,7 +48,7 @@ public interface QValuesDAO {
 
     @Mapper(StateObjectsMapper.class)
     @SqlQuery("SELECT stateId, array_agg(objectId) as objectIds FROM states GROUP BY stateId")
-    List<StateObject> getObjectListByStates();
+    List<StateObject> getObjectIdsForAllStates();
 
     @SqlUpdate("INSERT INTO states (stateId, objectId) VALUES (:stateId, :objectId) ON CONFLICT ON CONSTRAINT states_pkey DO NOTHING")
     @GetGeneratedKeys
@@ -87,6 +87,3 @@ public interface QValuesDAO {
      */
     void close();
 }
-
-
-

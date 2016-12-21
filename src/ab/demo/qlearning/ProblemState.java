@@ -20,11 +20,13 @@ public class ProblemState {
     public List<ABObject> shootableObjects;
     private Vision vision;
     private List<ABObject> allObjects;
+    private int id;
 
-    public ProblemState(Vision vision, ActionRobot actionRobot) {
+    public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
         GameStateExtractor.GameState state = actionRobot.getState();
         allObjects = new ArrayList<>();
         this.vision = vision;
+        this.id = id;
 
         if (state == GameStateExtractor.GameState.PLAYING) {
 
@@ -89,5 +91,13 @@ public class ProblemState {
 
     public List<ABObject> getShootableObjects() {
         return shootableObjects;
+    }
+
+    public List<ABObject> getAllObjects() {
+        return allObjects;
+    }
+
+    public int getId() {
+        return id;
     }
 }
