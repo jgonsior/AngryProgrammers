@@ -29,7 +29,6 @@ public class MainEntry {
     public static void main(String args[]) {
 
         LoggingHandler.initConsoleLog();
-        LoggingHandler.initFileLog();
 
         args = new String[]{"-su"};
         Options options = new Options();
@@ -91,6 +90,7 @@ public class MainEntry {
             }
             Proxy.setPort(proxyPort);
 
+            LoggingHandler.initFileLog();
 
             if (cmd.hasOption("standalone")) {
                 agent = new ReinforcementLearningAgentStandalone(qValuesDAO);

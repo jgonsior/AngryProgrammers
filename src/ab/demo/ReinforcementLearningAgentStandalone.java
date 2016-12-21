@@ -54,6 +54,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private GameStateExtractor.GameState currentGameState;
     private int currentLevel;
     private double currentReward;
+    private int currentMoveCounter;
 
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
@@ -82,7 +83,27 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         Set<Object> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
         saveCurrentScreenshot();
         logger.info("bef:" + blocksAndPigsBefore);
-        logger.info("aftd" + blocksAndPigsAfter);
+        logger.info("aft:" + blocksAndPigsAfter);
+
+        //wait until shot is being fired
+        while (blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
+            try {
+                logger.info("Wait for 500");
+                Thread.sleep(500);
+
+                this.updateCurrentVision();
+
+                blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+
+                saveCurrentScreenshot();
+                logger.info("bef:" + blocksAndPigsBefore);
+                logger.info("aftd" + blocksAndPigsAfter);
+            } catch (InterruptedException e) {
+                logger.error(e);
+            }
+        }
+
+        logger.info("two different screenshots found");
 
         while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {
@@ -109,15 +130,17 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
     private void checkIfDonePlayingAndWaitForWinningScreen() {
         if (currentVision.findBirdsMBR().size() == 0 || currentVision.findPigsMBR().size() == 0) {
+            logger.info("wait until there are no pigs or birds left");
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                 try {
-                    logger.info("Wait 1500 after there are no pigs or birds left");
-                    Thread.sleep(1500);
+                    Thread.sleep(150);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+            logger.info("done waiting");
+            ;
         }
     }
 
@@ -131,7 +154,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void saveCurrentScreenshot() {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "_" + +currentLevel + "_" + System.currentTimeMillis() + ".png");
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "_" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".png");
         try {
             ImageIO.write(currentScreenshot, "png", outputFile);
         } catch (IOException e) {
@@ -146,7 +169,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         actionRobot.loadLevel(currentLevel);
         trajectoryPlanner = new TrajectoryPlanner();
 
-        int moveCounter = 0;
+        currentMoveCounter = 0;
         int score;
         ProblemState previousProblemState;
 
@@ -201,13 +224,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
                         updateCurrentProblemState();
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, moveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, currentMoveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, moveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, currentMoveCounter);
                     }
 
 
-                    moveCounter++;
+                    currentMoveCounter++;
                 } else {
                     logger.error("No pig's found anymore!!!!!!!!!");
                 }
@@ -241,12 +264,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 trajectoryPlanner = new TrajectoryPlanner();
 
                 gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                moveCounter = 0;
+                currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LOST) {
                 logger.info("Restart level");
                 actionRobot.restartLevel();
                 gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                moveCounter = 0;
+                currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
                         + currentLevel);
@@ -295,10 +318,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         List<ABObject> shootableObjects = currentProblemState.getShootableObjects();
 
-        //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
+        /*//@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
         if (shootableObjects.size() - 1 > nextAction) {
             nextAction = shootableObjects.size() - 1;
-        }
+        }*/
 
         ABObject targetObject = shootableObjects.get(nextAction);
         return targetObject.getCenter();
@@ -387,8 +410,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      */
     public Point shootOneBird(Point targetPoint, Rectangle slingshot) {
 
-        ABObject pig = currentVision.findPigsMBR().get(0);
-        targetPoint = pig.getCenter();
+        //ABObject pig = currentVision.findPigsMBR().get(0);
+        //targetPoint = pig.getCenter();
 
         Point releasePoint = this.calculateMaybeTheReleasePoint(slingshot, targetPoint);
 

@@ -8,7 +8,6 @@
  *****************************************************************************/
 package ab.demo;
 
-import ab.demo.logging.LoggingHandler;
 import ab.demo.other.ClientActionRobot;
 import ab.demo.other.ClientActionRobotJava;
 import ab.demo.qlearning.ProblemState;
@@ -74,7 +73,6 @@ public class ReinforcementLearningAgentClient implements Runnable, Agent {
     }
 
     public ReinforcementLearningAgentClient(String ip, int id) {
-        LoggingHandler.initFileLog();
 
         clientActionRobotJava = new ClientActionRobotJava(ip);
         trajectoryPlanner = new TrajectoryPlanner();
