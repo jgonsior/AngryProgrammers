@@ -109,6 +109,9 @@ public class MainEntry {
                 qValuesDAO.createQValuesTable();
                 qValuesDAO.createAllGamesTable();
                 qValuesDAO.createAllMovesTable();
+                qValuesDAO.createAllObjectsTable();
+                qValuesDAO.createAllStatesTable();
+                qValuesDAO.createAllStateIdsTable();
             }
 
         } catch (UnrecognizedOptionException e) {
