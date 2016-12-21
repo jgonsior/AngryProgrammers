@@ -18,19 +18,21 @@ import java.util.List;
 public class ProblemState {
 
     public List<ABObject> shootableObjects;
-    private Vision vison;
+    private Vision vision;
     private List<ABObject> allObjects;
 
     public ProblemState(Vision vision, ActionRobot actionRobot) {
         GameStateExtractor.GameState state = actionRobot.getState();
         allObjects = new ArrayList<>();
-        vison = vision;
+        this.vision = vision;
 
         if (state == GameStateExtractor.GameState.PLAYING) {
 
-            allObjects.addAll(vison.findBirdsRealShape());
-            allObjects.addAll(vison.findBlocksRealShape());
-            allObjects.addAll(vison.findPigsRealShape());
+            allObjects.addAll(vision.findBirdsRealShape());
+            allObjects.addAll(vision.findBlocksRealShape());
+            allObjects.addAll(vision.findPigsRealShape());
+            allObjects.addAll(vision.findHills());
+            allObjects.addAll(vision.findTNTs());
 
             shootableObjects = calculateShootableObjects();
 
@@ -60,8 +62,8 @@ public class ProblemState {
      * @return list of approximation of shootableObjects objects
      */
     private List<ABObject> calculateShootableObjects() {
-        List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
-        shootableObjects.addAll(vison.findPigsRealShape());
+        List<ABObject> shootableObjects = new ArrayList<>(vision.findBlocksRealShape());
+        shootableObjects.addAll(vision.findPigsRealShape());
 
         // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {

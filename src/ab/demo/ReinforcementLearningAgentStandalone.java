@@ -178,7 +178,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         //one cycle means one shot was being executed
         while (true) {
-            logger.info("Next iteration of the allmighty while loop");
+            logger.info("Next iteration of the all mighty while loop");
 
             updateCurrentVision();
             updateCurrentProblemState();
