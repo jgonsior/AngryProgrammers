@@ -13,9 +13,12 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -71,25 +74,29 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /***
      * waits until the shoot was successfully being executed
      * make screenshots as long as 2 following screenshots are equal
-     * @param blocksAndBirdsBefore
+     * @param blocksAndPigsBefore
      */
-    private void waitUntilBlocksHaveBeenFallenDown(List<ABObject> blocksAndBirdsBefore) {
+    private void waitUntilBlocksHaveBeenFallenDown(Set<ABObject> blocksAndPigsBefore) {
         this.updateCurrentVision();
 
-        List<ABObject> blocksAndBirdsAfter = getBlocksAndBirds(currentVision);
+        Set<ABObject> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
 
-        //this.showCurrentScreenshot();
-
-        while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndBirdsBefore.equals(blocksAndBirdsAfter)) {
+        while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {
+
                 logger.info("Wait for 500");
                 Thread.sleep(500);
 
                 this.updateCurrentVision();
 
-                blocksAndBirdsAfter = getBlocksAndBirds(currentVision);
+                blocksAndPigsBefore = blocksAndPigsAfter;
 
-                blocksAndBirdsBefore = blocksAndBirdsAfter;
+                blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+
+                /*saveCurrentScreenshot();
+                logger.info("bef:" + blocksAndPigsBefore);
+                logger.info("aftd" + blocksAndPigsAfter);*/
+
 
             } catch (InterruptedException e) {
                 logger.error(e);
@@ -120,6 +127,17 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         frame.setVisible(true);
     }
 
+    private void saveCurrentScreenshot() {
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "_" + +currentLevel + "_" + System.currentTimeMillis() + ".png");
+        try {
+            ImageIO.write(currentScreenshot, "png", outputFile);
+        } catch (IOException e) {
+            logger.error("Unable to save screenshot " + e);
+            e.printStackTrace();
+        }
+        logger.info("Saved screenshot " + outputFile.getName());
+    }
+
     public void run() {
         currentLevel = 1;
         actionRobot.loadLevel(currentLevel);
@@ -136,13 +154,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         while (true) {
             logger.info("Next iteration of the allmighty while loop");
 
-            this.updateCurrentVision();
-            this.updateCurrentProblemState();
+            updateCurrentVision();
+            updateCurrentProblemState();
 
             currentGameState = actionRobot.getState();
             previousProblemState = currentProblemState;
 
-            if (this.currentGameState == GameStateExtractor.GameState.PLAYING) {
+            if (currentGameState == GameStateExtractor.GameState.PLAYING) {
 
                 // früher wurde hier erst die slingshot confirmed!
                 Rectangle slingshot = this.findSlingshot();
@@ -151,18 +169,18 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 List<ABObject> pigs = currentVision.findPigsMBR();
 
                 if (!pigs.isEmpty()) {
-                    this.updateCurrentVision();
+                    updateCurrentVision();
 
                     // get next action
                     ActionPair nextActionPair = getNextAction();
 
-                    List<ABObject> blocksAndBirdsBeforeShot = getBlocksAndBirds(currentVision);
+                    Set<ABObject> blocksAndPigsBeforShot = getBlocksAndPigs(currentVision);
 
-                    Point releasePoint = this.shootOneBird(this.calculateTargetPointFromActionPair(nextActionPair), slingshot);
+                    Point releasePoint = shootOneBird(calculateTargetPointFromActionPair(nextActionPair), slingshot);
 
                     logger.info("done shooting");
 
-                    this.waitUntilBlocksHaveBeenFallenDown(blocksAndBirdsBeforeShot);
+                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforShot);
 
                     logger.info("done waiting for blocks to fall down");
 
@@ -172,7 +190,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
                     trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
 
-                    this.checkIfDonePlayingAndWaitForWinningScreen();
+                    checkIfDonePlayingAndWaitForWinningScreen();
 
                     //update currentGameState
                     currentGameState = actionRobot.getState();
@@ -180,7 +198,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     currentReward = getReward(currentGameState);
 
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
-                        this.updateCurrentProblemState();
+                        updateCurrentProblemState();
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, moveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, moveCounter);
@@ -448,8 +466,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * @param vision
      * @return List of current birds and blocks
      */
-    private List<ABObject> getBlocksAndBirds(Vision vision) {
-        List<ABObject> allObjs = new ArrayList<>();
+    private Set<ABObject> getBlocksAndPigs(Vision vision) {
+        Set<ABObject> allObjs = new HashSet<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
         return allObjs;
