@@ -78,6 +78,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         List<ABObject> blocksAndBirdsAfter = getBlocksAndBirds(currentVision);
 
+        //this.showCurrentScreenshot();
+
         while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndBirdsBefore.equals(blocksAndBirdsAfter)) {
             try {
                 logger.info("Wait for 500");
@@ -109,16 +111,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }
     }
 
-    private void displayCurrentScreenshot() {
+    private void showCurrentScreenshot() {
         JDialog frame = new JDialog();
         frame.setModal(true);
         frame.getContentPane().setLayout(new FlowLayout());
         frame.getContentPane().add(new JLabel(new ImageIcon(currentScreenshot)));
         frame.pack();
         frame.setVisible(true);
-        //frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-
-
     }
 
     public void run() {
@@ -173,22 +172,20 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
                     trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
 
-
+                    this.checkIfDonePlayingAndWaitForWinningScreen();
 
                     //update currentGameState
                     currentGameState = actionRobot.getState();
 
-                    this.updateCurrentProblemState();
-
                     currentReward = getReward(currentGameState);
 
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
+                        this.updateCurrentProblemState();
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, moveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, moveCounter);
                     }
 
-                    this.checkIfDonePlayingAndWaitForWinningScreen();
 
                     moveCounter++;
                 } else {
