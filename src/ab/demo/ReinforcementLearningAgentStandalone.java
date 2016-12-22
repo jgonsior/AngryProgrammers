@@ -56,6 +56,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private int currentLevel;
     private double currentReward;
     private int currentMoveCounter;
+    private int currentGameId;
 
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
@@ -155,8 +156,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void saveCurrentScreenshot() {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "_" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".png");
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".png");
         try {
+            outputFile.getParentFile().mkdirs();
             ImageIO.write(currentScreenshot, "png", outputFile);
         } catch (IOException e) {
             logger.error("Unable to save screenshot " + e);
@@ -175,7 +177,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         ProblemState previousProblemState;
 
         // id which will be generated randomly every lvl that we can connect moves to one game
-        int gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
 
         //one cycle means one shot was being executed
         while (true) {
@@ -225,9 +227,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
                         updateCurrentProblemState();
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, gameId, currentMoveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, currentGameId, currentMoveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, gameId, currentMoveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, currentGameId, currentMoveCounter);
                     }
 
 
@@ -264,12 +266,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
 
-                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LOST) {
                 logger.info("Restart level");
                 actionRobot.restartLevel();
-                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
