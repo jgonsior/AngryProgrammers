@@ -156,10 +156,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void saveCurrentScreenshot() {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".png");
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".gif");
         try {
             outputFile.getParentFile().mkdirs();
-            ImageIO.write(currentScreenshot, "png", outputFile);
+            ImageIO.write(currentScreenshot, "gif", outputFile);
         } catch (IOException e) {
             logger.error("Unable to save screenshot " + e);
             e.printStackTrace();
