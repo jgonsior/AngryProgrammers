@@ -17,27 +17,28 @@ import java.util.List;
  */
 public class ProblemState {
 
-    public List<ABObject> shootable;
-    private Vision vison;
+    public List<ABObject> shootableObjects;
+    private Vision vision;
     private List<ABObject> allObjects;
+    private int id;
 
-    public ProblemState(Vision vision) {
-        ActionRobot actionRobot = new ActionRobot();
+    public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
         GameStateExtractor.GameState state = actionRobot.getState();
         allObjects = new ArrayList<>();
+        this.vision = vision;
+        this.id = id;
 
         if (state == GameStateExtractor.GameState.PLAYING) {
-            vison = vision;
 
-            allObjects.addAll(vison.findBirdsRealShape());
-            allObjects.addAll(vison.findBlocksRealShape());
-            allObjects.addAll(vison.findPigsRealShape());
+            allObjects.addAll(vision.findBirdsRealShape());
+            allObjects.addAll(vision.findBlocksRealShape());
+            allObjects.addAll(vision.findPigsRealShape());
+            allObjects.addAll(vision.findHills());
+            allObjects.addAll(vision.findTNTs());
 
-            shootable = calculateShootableObjects();
+            shootableObjects = calculateShootableObjects();
 
         }
-
-
     }
 
     /**
@@ -58,24 +59,25 @@ public class ProblemState {
     }
 
     /**
-     * returns an approximation of shootable objects
+     * returns an approximation of shootableObjects objects
      *
-     * @return list of approximation of shootable objects
+     * @return list of approximation of shootableObjects objects
      */
     private List<ABObject> calculateShootableObjects() {
-        List<ABObject> shootableObjects = new ArrayList<>(vison.findBlocksRealShape());
-        shootableObjects.addAll(vison.findPigsRealShape());
+        List<ABObject> shootableObjects = new ArrayList<>(vision.findBlocksRealShape());
+        shootableObjects.addAll(vision.findPigsRealShape());
+
         // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {
-            double x1 = object.getCenterX();
-            double y1 = object.getCenterY();
+            double x_object = object.getCenterX();
+            double y_object = object.getCenterY();
             innerloop:
             for (ABObject neighbor : allObjects) {
                 if (!object.equals(neighbor)) {
-                    double x2 = neighbor.getCenterX();
-                    double y2 = neighbor.getCenterY();
-                    if ((x2 < x1) && (y2 < y1)) {
-                        if (((x1 - x2) < 20) && ((y1 - y2) < 20)) {
+                    double x_neighbor = neighbor.getCenterX();
+                    double y_neighbor = neighbor.getCenterY();
+                    if ((x_neighbor < x_object) && (y_neighbor < y_object)) {
+                        if (((x_object - x_neighbor) < 20) && ((y_object - y_neighbor) < 20)) {
                             shootableObjects.remove(object);
                             break innerloop;
                         }
@@ -88,6 +90,14 @@ public class ProblemState {
     }
 
     public List<ABObject> getShootableObjects() {
-        return shootable;
+        return shootableObjects;
+    }
+
+    public List<ABObject> getAllObjects() {
+        return allObjects;
+    }
+
+    public int getId() {
+        return id;
     }
 }

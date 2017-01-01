@@ -13,17 +13,20 @@ import ab.server.proxy.message.ProxyClickMessage;
 import ab.server.proxy.message.ProxyMouseWheelMessage;
 import ab.utils.StateUtil;
 import ab.vision.GameStateExtractor.GameState;
+import org.apache.log4j.Logger;
 
 /**
  * Schema for loading level
  */
 public class LoadLevelSchema {
+
+    private static Logger logger = Logger.getLogger(LoadLevelSchema.class);
+
     private Proxy proxy;
     private boolean pageSwitch = false;
 
     public LoadLevelSchema(Proxy proxy) {
         this.proxy = proxy;
-
     }
 
     public boolean loadLevel(int i) {
@@ -41,8 +44,9 @@ public class LoadLevelSchema {
         GameState state = StateUtil.getGameState(proxy);
 
         while (state != GameState.PLAYING) {
-            System.out.println(" In state:   " + state + " Try reloading...");
+            logger.info(" In state:   " + state + " Try reloading...");
             loadLevel(state, i);
+            logger.info("Wait for 12000 for loading any level");
             try {
                 Thread.sleep(12000);
             } catch (InterruptedException e1) {
@@ -69,6 +73,8 @@ public class LoadLevelSchema {
             {
 
                 proxy.send(new ProxyClickMessage(342, 382));//Click the left most button at the end page
+
+                logger.info("Wait for 1000 for loading level " + i);
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e1) {
@@ -76,6 +82,8 @@ public class LoadLevelSchema {
                 }
                 if (pageSwitch) {
                     proxy.send(new ProxyClickMessage(378, 451));
+
+                    logger.info("Wait for 1000 for loading level " + i + "after pageSwitch");
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e1) {
@@ -84,6 +92,8 @@ public class LoadLevelSchema {
                     pageSwitch = false;
                 }
                 proxy.send(new ProxyClickMessage(54 + ((i - 1) % 7) * 86, 110 + ((i - 1) / 7) * 100));
+
+                logger.info("Wait for 1000 for loading level " + i + " after click send");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -96,6 +106,8 @@ public class LoadLevelSchema {
                 proxy.send(new ProxyClickMessage(1176, 704));
         } else if (state == GameState.PLAYING) {
             proxy.send(new ProxyClickMessage(48, 44));//Click the left most button, pause
+
+            logger.info("Wait for 1000 for loading level " + i + "after clicking the left most button");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e1) {
