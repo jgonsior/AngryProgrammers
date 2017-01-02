@@ -141,6 +141,21 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     e.printStackTrace();
                 }
             }
+
+            //if we have won wait until gameScore on following screens is the same
+            if (actionRobot.getState() == GameStateExtractor.GameState.WON) {
+                double rewardBefore = -1.0;
+                double rewardAfter = getReward(actionRobot.getState());
+                while(rewardBefore != rewardAfter) {
+                    try {
+                        Thread.sleep(150);
+                        rewardBefore = rewardAfter;
+                        rewardAfter = getReward(actionRobot.getState());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
             logger.info("done waiting");
             ;
         }
