@@ -131,6 +131,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void checkIfDonePlayingAndWaitForWinningScreen() {
+        this.updateCurrentVision();
         if (currentVision.findBirdsMBR().size() == 0 || currentVision.findPigsMBR().size() == 0) {
             logger.info("no pigs or birds left, now wait until gamestate changed");
             // if we have no pigs left or birds, wait for winning screen
