@@ -132,11 +132,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
     private void checkIfDonePlayingAndWaitForWinningScreen() {
         if (currentVision.findBirdsMBR().size() == 0 || currentVision.findPigsMBR().size() == 0) {
-            logger.info("wait until there are no pigs or birds left");
+            logger.info("no pigs or birds left, now wait until gamestate changed");
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                 try {
-                    Thread.sleep(150);
+                    Thread.sleep(300);
+                    logger.info("sleep 300 for change state (current: " + actionRobot.getState() + ")");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -144,11 +145,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
             //if we have won wait until gameScore on following screens is the same
             if (actionRobot.getState() == GameStateExtractor.GameState.WON) {
+                logger.info("in WON state now wait until stable reward");
                 double rewardBefore = -1.0;
                 double rewardAfter = getReward(actionRobot.getState());
                 while(rewardBefore != rewardAfter) {
                     try {
-                        Thread.sleep(150);
+                        Thread.sleep(300);
+                        logger.info("sleep 300 for new reward (current: " + String.valueOf(rewardAfter) +")");
                         rewardBefore = rewardAfter;
                         rewardAfter = getReward(actionRobot.getState());
                     } catch (InterruptedException e) {
