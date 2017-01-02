@@ -14,41 +14,58 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
+import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
 /**
  * @author jgonsior
  */
-public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
+public class ReinforcementLearningAgentStandalone implements Agent {
 
-    private static Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
-    public int currentLevel = 1;
-    private TrajectoryPlanner trajectoryPlanner;
-    //Wrapper of the communicating messages
+    private static final Logger logger = Logger.getLogger(ReinforcementLearningAgentStandalone.class);
+
     private ActionRobot actionRobot;
+
     private double discountFactor = 0.9;
     private double learningRate = 0.1;
     private double explorationRate = 0.7;
+
     private boolean firstShot;
+
     private Random randomGenerator;
+
     private QValuesDAO qValuesDAO;
-    // id which will be generated randomly every lvl that we can connect moves to one game
-    private int gameId;
-    private int moveCounter;
+
     private boolean lowTrajectory = false;
+
+
+    /**
+     * some variables containing information about the current state of the game which are being used by multiple methods
+     */
+    private Vision currentVision;
+    private TrajectoryPlanner trajectoryPlanner;
+    private BufferedImage currentScreenshot;
+    private ProblemState currentProblemState;
+    private GameStateExtractor.GameState currentGameState;
+    private int currentLevel;
+    private double currentReward;
+    private int currentMoveCounter;
+    private int currentGameId;
+
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
     // a standalone implementation of the Reinforcement Agent
     public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO) {
         LoggingHandler.initFileLog();
-        LoggingHandler.initConsoleLog();
 
         this.actionRobot = new ActionRobot();
-        this.trajectoryPlanner = new TrajectoryPlanner();
         this.randomGenerator = new Random();
         this.firstShot = true;
 
@@ -57,350 +74,496 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
-    // run the client
-    public void run() {
-        actionRobot.loadLevel(currentLevel);
-        gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-        while (true) {
-            GameStateExtractor.GameState state = solve();
-            moveCounter = moveCounter + 1;
-            if (state == GameStateExtractor.GameState.WON) {
+    /***
+     * waits until the shoot was successfully being executed
+     * make screenshots as long as 2 following screenshots are equal
+     * @param blocksAndPigsBefore
+     */
+    private void waitUntilBlocksHaveBeenFallenDown(Set<Object> blocksAndPigsBefore) {
+        this.updateCurrentVision();
+
+        Set<Object> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+        saveCurrentScreenshot();
+        logger.info("bef:" + blocksAndPigsBefore);
+        logger.info("aft:" + blocksAndPigsAfter);
+
+        //wait until shot is being fired
+        while (blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
+            try {
+                logger.info("Wait for 500");
+                Thread.sleep(500);
+
+                this.updateCurrentVision();
+
+                blocksAndPigsBefore = getBlocksAndPigs(currentVision);
+
+                saveCurrentScreenshot();
+                logger.info("bef:" + blocksAndPigsBefore);
+                logger.info("aftd" + blocksAndPigsAfter);
+            } catch (InterruptedException e) {
+                logger.error(e);
+            }
+        }
+
+        logger.info("two different screenshots found");
+
+        while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
+            try {
+
+                logger.info("Wait for 500");
+                Thread.sleep(500);
+
+                this.updateCurrentVision();
+
+                blocksAndPigsBefore = blocksAndPigsAfter;
+
+                blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+
+                saveCurrentScreenshot();
+                logger.info("bef:" + blocksAndPigsBefore);
+                logger.info("aftd" + blocksAndPigsAfter);
+
+
+            } catch (InterruptedException e) {
+                logger.error(e);
+            }
+        }
+    }
+
+    private void checkIfDonePlayingAndWaitForWinningScreen() {
+        if (currentVision.findBirdsMBR().size() == 0 || currentVision.findPigsMBR().size() == 0) {
+            logger.info("wait until there are no pigs or birds left");
+            // if we have no pigs left or birds, wait for winning screen
+            while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(150);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                int score = StateUtil.getScore(ActionRobot.proxy);
-                if (!scores.containsKey(currentLevel))
+
+            //if we have won wait until gameScore on following screens is the same
+            if (actionRobot.getState() == GameStateExtractor.GameState.WON) {
+                double rewardBefore = null;
+                double rewardAfter =  getReward(actionRobot.getState());
+                while(!rewardBefore.equals(rewardAfter)) {
+                    try {
+                        Thread.sleep(150);
+                        rewardBefore = rewardAfter;
+                        rewardAfter = getReward(actionRobot.getState());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            logger.info("done waiting");
+            ;
+        }
+    }
+
+    private void showCurrentScreenshot() {
+        JDialog frame = new JDialog();
+        frame.setModal(true);
+        frame.getContentPane().setLayout(new FlowLayout());
+        frame.getContentPane().add(new JLabel(new ImageIcon(currentScreenshot)));
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    private void saveCurrentScreenshot() {
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".gif");
+        try {
+            outputFile.getParentFile().mkdirs();
+            ImageIO.write(currentScreenshot, "gif", outputFile);
+        } catch (IOException e) {
+            logger.error("Unable to save screenshot " + e);
+            e.printStackTrace();
+        }
+        logger.info("Saved screenshot " + outputFile.getName());
+    }
+
+    public void run() {
+        currentLevel = 1;
+        actionRobot.loadLevel(currentLevel);
+        trajectoryPlanner = new TrajectoryPlanner();
+
+        currentMoveCounter = 0;
+        int score;
+        ProblemState previousProblemState;
+
+        // id which will be generated randomly every lvl that we can connect moves to one game
+        currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+
+        //one cycle means one shot was being executed
+        while (true) {
+            logger.info("Next iteration of the all mighty while loop");
+
+            updateCurrentVision();
+            updateCurrentProblemState();
+
+            currentGameState = actionRobot.getState();
+            previousProblemState = currentProblemState;
+
+            if (currentGameState == GameStateExtractor.GameState.PLAYING) {
+
+                Rectangle slingshot = this.findSlingshot();
+
+                // check if there are still pigs available
+                List<ABObject> pigs = currentVision.findPigsMBR();
+
+                if (!pigs.isEmpty()) {
+                    updateCurrentVision();
+
+                    // get next action
+                    ActionPair nextActionPair = getNextAction();
+
+                    Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
+
+                    Point releasePoint = shootOneBird(calculateTargetPointFromActionPair(nextActionPair), slingshot);
+
+                    logger.info("done shooting");
+
+                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot);
+
+                    logger.info("done waiting for blocks to fall down");
+
+
+                    //save the information about the current zooming for the next shot
+                    //could be deleted if we don't zoom anymore
+                    List<Point> trajectoryPoints = currentVision.findTrajPoints();
+                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
+
+                    checkIfDonePlayingAndWaitForWinningScreen();
+
+                    //update currentGameState
+                    currentGameState = actionRobot.getState();
+
+                    currentReward = getReward(currentGameState);
+
+                    if (currentGameState == GameStateExtractor.GameState.PLAYING) {
+                        updateCurrentProblemState();
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, currentGameId, currentMoveCounter);
+                    } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
+                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, currentGameId, currentMoveCounter);
+                    }
+
+
+                    currentMoveCounter++;
+                } else {
+                    logger.error("No pig's found anymore!!!!!!!!!");
+                }
+            } else {
+                logger.warn("Accidentally in solving method without being in PLAYING state");
+            }
+
+            if (currentGameState == GameStateExtractor.GameState.WON) {
+                logger.info("Wait for 3000 after won screen");
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    logger.error("Sleep thread was being interrupted" + e);
+                }
+
+                score = StateUtil.getScore(ActionRobot.proxy);
+
+                // update the local list of highscores
+                if (!scores.containsKey(currentLevel)) {
                     scores.put(currentLevel, score);
-                else {
+                } else {
                     if (scores.get(currentLevel) < score)
                         scores.put(currentLevel, score);
                 }
-                int totalScore = 0;
-                for (Integer key : scores.keySet()) {
 
-                    totalScore += scores.get(key);
-                    logger.info(" Level " + key
-                            + " Score: " + scores.get(key) + " ");
-                }
-                logger.info("Total Score: " + totalScore);
-                actionRobot.loadLevel(++currentLevel);
-                // make a new trajectory planner whenever a new level is entered
+                this.logScores();
+
+                currentLevel++;
+                actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
+                // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
 
-                // first shot on this level, try high shot first
-                firstShot = true;
-
-                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                moveCounter = 0;
-            } else if (state == GameStateExtractor.GameState.LOST) {
-                logger.info("Restart");
+                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentMoveCounter = 0;
+            } else if (currentGameState == GameStateExtractor.GameState.LOST) {
+                logger.info("Restart level");
                 actionRobot.restartLevel();
-                gameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                moveCounter = 0;
-            } else if (state == GameStateExtractor.GameState.LEVEL_SELECTION) {
+                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentMoveCounter = 0;
+            } else if (currentGameState == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
                         + currentLevel);
                 actionRobot.loadLevel(currentLevel);
-            } else if (state == GameStateExtractor.GameState.MAIN_MENU) {
+            } else if (currentGameState == GameStateExtractor.GameState.MAIN_MENU) {
                 logger.warn("Unexpected main menu page, go to the last current level : "
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
-            } else if (state == GameStateExtractor.GameState.EPISODE_MENU) {
+            } else if (currentGameState == GameStateExtractor.GameState.EPISODE_MENU) {
                 logger.warn("Unexpected episode menu page, go to the last current level : "
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
             }
-
         }
-
-    }
-
-    public GameStateExtractor.GameState solve() {
-        // capture Image
-        BufferedImage screenshot = ActionRobot.doScreenShot();
-        // process image
-        Vision vision = new Vision(screenshot);
-        // find the slingshot
-        Rectangle sling = vision.findSlingshotMBR();
-
-        // confirm the slingshot
-        while (sling == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-            logger.warn("No slingshot detected. Please remove pop up or zoom out");
-            ActionRobot.fullyZoomOut();
-            screenshot = ActionRobot.doScreenShot();
-            vision = new Vision(screenshot);
-            sling = vision.findSlingshotMBR();
-            ActionRobot.skipPopUp();
-        }
-        // get all the pigs
-        java.util.List<ABObject> pigs = vision.findPigsMBR();
-        GameStateExtractor.GameState state = actionRobot.getState();
-
-        if (state != GameStateExtractor.GameState.PLAYING) {
-            logger.warn("Accidentally in solving method without being in PLAYINg state");
-            return state;
-        }
-
-        // if there is a sling, then play, otherwise just skip.
-        if (sling != null) {
-
-            if (!pigs.isEmpty()) {
-
-                Point releasePoint = null;
-                Shot shot = new Shot();
-                int dx, dy;
-
-                ProblemState currentState = new ProblemState(vision);
-                int stateId = getStateId(currentState);
-
-                // get Next best Action
-                ActionPair nextActionPair = getNextAction(stateId);
-                int nextAction = nextActionPair.value;
-
-                java.util.List<ABObject> shootables = currentState.getShootableObjects();
-                logger.info("Shootables: " + shootables);
-                logger.info("NextAction: " + String.valueOf(nextAction));
-                if (shootables.size() - 1 < nextAction) {
-                    nextAction = shootables.size() - 1;
-                    logger.error("Nextaction was too big");
-                }
-                ABObject obj = shootables.get(nextAction);
-                Point _tpt = obj.getCenter();
-
-                // estimate the trajectory
-                ArrayList<Point> pts = trajectoryPlanner.estimateLaunchPoint(sling, _tpt);
-
-                // do a high shot when entering a level to find an accurate velocity
-                if (firstShot && pts.size() > 1) {
-                    lowTrajectory = false;
-                    releasePoint = pts.get(1);
-                } else if (pts.size() == 1) {
-                    // TODO: find out if low or high trajectory????
-                    releasePoint = pts.get(0);
-                } else if (pts.size() == 2) {
-                    // randomly choose between the trajectories, with a 1 in
-                    // 6 chance of choosing the high one
-                    if (randomGenerator.nextInt(6) == 0) {
-                        lowTrajectory = false;
-                        releasePoint = pts.get(1);
-                    } else {
-                        lowTrajectory = true;
-                        releasePoint = pts.get(0);
-                    }
-                } else if (pts.isEmpty()) {
-                    logger.info("No release point found for the target");
-                    logger.info("Try a shot with 45 degree");
-                    releasePoint = trajectoryPlanner.findReleasePoint(sling, Math.PI / 4);
-                }
-
-                // Get the reference point
-                Point refPoint = trajectoryPlanner.getReferencePoint(sling);
-
-
-                //Calculate the tapping time according the bird type
-                if (releasePoint != null) {
-                    double releaseAngle = trajectoryPlanner.getReleaseAngle(sling,
-                            releasePoint);
-                    logger.info("Release Point: " + releasePoint);
-                    logger.info("Release Angle: "
-                            + Math.toDegrees(releaseAngle));
-                    int tapInterval = 0;
-                    switch (actionRobot.getBirdTypeOnSling()) {
-
-                        case RedBird:
-                            tapInterval = 0;
-                            break;               // start of trajectory
-                        case YellowBird:
-                            tapInterval = 65 + randomGenerator.nextInt(25);
-                            break; // 65-90% of the way
-                        case WhiteBird:
-                            tapInterval = 70 + randomGenerator.nextInt(20);
-                            break; // 70-90% of the way
-                        case BlackBird:
-                            tapInterval = 70 + randomGenerator.nextInt(20);
-                            break; // 70-90% of the way
-                        case BlueBird:
-                            tapInterval = 65 + randomGenerator.nextInt(20);
-                            break; // 65-85% of the way
-                        default:
-                            tapInterval = 60;
-                    }
-
-                    int tapTime = trajectoryPlanner.getTapTime(sling, releasePoint, _tpt, tapInterval);
-                    dx = (int) releasePoint.getX() - refPoint.x;
-                    dy = (int) releasePoint.getY() - refPoint.y;
-                    shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
-                } else {
-                    logger.error("No Release Point Found");
-                    return state;
-                }
-
-
-                // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
-
-                ActionRobot.fullyZoomOut();
-                BufferedImage screenshotBefore = ActionRobot.doScreenShot();
-                Vision visionBefore = new Vision(screenshotBefore);
-                List<ABObject> bnbBefore = getBlocksAndBirds(visionBefore);
-                Rectangle _sling = visionBefore.findSlingshotMBR();
-                if (_sling != null) {
-                    double scale_diff = Math.pow((sling.width - _sling.width), 2) + Math.pow((sling.height - _sling.height), 2);
-                    if (scale_diff < 25) {
-                        if (dx < 0) {
-                            actionRobot.cshoot(shot);
-                            // make screenshots as long as 2 following screenshots are equal
-                            while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-                                try {
-                                    logger.info("Wait 500");
-                                    Thread.sleep(500);
-                                    screenshot = ActionRobot.doScreenShot();
-                                    vision = new Vision(screenshot);
-                                    List<ABObject> bnbAfter = getBlocksAndBirds(vision);
-                                    logger.info("bnbBefore: " + bnbBefore);
-                                    logger.info("bnbAfter: " + bnbAfter);
-                                    if (bnbBefore.equals(bnbAfter)) {
-                                        break;
-                                    } else {
-                                        bnbBefore = bnbAfter;
-                                    }
-
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            logger.info("Birds Left: " + vision.findBirdsMBR().size());
-                            logger.info("Pigs Left: " + vision.findPigsMBR().size());
-
-                            boolean gameOver = false;
-
-                            if (vision.findBirdsMBR().size() == 0 || vision.findPigsMBR().size() == 0) {
-                                gameOver = true;
-                                // if we have no pigs left or birds, wait for winning screen
-                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-                                    try {
-                                        logger.info("Wait 2500, right now in state " + actionRobot.getState());
-                                        Thread.sleep(2500);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-
-
-                            
-                            // should be redundant but somehow we are sometimes after above wait in playing state 
-                            if (gameOver && actionRobot.getState()==GameStateExtractor.GameState.PLAYING){
-                                while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-                                    try {
-                                        logger.info("Wait redundant 2500, right now in state " + actionRobot.getState());
-                                        Thread.sleep(2500);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-
-                            }
-
-
-                            state = actionRobot.getState();
-                            double reward = getReward(state);
-                            logger.info("After wait in state: " + state);
-                            logger.info("Reward was " + String.valueOf(reward));
-                            if (state == GameStateExtractor.GameState.PLAYING && !gameOver) {
-                                screenshot = ActionRobot.doScreenShot();
-                                vision = new Vision(screenshot);
-                                java.util.List<Point> traj = vision.findTrajPoints();
-                                trajectoryPlanner.adjustTrajectory(traj, sling, releasePoint);
-                                firstShot = false;
-                                updateQValue(stateId, nextActionPair, new ProblemState(vision), reward, false);
-                            } else if (state == GameStateExtractor.GameState.WON || state == GameStateExtractor.GameState.LOST) {
-                                updateQValue(stateId, nextActionPair, currentState, reward, true);
-                            }
-                        }
-                    } else
-                        logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
-                } else
-                    logger.warn("no sling detected, can not execute the shot, will re-segement the image");
-            }
-
-        }
-        return state;
     }
 
     /**
-     * initializes new stateid, creates all objects and links them to state
-     * and generate all actions from shootable objects
-     * @param s
+     * logs the current higscores for each level
      */
-    private int initProblemState(ProblemState s) {
-        int counter = 0; 
+    private void logScores() {
+        int totalScore = 0;
+
+        for (Integer key : scores.keySet()) {
+            totalScore += scores.get(key);
+            logger.info(" Level " + key
+                    + " Score: " + scores.get(key) + " ");
+        }
+        logger.info("Total Score: " + totalScore);
+    }
+
+    private void updateCurrentVision() {
+        currentScreenshot = ActionRobot.doScreenShot();
+        currentVision = new Vision(currentScreenshot);
+    }
+
+    private void updateCurrentProblemState() {
+        int counter = 0;
         // 1. get new StateId
-        int stateId = (int)qValuesDAO.insertStateId();
+
+        int stateId = qValuesDAO.insertStateId();
+        ProblemState problemState = new ProblemState(currentVision, actionRobot, stateId);
+
+        int objectId;
         // 2. create all Objects and link them to this state
-        for (ABObject obj : s.allObjects) {
-            int objectId = qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape));
+        for (ABObject object : problemState.getAllObjects()) {
+            objectId = qValuesDAO.insertObject((int) object.getCenterX() / 10,
+                    (int) object.getCenterX() / 10,
+                    String.valueOf(object.getType()),
+                    String.valueOf(object.shape));
             qValuesDAO.insertState(stateId, objectId);
         }
+
         // 3. Generate actions in q_values if we have no actions initialised yet
-        if (qValuesDAO.getActionAmount(stateId) == 0) {
-            for (ABObject obj : s.getShootableObjects()) {
-                qValuesDAO.insertNewAction(0.0, stateId, counter);
-                counter += 1;
-            }
-        }
-        logger.info("state with id " + String.valueOf(stateId) + "initialized");
-        return stateId;
+        this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
+
+        this.currentProblemState = problemState;
     }
 
     /**
-    * returns stateId from database to given problemstate by object comparison. 
-    * all objects equal -> stateid accepted, if less then 3 objects different but sam length -> candidate
-    * if not even candidate found init new state
-    * @param s
-    * @return stateId
-    */
-    private int getStateId(ProblemState s) {
+     * ?!
+     *
+     * @return
+     */
+    private int getStateId() {
         Set objectIds = new HashSet();
-        for (ABObject obj : s.allObjects) {
-            objectIds.add(qValuesDAO.insertObject((int)obj.getCenterX()/10, (int)obj.getCenterX()/10, String.valueOf(obj.getType()), String.valueOf(obj.shape)));
+
+        for (ABObject object : currentProblemState.getAllObjects()) {
+            objectIds.add(qValuesDAO.insertObject((int) object.getCenterX() / 10,
+                    (int) object.getCenterX() / 10,
+                    String.valueOf(object.getType()),
+                    String.valueOf(object.shape)));
         }
 
-        List<StateObject> stateObjects = qValuesDAO.getObjectListByStates();
-        List<Integer> candidates = new ArrayList<>();
-        for (StateObject obj : stateObjects){
-            Set<Integer> targetObjecIds = obj.objectIds;
+        List<StateObject> stateObjects = qValuesDAO.getObjectIdsForAllStates();
+        List<Integer> similarStateIds = new ArrayList<>();
+        for (StateObject stateObject : stateObjects) {
+            Set<Integer> targetObjectIds = stateObject.objectIds;
 
             // if they are the same, return objectId
-            if (objectIds.equals(targetObjecIds)){
-                logger.info("Found known state " + obj.stateId);
-                return obj.stateId;
-            } else if (objectIds.size() == targetObjecIds.size()){
-                //else look for symmetric difference if same length 
+            if (objectIds.equals(targetObjectIds)) {
+                logger.info("Found known state " + stateObject.stateId);
+                return stateObject.stateId;
+            } else if (objectIds.size() == targetObjectIds.size()) {
+                //else look for symmetric difference if same length
                 //(we assume the vision can count correctly, just had problems between rect and circle)
-                //@todo: maybe replace this with function from Guava or similar
                 Set<Integer> intersection = new HashSet<Integer>(objectIds);
-                intersection.retainAll(targetObjecIds);
+                intersection.retainAll(targetObjectIds);
 
                 Set<Integer> difference = new HashSet<Integer>();
                 difference.addAll(objectIds);
-                difference.addAll(targetObjecIds);
+                difference.addAll(targetObjectIds);
                 difference.removeAll(intersection);
-                if (difference.size() < 3){
-                    candidates.add(obj.stateId);
-                    logger.info("Candidate state: " + obj.stateId + " (difference: " + difference + ")");
+
+                if (difference.size() < 3) {
+                    similarStateIds.add(stateObject.stateId);
+                    logger.info("Candidate state: " + stateObject.stateId);
                 }
             }
         }
-        if (candidates.size() == 0){
-            return this.initProblemState(s);
+
+        if (similarStateIds.size() == 0) {
+            logger.info("Init new state");
+            this.updateCurrentProblemState();
+            return currentProblemState.getId();
         } else {
-            //@todo: take the one with lowest number?
-            return candidates.get(0);
+            //@todo in the case of multiple similar states we should use the one which is the most similar one to our own one
+            return similarStateIds.get(0);
+        }
+    }
+
+    private Point calculateTargetPointFromActionPair(ActionPair actionPair) {
+        int nextAction = actionPair.value;
+
+        List<ABObject> shootableObjects = currentProblemState.getShootableObjects();
+
+        /*//@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
+        if (shootableObjects.size() - 1 > nextAction) {
+            nextAction = shootableObjects.size() - 1;
+        }*/
+
+        ABObject targetObject = shootableObjects.get(nextAction);
+        return targetObject.getCenter();
+    }
+
+    /**
+     * I have no Idea what these function is doing, but maybe it's useful…
+     */
+    private Point calculateMaybeTheReleasePoint(Rectangle slingshot, Point targetPoint) {
+        Point releasePoint = null;
+        // estimate the trajectory
+        ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
+
+
+        //@todo: the stuff with the trajectory needs to be somehow converted into getNextAction because it IS an action
+        // do a high shot when entering a level to find an accurate velocity
+        if (firstShot && estimateLaunchPoints.size() > 1) {
+            lowTrajectory = false;
+            releasePoint = estimateLaunchPoints.get(1);
+        } else if (estimateLaunchPoints.size() == 1) {
+            // TODO: find out if low or high trajectory????
+            releasePoint = estimateLaunchPoints.get(0);
+        } else if (estimateLaunchPoints.size() == 2) {
+            // randomly choose between the trajectories, with a 1 in
+            // 6 chance of choosing the high one
+            if (randomGenerator.nextInt(6) == 0) {
+                lowTrajectory = false;
+                releasePoint = estimateLaunchPoints.get(1);
+            } else {
+                lowTrajectory = true;
+                releasePoint = estimateLaunchPoints.get(0);
+            }
+        } else if (estimateLaunchPoints.isEmpty()) {
+            logger.info("No release point found for the target");
+            logger.info("Try a shot with 45 degree");
+            releasePoint = trajectoryPlanner.findReleasePoint(slingshot, Math.PI / 4);
+        }
+        return releasePoint;
+    }
+
+    /**
+     * calculates based on the bird type we want to shoot at if it is a specia bird and if so what is the tapping time
+     *
+     * @param releasePoint
+     * @param slingshot
+     * @param targetPoint
+     * @return
+     */
+    private int calculateTappingTime(Point releasePoint, Rectangle slingshot, Point targetPoint) {
+        double releaseAngle = trajectoryPlanner.getReleaseAngle(slingshot,
+                releasePoint);
+        logger.info("Release Point: " + releasePoint);
+        logger.info("Release Angle: "
+                + Math.toDegrees(releaseAngle));
+        int tappingInterval = 0;
+        switch (actionRobot.getBirdTypeOnSling()) {
+
+            case RedBird:
+                tappingInterval = 0;
+                break;               // start of trajectory
+            case YellowBird:
+                tappingInterval = 65 + randomGenerator.nextInt(25);
+                break; // 65-90% of the way
+            case WhiteBird:
+                tappingInterval = 70 + randomGenerator.nextInt(20);
+                break; // 70-90% of the way
+            case BlackBird:
+                tappingInterval = 70 + randomGenerator.nextInt(20);
+                break; // 70-90% of the way
+            case BlueBird:
+                tappingInterval = 65 + randomGenerator.nextInt(20);
+                break; // 65-85% of the way
+            default:
+                tappingInterval = 60;
+        }
+        return trajectoryPlanner.getTapTime(slingshot, releasePoint, targetPoint, tappingInterval);
+    }
+
+    /**
+     * open question: what is reference point, what release point?!
+     *
+     * @param targetPoint
+     */
+    public Point shootOneBird(Point targetPoint, Rectangle slingshot) {
+
+        //ABObject pig = currentVision.findPigsMBR().get(0);
+        //targetPoint = pig.getCenter();
+
+        Point releasePoint = this.calculateMaybeTheReleasePoint(slingshot, targetPoint);
+
+        int tappingTime = 0;
+        if (releasePoint != null) {
+            tappingTime = this.calculateTappingTime(releasePoint, slingshot, targetPoint);
+        } else {
+            logger.error("No release point found -,-");
+        }
+
+        Point referencePoint = trajectoryPlanner.getReferencePoint(slingshot);
+
+        int dx = (int) releasePoint.getX() - referencePoint.x;
+        int dy = (int) releasePoint.getY() - referencePoint.y;
+
+        Shot shot = new Shot(referencePoint.x, referencePoint.y, dx, dy, 1, tappingTime);
+
+
+        // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
+
+        ActionRobot.fullyZoomOut();
+
+        this.updateCurrentVision();
+
+        Rectangle _sling = currentVision.findSlingshotMBR();
+
+        if (_sling != null) {
+            double scaleDifference = Math.pow((slingshot.width - _sling.width), 2) + Math.pow((slingshot.height - _sling.height), 2);
+            if (scaleDifference < 25) {
+                if (dx < 0) {
+                    actionRobot.cshoot(shot);
+                }
+            } else {
+                logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
+            }
+        } else {
+            logger.warn("no sling detected, can not execute the shot, will re-segement the image");
+        }
+
+        return releasePoint;
+    }
+
+    private Rectangle findSlingshot() {
+        Rectangle slingshot = currentVision.findSlingshotMBR();
+
+        // confirm the slingshot
+        while (slingshot == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
+            logger.warn("No slingshot detected. Please remove pop up or zoom out");
+            ActionRobot.fullyZoomOut();
+            this.updateCurrentVision();
+            slingshot = currentVision.findSlingshotMBR();
+            ActionRobot.skipPopUp();
+        }
+        return slingshot;
+    }
+
+    /**
+     * checks if highest q_value is 0.0 which means that we have never been in this state,
+     * so we need to initialize all possible actions to 0.0
+     *
+     * @param problemState
+     */
+    private void insertsPossibleActionsForProblemStateIntoDatabase(ProblemState problemState) {
+        int counter = 0;
+        if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
+            for (ABObject object : problemState.getShootableObjects()) {
+                qValuesDAO.insertNewAction(0, problemState.getId(), counter);
+                counter += 1;
+            }
         }
     }
 
@@ -410,10 +573,11 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * @param vision
      * @return List of current birds and blocks
      */
-    private List<ABObject> getBlocksAndBirds(Vision vision) {
-        List<ABObject> allObjs = new ArrayList<>();
+    private Set<Object> getBlocksAndPigs(Vision vision) {
+        Set<Object> allObjs = new HashSet<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
+        allObjs.addAll(vision.findTrajPoints());
         return allObjs;
     }
 
@@ -442,20 +606,20 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * @param reward
      * @param end        true if the current level was finished (could be either won or lost)
      */
-    private void updateQValue(int fromId, ActionPair nextAction, ProblemState to, double reward, boolean end) {
+    private void updateQValue(ProblemState from, ProblemState to, ActionPair nextAction, double reward, boolean end, int gameId, int moveCounter) {
         int action = nextAction.value;
-        logger.info("Search for to State");
-        int toId = getStateId(to);
-        double oldValue = qValuesDAO.getQValue(fromId, action);
+        double oldValue = qValuesDAO.getQValue(from.getId(), action);
         double newValue;
+
         if (end) {
             newValue = oldValue + learningRate * (reward - oldValue);
         } else {
             //possible error: highest Q value could have been different compared to when the action was selected with qValuesDAO.getBestAction
-            newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(toId) - oldValue);
+            newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.getId()) - oldValue);
         }
-        qValuesDAO.updateQValue(newValue, fromId, action);
-        qValuesDAO.saveMove(gameId, moveCounter, fromId, action, toId, reward, nextAction.rand, lowTrajectory);
+
+        qValuesDAO.updateQValue(newValue, from.getId(), action);
+        qValuesDAO.saveMove(gameId, moveCounter, from.getId(), action, to.getId(), reward, nextAction.rand, lowTrajectory);
 
     }
 
@@ -463,17 +627,16 @@ public class ReinforcementLearningAgentStandalone implements Runnable, Agent {
      * Returns next action, with explorationrate as probability of taking a random action
      * and else look for the so far best action
      *
-     * @param stateId
-     * @return ActionPair with value and boolean for random decision
+     * @return
      */
-    private ActionPair getNextAction(int stateId) {
+    private ActionPair getNextAction() {
         int randomValue = randomGenerator.nextInt(100);
         if (randomValue < explorationRate * 100) {
             logger.info("Picked random action");
-            return new ActionPair(true, qValuesDAO.getRandomAction(stateId));
+            return new ActionPair(true, qValuesDAO.getRandomAction(currentProblemState.getId()));
         } else {
             logger.info("Picked currently best available action");
-            return new ActionPair(false, qValuesDAO.getBestAction(stateId));
+            return new ActionPair(false, qValuesDAO.getBestAction(currentProblemState.getId()));
         }
     }
 

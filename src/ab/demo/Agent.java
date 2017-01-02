@@ -5,6 +5,6 @@ package ab.demo;
  *
  * @author jgonsior
  */
-public interface Agent {
-    public void run();
+public interface Agent extends Runnable {
+    void run();
 }

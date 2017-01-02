@@ -8,6 +8,8 @@
  *****************************************************************************/
 package ab.planner;
 
+import org.apache.log4j.Logger;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.List;
 
 public class TrajectoryPlanner {
 
+    private static Logger logger = Logger.getLogger(TrajectoryPlanner.class);
 
     private static double X_OFFSET = 0.5;
     private static double Y_OFFSET = 0.65;
@@ -100,7 +103,7 @@ public class TrajectoryPlanner {
 
         // adjust the scale and angle change
         adjustScale(Math.sqrt(ux * ux + uy * uy), theta);
-        System.out.println("\nscale factor changed to: " + _scaleFactor);
+        logger.info("scale factor changed to: " + _scaleFactor);
         _trajSet = false;
     }
 
