@@ -154,13 +154,16 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                         logger.info("sleep 300 for new reward (current: " + String.valueOf(rewardAfter) +")");
                         rewardBefore = rewardAfter;
                         rewardAfter = getReward(actionRobot.getState());
+                        this.updateCurrentVision();
+                        saveCurrentScreenshot();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }
             logger.info("done waiting");
-            ;
+            this.updateCurrentVision();
+            saveCurrentScreenshot();
         }
     }
 
