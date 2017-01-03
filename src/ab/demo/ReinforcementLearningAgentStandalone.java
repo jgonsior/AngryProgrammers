@@ -57,6 +57,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private double currentReward;
     private int currentMoveCounter;
     private int currentGameId;
+    private boolean birdsLeft;
 
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
@@ -132,14 +133,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
     private void checkIfDonePlayingAndWaitForWinningScreen() {
         this.updateCurrentVision();
-        // possibly birds on the right side ar found which we can not shoot -> do not consider them
-        // @todo: maybe readjust the 300 for getCenterX()
-        boolean birdsLeft = false;
-        for (ABObject bird : currentVision.findBirdsMBR()){
-            if (bird.getCenterX() < 300){
-                birdsLeft = true;
-            }
-        }
+
         if (!birdsLeft || currentVision.findPigsMBR().size() == 0) {
             logger.info("no pigs or birds (on left side) left, now wait until gamestate changed");
             // if we have no pigs left or birds, wait for winning screen
@@ -551,7 +545,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             double scaleDifference = Math.pow((slingshot.width - _sling.width), 2) + Math.pow((slingshot.height - _sling.height), 2);
             if (scaleDifference < 25) {
                 if (dx < 0) {
+                    int amountOfBirds = currentVision.findBirdsMBR().size();
                     actionRobot.cshoot(shot);
+                    if (amountOfBirds == 1){
+                        birdsLeft = false;
+                    } else {
+                        birdsLeft = true;
+                    }
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
