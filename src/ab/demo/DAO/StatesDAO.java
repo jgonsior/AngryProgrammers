@@ -1,13 +1,16 @@
 package ab.demo.DAO;
 
 import ab.demo.qlearning.StateObject;
-import ab.demo.qlearning.StateObjectsMapper;
+import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -35,4 +38,14 @@ public interface StatesDAO {
      * closes the connection
      */
     void close();
+
+    class StateObjectsMapper implements ResultSetMapper<StateObject> {
+
+        @Override
+        public StateObject map(int row, ResultSet rs, StatementContext ctx) throws SQLException {
+            return new StateObject(rs.getInt("stateId"), rs.getString("objectIds"));
+        }
+    }
+
 }
+

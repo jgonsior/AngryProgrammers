@@ -4,6 +4,7 @@ import ab.demo.DAO.*;
 import ab.demo.logging.LoggingHandler;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
+import ab.demo.qlearning.Action;
 import ab.demo.qlearning.ProblemState;
 import ab.demo.qlearning.StateObject;
 import ab.planner.TrajectoryPlanner;
@@ -234,11 +235,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     updateCurrentVision();
 
                     // get next action
-                    ActionPair nextActionPair = getNextAction();
+                    Action nextAction = getNextAction();
 
                     Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
 
-                    Point releasePoint = shootOneBird(calculateTargetPointFromActionPair(nextActionPair), slingshot);
+                    Point releasePoint = shootOneBird(calculateTargetPointFromActionObject(nextAction), slingshot);
 
                     logger.info("done shooting");
 
@@ -259,9 +260,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     if (currentGameState == GameStateExtractor.GameState.PLAYING) {
                         updateCurrentProblemState();
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, false, currentGameId, currentMoveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextAction, currentReward, false, currentGameId, currentMoveCounter);
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
-                        updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, currentGameId, currentMoveCounter);
+                        updateQValue(previousProblemState, currentProblemState, nextAction, currentReward, true, currentGameId, currentMoveCounter);
                     }
 
                     currentMoveCounter++;
@@ -344,7 +345,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void updateCurrentProblemState() {
         // 1. create state and set StateId
         ProblemState problemState = new ProblemState(currentVision, actionRobot, 0);
-        ActionPair stateIdPair = getStateId(problemState);
+        NotActionPairAnyMore stateIdPair = getStateId(problemState);
         int stateId = stateIdPair.value;
         problemState.setId(stateId);
 
@@ -369,9 +370,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /**
      * ?!
      *
-     * @return ActionPair with boolean if new created id and id as value
+     * @return NotActionPairAnyMore with boolean if new created id and id as value
      */
-    private ActionPair getStateId(ProblemState state) {
+    private NotActionPairAnyMore getStateId(ProblemState state) {
         Set objectIds = new HashSet();
 
         for (ABObject object : state.getAllObjects()) {
@@ -395,7 +396,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             // if they are the same, return objectId
             if (objectIds.equals(targetObjectIds)) {
                 logger.info("Found known state " + stateObject.stateId);
-                return new ActionPair(false, stateObject.stateId);
+                return new NotActionPairAnyMore(false, stateObject.stateId);
             } else if (objectIds.size() == targetObjectIds.size()) {
                 //else look for symmetric difference if same length
                 //(we assume the vision can count correctly, just had problems between rect and circle)
@@ -416,16 +417,16 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         if (similarStateIds.size() == 0) {
             logger.info("Init new state");
-            return new ActionPair(true, stateIdDAO.insertStateId());
+            return new NotActionPairAnyMore(true, stateIdDAO.insertStateId());
         } else {
             //@todo in the case of multiple similar states we should use the one which is the most similar one to our own one
-            return new ActionPair(false, similarStateIds.get(0));
+            return new NotActionPairAnyMore(false, similarStateIds.get(0));
         }
     }
 
 
-    private Point calculateTargetPointFromActionPair(ActionPair actionPair) {
-        int nextAction = actionPair.value;
+    private Point calculateTargetPointFromActionObject(Action action) {
+        int nextAction = action.getActionId();
 
         List<ABObject> shootableObjects = currentProblemState.getShootableObjects();
 
@@ -641,9 +642,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * @param reward
      * @param end        true if the current level was finished (could be either won or lost)
      */
-    private void updateQValue(ProblemState from, ProblemState to, ActionPair nextAction, double reward, boolean end, int gameId, int moveCounter) {
-        int action = nextAction.value;
-        double oldValue = qValuesDAO.getQValue(from.getId(), action);
+    private void updateQValue(ProblemState from, ProblemState to, Action nextAction, double reward, boolean end, int gameId, int moveCounter) {
+        int actionId = nextAction.getActionId();
+        double oldValue = qValuesDAO.getQValue(from.getId(), actionId);
         double newValue;
 
         if (end) {
@@ -653,8 +654,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.getId()) - oldValue);
         }
 
-        qValuesDAO.updateQValue(newValue, from.getId(), action);
-        movesDAO.saveMove(gameId, moveCounter, from.getId(), action, to.getId(), reward, nextAction.rand, lowTrajectory);
+        qValuesDAO.updateQValue(newValue, from.getId(), actionId);
+        movesDAO.saveMove(gameId, moveCounter, from.getId(), actionId, to.getId(), reward, nextAction.isRand(), lowTrajectory);
 
     }
 
@@ -664,25 +665,32 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      *
      * @return
      */
-    private ActionPair getNextAction() {
+    private Action getNextAction() {
         int randomValue = randomGenerator.nextInt(100);
+        Action action;
         if (randomValue < explorationRate * 100) {
             logger.info("Picked random action");
-            return new ActionPair(true, qValuesDAO.getRandomAction(currentProblemState.getId()));
+            //get random action should return more than one id!
+            action = qValuesDAO.getRandomAction(currentProblemState.getId());
+            action.setRand(true);
         } else {
             logger.info("Picked currently best available action");
-            return new ActionPair(false, qValuesDAO.getBestAction(currentProblemState.getId()));
+            action = qValuesDAO.getBestAction(currentProblemState.getId());
+            action.setRand(false);
         }
+        return action;
     }
 
-    private class ActionPair {
+
+    private class NotActionPairAnyMore {
         public final boolean rand;
         public final int value;
 
-        public ActionPair(boolean rand, int value) {
+        public NotActionPairAnyMore(boolean rand, int value) {
             this.rand = rand;
             this.value = value;
         }
 
     }
+
 }
