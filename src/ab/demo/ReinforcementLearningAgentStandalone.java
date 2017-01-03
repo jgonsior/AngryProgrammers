@@ -596,7 +596,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         int counter = 0;
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
             for (ABObject object : problemState.getShootableObjects()) {
-                qValuesDAO.insertNewAction(0, problemState.getId(), counter);
+                qValuesDAO.insertNewAction(0, problemState.getId(), counter, object.getTrajectoryType().name(), object.toString());
                 counter += 1;
             }
         }

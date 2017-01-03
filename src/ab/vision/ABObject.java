@@ -49,6 +49,10 @@ public class ABObject extends Rectangle {
         this.type = ABType.Unknown;
     }
 
+    public String toString() {
+        return this.id + this.type.toString() + this.shape.toString();
+    }
+
     public static void resetCounter() {
         counter = 0;
     }

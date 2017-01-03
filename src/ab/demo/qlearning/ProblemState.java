@@ -92,6 +92,7 @@ public class ProblemState {
         for (ABObject lowShootableObject : lowShootableObjects) {
             ABObject highShootableObject = (ABObject) lowShootableObject.clone();
             highShootableObject.setTrajectoryType(ABObject.TrajectoryType.HIGH);
+            shootableObjects.add(highShootableObject);
         }
 
         return shootableObjects;
