@@ -11,23 +11,20 @@ package ab.vision;
 import java.awt.*;
 
 public class ABObject extends Rectangle {
+
     private static final long serialVersionUID = 1L;
     private static int counter = 0;
     public int id;
     //object type
     public ABType type;
-
     public int area = 0;
     //For all MBRs, the shape is Rect by default.
     public ABShape shape = ABShape.Rect;
-
     //For all MBRs, the angle is 0 by default.
     public double angle = 0;
-
     //is Hollow or not
     public boolean hollow = false;
-
-
+    private TrajectoryType trajectoryType = TrajectoryType.LOW;
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
         this.type = type;
@@ -46,6 +43,7 @@ public class ABObject extends Rectangle {
         this.id = ab.id;
     }
 
+
     public ABObject() {
         this.id = counter++;
         this.type = ABType.Unknown;
@@ -55,6 +53,14 @@ public class ABObject extends Rectangle {
         counter = 0;
     }
 
+    public TrajectoryType getTrajectoryType() {
+        return trajectoryType;
+    }
+
+    public void setTrajectoryType(TrajectoryType trajectoryType) {
+        this.trajectoryType = trajectoryType;
+    }
+
     public ABType getType() {
         return type;
     }
@@ -62,5 +68,7 @@ public class ABObject extends Rectangle {
     public Point getCenter() {
         return new Point((int) getCenterX(), (int) getCenterY());
     }
+
+    public enum TrajectoryType {HIGH, LOW}
 
 }

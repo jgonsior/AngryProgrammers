@@ -1,10 +1,10 @@
 package ab.demo;
 
+import ab.demo.DAO.*;
 import ab.demo.logging.LoggingHandler;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.demo.qlearning.ProblemState;
-import ab.demo.qlearning.QValuesDAO;
 import ab.demo.qlearning.StateObject;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
@@ -41,6 +41,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private Random randomGenerator;
 
     private QValuesDAO qValuesDAO;
+    private GamesDAO gamesDAO;
+    private MovesDAO movesDAO;
+    private ObjectsDAO objectsDAO;
+    private StateIdDAO stateIdDAO;
+    private StatesDAO statesDAO;
 
     private boolean lowTrajectory = false;
 
@@ -63,7 +68,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
     // a standalone implementation of the Reinforcement Agent
-    public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO) {
+    public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO, GamesDAO gamesDAO, MovesDAO movesDAO, ObjectsDAO objectsDAO, StateIdDAO stateIdDAO, StatesDAO statesDAO) {
         LoggingHandler.initFileLog();
 
         this.actionRobot = new ActionRobot();
@@ -71,6 +76,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         this.firstShot = true;
 
         this.qValuesDAO = qValuesDAO;
+        this.gamesDAO = gamesDAO;
+        this.movesDAO = movesDAO;
+        this.objectsDAO = objectsDAO;
+        this.stateIdDAO = stateIdDAO;
+        this.statesDAO = statesDAO;
 
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
@@ -135,7 +145,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         this.updateCurrentVision();
 
         if (!birdsLeft || currentVision.findPigsMBR().size() == 0) {
-            logger.info("no pigs or birds (on left side) left, now wait until gamestate changed");
+            logger.info("no pigs or birds (on left side) left, now wait until gamestate changes");
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                 try {
@@ -151,10 +161,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 logger.info("in WON state now wait until stable reward");
                 double rewardBefore = -1.0;
                 double rewardAfter = getReward(actionRobot.getState());
-                while(rewardBefore != rewardAfter) {
+                while (rewardBefore != rewardAfter) {
                     try {
                         Thread.sleep(300);
-                        logger.info("sleep 300 for new reward (current: " + String.valueOf(rewardAfter) +")");
+                        logger.info("sleep 300 for new reward (current: " + String.valueOf(rewardAfter) + ")");
                         rewardBefore = rewardAfter;
                         rewardAfter = getReward(actionRobot.getState());
                         this.updateCurrentVision();
@@ -200,8 +210,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         int score;
         ProblemState previousProblemState;
 
-        // id which will be generated randomly every lvl that we can connect moves to one game
-        currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        // id which will be generated randomly every lvl so that we can connect moves to games
+        currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
 
         //one cycle means one shot was being executed
         while (true) {
@@ -237,7 +247,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     logger.info("done waiting for blocks to fall down");
 
                     //save the information about the current zooming for the next shot
-                    //could be deleted if we don't zoom anymore
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
                     trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
 
@@ -288,12 +297,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
 
-                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LOST) {
                 logger.info("Restart level");
                 actionRobot.restartLevel();
-                currentGameId = qValuesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+                currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
@@ -340,14 +349,14 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         problemState.setId(stateId);
 
         // 2. if stateId was generated newly create all Objects and link them to this state
-        if (stateIdPair.rand){
+        if (stateIdPair.rand) {
             int objectId;
             for (ABObject object : problemState.getAllObjects()) {
-                objectId = qValuesDAO.insertObject((int) object.getCenterX() / 10,
+                objectId = objectsDAO.insertObject((int) object.getCenterX() / 10,
                         (int) object.getCenterX() / 10,
                         String.valueOf(object.getType()),
                         String.valueOf(object.shape));
-                qValuesDAO.insertState(stateId, objectId);
+                statesDAO.insertState(stateId, objectId);
             }
 
             // 3. Generate actions in q_values if we have no actions initialised yet
@@ -368,17 +377,17 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         for (ABObject object : state.getAllObjects()) {
 
             // do not compare birds on the right side if they still lay there
-            if (String.valueOf(object.getType()).contains("Bird") && object.getCenterX() > 300){
+            if (String.valueOf(object.getType()).contains("Bird") && object.getCenterX() > 300) {
                 continue;
             }
 
-            objectIds.add(qValuesDAO.insertObject((int) object.getCenterX() / 10,
+            objectIds.add(objectsDAO.insertObject((int) object.getCenterX() / 10,
                     (int) object.getCenterX() / 10,
                     String.valueOf(object.getType()),
                     String.valueOf(object.shape)));
         }
 
-        List<StateObject> stateObjects = qValuesDAO.getObjectIdsForAllStates();
+        List<StateObject> stateObjects = statesDAO.getObjectIdsForAllStates();
         List<Integer> similarStateIds = new ArrayList<>();
         for (StateObject stateObject : stateObjects) {
             Set<Integer> targetObjectIds = stateObject.objectIds;
@@ -386,7 +395,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             // if they are the same, return objectId
             if (objectIds.equals(targetObjectIds)) {
                 logger.info("Found known state " + stateObject.stateId);
-                return new ActionPair(false,stateObject.stateId);
+                return new ActionPair(false, stateObject.stateId);
             } else if (objectIds.size() == targetObjectIds.size()) {
                 //else look for symmetric difference if same length
                 //(we assume the vision can count correctly, just had problems between rect and circle)
@@ -407,7 +416,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         if (similarStateIds.size() == 0) {
             logger.info("Init new state");
-            return new ActionPair(true, qValuesDAO.insertStateId());
+            return new ActionPair(true, stateIdDAO.insertStateId());
         } else {
             //@todo in the case of multiple similar states we should use the one which is the most similar one to our own one
             return new ActionPair(false, similarStateIds.get(0));
@@ -547,7 +556,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 if (dx < 0) {
                     int amountOfBirds = currentVision.findBirdsMBR().size();
                     actionRobot.cshoot(shot);
-                    if (amountOfBirds == 1){
+                    if (amountOfBirds == 1) {
                         birdsLeft = false;
                     } else {
                         birdsLeft = true;
@@ -645,7 +654,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }
 
         qValuesDAO.updateQValue(newValue, from.getId(), action);
-        qValuesDAO.saveMove(gameId, moveCounter, from.getId(), action, to.getId(), reward, nextAction.rand, lowTrajectory);
+        movesDAO.saveMove(gameId, moveCounter, from.getId(), action, to.getId(), reward, nextAction.rand, lowTrajectory);
 
     }
 

@@ -1,7 +1,7 @@
 package ab.demo;
 
+import ab.demo.DAO.*;
 import ab.demo.logging.LoggingHandler;
-import ab.demo.qlearning.QValuesDAO;
 import ab.server.Proxy;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
@@ -30,7 +30,7 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        //args = new String[]{"-su"};
+        args = new String[]{"-su"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
@@ -74,6 +74,11 @@ public class MainEntry {
         DBI dbi = new DBI(dbPath, dbUser, dbPass);
 
         QValuesDAO qValuesDAO = dbi.open(QValuesDAO.class);
+        GamesDAO gamesDAO = dbi.open(GamesDAO.class);
+        MovesDAO movesDAO = dbi.open(MovesDAO.class);
+        ObjectsDAO objectsDAO = dbi.open(ObjectsDAO.class);
+        StateIdDAO stateIdDAO = dbi.open(StateIdDAO.class);
+        StatesDAO statesDAO = dbi.open(StatesDAO.class);
 
         try {
             cmd = parser.parse(options, args);
@@ -93,7 +98,7 @@ public class MainEntry {
             LoggingHandler.initFileLog();
 
             if (cmd.hasOption("standalone")) {
-                agent = new ReinforcementLearningAgentStandalone(qValuesDAO);
+                agent = new ReinforcementLearningAgentStandalone(qValuesDAO, gamesDAO, movesDAO, objectsDAO, stateIdDAO, statesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveAgent();
             } else if (cmd.hasOption("competition")) {
@@ -108,11 +113,11 @@ public class MainEntry {
 
             if (cmd.hasOption("updateDatabaseTables")) {
                 qValuesDAO.createQValuesTable();
-                qValuesDAO.createAllGamesTable();
-                qValuesDAO.createAllMovesTable();
-                qValuesDAO.createAllObjectsTable();
-                qValuesDAO.createAllStatesTable();
-                qValuesDAO.createAllStateIdsTable();
+                gamesDAO.createGamesTable();
+                movesDAO.createMovesTable();
+                objectsDAO.createObjectsTable();
+                stateIdDAO.createStateIdsTable();
+                statesDAO.createStatesTable();
             }
 
         } catch (UnrecognizedOptionException e) {

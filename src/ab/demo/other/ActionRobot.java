@@ -35,9 +35,8 @@ import java.util.List;
  * Util class for basic functions
  */
 public class ActionRobot {
-    public static Proxy proxy;
-
     private static final Logger logger = Logger.getLogger(ActionRobot.class);
+    public static Proxy proxy;
 
     static {
         if (proxy == null) {
@@ -212,7 +211,7 @@ public class ActionRobot {
 
     }
 
-    public void cshoot(Shot shot) {        
+    public void cshoot(Shot shot) {
         this.cFastshoot(shot);
         logger.info("Shooting Completed");
 

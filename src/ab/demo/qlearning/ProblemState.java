@@ -64,9 +64,10 @@ public class ProblemState {
      * @return list of approximation of shootableObjects objects
      */
     private List<ABObject> calculateShootableObjects() {
-        List<ABObject> shootableObjects = new ArrayList<>(vision.findBlocksRealShape());
-        shootableObjects.addAll(vision.findPigsRealShape());
-        shootableObjects.addAll(vision.findTNTs());
+        List<ABObject> lowShootableObjects = new ArrayList<>(vision.findBlocksRealShape());
+        lowShootableObjects.addAll(vision.findHills());
+        lowShootableObjects.addAll(vision.findPigsRealShape());
+        lowShootableObjects.addAll(vision.findTNTs());
 
         // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {
@@ -79,12 +80,18 @@ public class ProblemState {
                     double y_neighbor = neighbor.getCenterY();
                     if ((x_neighbor < x_object) && (y_neighbor < y_object)) {
                         if (((x_object - x_neighbor) < 20) && ((y_object - y_neighbor) < 20)) {
-                            shootableObjects.remove(object);
+                            lowShootableObjects.remove(object);
                             break innerloop;
                         }
                     }
                 }
             }
+        }
+
+        List<ABObject> shootableObjects = new ArrayList<>(lowShootableObjects);
+        for (ABObject lowShootableObject : lowShootableObjects) {
+            ABObject highShootableObject = (ABObject) lowShootableObject.clone();
+            highShootableObject.setTrajectoryType(ABObject.TrajectoryType.HIGH);
         }
 
         return shootableObjects;
