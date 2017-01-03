@@ -158,6 +158,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 logger.info("in WON state now wait until stable reward");
                 double rewardBefore = -1.0;
                 double rewardAfter = getReward(actionRobot.getState());
+                currentActionName = "scoreScreenshot";
                 while (rewardBefore != rewardAfter) {
                     try {
                         Thread.sleep(300);
@@ -619,7 +620,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private double getReward(GameStateExtractor.GameState state) {
         if (state == GameStateExtractor.GameState.WON) {
             GameStateExtractor gameStateExtractor = new GameStateExtractor();
-            BufferedImage scoreScreenshot = actionRobot.doScreenShot();
+            this.updateCurrentVision();
+            BufferedImage scoreScreenshot = this.currentScreenshot;
             return gameStateExtractor.getScoreEndGame(scoreScreenshot);
         } else {
             return -1;
@@ -665,13 +667,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             //get random action should return more than one id!
             action = qValuesDAO.getRandomAction(currentProblemState.getId());
             action.setRand(true);
-            logger.info("Picked random action, " + action.getTrajectoryType().name() + "| " + action.getTargetObjectString());
+            currentActionName = "random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
         } else {
             action = qValuesDAO.getBestAction(currentProblemState.getId());
             action.setRand(false);
-            logger.info("Picked currently best available action, " + action.getTrajectoryType().name() + "| " + action.getTargetObjectString());
+            currentActionName = "best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
         }
-        currentActionName = action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
+        logger.info("Selected the following action: " + currentActionName);
         return action;
     }
 
