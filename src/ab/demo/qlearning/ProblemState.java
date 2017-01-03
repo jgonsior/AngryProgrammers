@@ -66,6 +66,7 @@ public class ProblemState {
     private List<ABObject> calculateShootableObjects() {
         List<ABObject> shootableObjects = new ArrayList<>(vision.findBlocksRealShape());
         shootableObjects.addAll(vision.findPigsRealShape());
+        shootableObjects.addAll(vision.findTNTs());
 
         // check for every object if is blocked by a neighbour
         for (ABObject object : allObjects) {
