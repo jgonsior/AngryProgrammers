@@ -121,7 +121,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
-                logger.info("aftd" + blocksAndPigsAfter);
+                logger.info("aft:" + blocksAndPigsAfter);
 
 
             } catch (InterruptedException e) {
@@ -213,15 +213,15 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         while (true) {
             logger.info("Next iteration of the all mighty while loop");
 
-            updateCurrentVision();
-            updateCurrentProblemState();
-
             currentGameState = actionRobot.getState();
-            previousProblemState = currentProblemState;
 
             if (currentGameState == GameStateExtractor.GameState.PLAYING) {
 
+                updateCurrentVision();
                 Rectangle slingshot = this.findSlingshot();
+
+                updateCurrentProblemState();
+                previousProblemState = currentProblemState;
 
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
@@ -242,7 +242,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     logger.info("done waiting for blocks to fall down");
 
-
                     //save the information about the current zooming for the next shot
                     //could be deleted if we don't zoom anymore
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
@@ -261,7 +260,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     } else if (currentGameState == GameStateExtractor.GameState.WON || currentGameState == GameStateExtractor.GameState.LOST) {
                         updateQValue(previousProblemState, currentProblemState, nextActionPair, currentReward, true, currentGameId, currentMoveCounter);
                     }
-
 
                     currentMoveCounter++;
                 } else {
@@ -374,6 +372,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         Set objectIds = new HashSet();
 
         for (ABObject object : state.getAllObjects()) {
+
+            // do not compare birds on the right side if they still lay there
+            if (String.valueOf(object.getType()).contains("Bird") && object.getCenterX() > 300){
+                continue;
+            }
+
             objectIds.add(qValuesDAO.insertObject((int) object.getCenterX() / 10,
                     (int) object.getCenterX() / 10,
                     String.valueOf(object.getType()),
