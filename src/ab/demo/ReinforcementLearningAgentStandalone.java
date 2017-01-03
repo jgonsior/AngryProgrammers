@@ -37,7 +37,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private double learningRate = 0.1;
     private double explorationRate = 0.7;
 
-    private boolean firstShot;
 
     private Random randomGenerator;
 
@@ -47,9 +46,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private ObjectsDAO objectsDAO;
     private StateIdDAO stateIdDAO;
     private StatesDAO statesDAO;
-
-    private boolean lowTrajectory = false;
-
 
     /**
      * some variables containing information about the current state of the game which are being used by multiple methods
@@ -65,6 +61,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private int currentGameId;
     private boolean birdsLeft;
 
+    private String currentActionName = "";
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
@@ -74,7 +71,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         this.actionRobot = new ActionRobot();
         this.randomGenerator = new Random();
-        this.firstShot = true;
 
         this.qValuesDAO = qValuesDAO;
         this.gamesDAO = gamesDAO;
@@ -191,7 +187,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void saveCurrentScreenshot() {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + System.currentTimeMillis() + ".gif");
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + currentActionName + "_" + System.currentTimeMillis() + ".gif");
         try {
             outputFile.getParentFile().mkdirs();
             ImageIO.write(currentScreenshot, "gif", outputFile);
@@ -239,7 +235,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
 
-                    Point releasePoint = shootOneBird(calculateTargetPointFromActionObject(nextAction), slingshot);
+                    Point releasePoint = shootOneBird(nextAction, slingshot);
 
                     logger.info("done shooting");
 
@@ -443,7 +439,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /**
      * I have no Idea what these function is doing, but maybe it's useful…
      */
-    private Point calculateMaybeTheReleasePoint(Rectangle slingshot, Point targetPoint) {
+    private Point calculateReleasePoint(Rectangle slingshot, Point targetPoint, ABObject.TrajectoryType trajectoryType) {
         Point releasePoint = null;
         // estimate the trajectory
         ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
@@ -451,20 +447,15 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         //@todo: the stuff with the trajectory needs to be somehow converted into getNextAction because it IS an action
         // do a high shot when entering a level to find an accurate velocity
-        if (firstShot && estimateLaunchPoints.size() > 1) {
-            lowTrajectory = false;
-            releasePoint = estimateLaunchPoints.get(1);
-        } else if (estimateLaunchPoints.size() == 1) {
-            // TODO: find out if low or high trajectory????
+        if (estimateLaunchPoints.size() == 1) {
+            if (trajectoryType != ABObject.TrajectoryType.LOW) {
+                logger.error("Somehow there was only one launch point found and therefore we can only do a LOW shot, eventhoug a HIGH shot was being requested.");
+            }
             releasePoint = estimateLaunchPoints.get(0);
         } else if (estimateLaunchPoints.size() == 2) {
-            // randomly choose between the trajectories, with a 1 in
-            // 6 chance of choosing the high one
-            if (randomGenerator.nextInt(6) == 0) {
-                lowTrajectory = false;
+            if (trajectoryType == ABObject.TrajectoryType.HIGH) {
                 releasePoint = estimateLaunchPoints.get(1);
-            } else {
-                lowTrajectory = true;
+            } else if (trajectoryType == ABObject.TrajectoryType.LOW) {
                 releasePoint = estimateLaunchPoints.get(0);
             }
         } else if (estimateLaunchPoints.isEmpty()) {
@@ -519,14 +510,16 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /**
      * open question: what is reference point, what release point?!
      *
-     * @param targetPoint
+     * @param action
+     * @param slingshot
      */
-    public Point shootOneBird(Point targetPoint, Rectangle slingshot) {
+    public Point shootOneBird(Action action, Rectangle slingshot) {
+        Point targetPoint = calculateTargetPointFromActionObject(action);
 
         //ABObject pig = currentVision.findPigsMBR().get(0);
         //targetPoint = pig.getCenter();
 
-        Point releasePoint = this.calculateMaybeTheReleasePoint(slingshot, targetPoint);
+        Point releasePoint = this.calculateReleasePoint(slingshot, targetPoint, action.getTrajectoryType());
 
         int tappingTime = 0;
         if (releasePoint != null) {
@@ -655,7 +648,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }
 
         qValuesDAO.updateQValue(newValue, from.getId(), actionId);
-        movesDAO.saveMove(gameId, moveCounter, from.getId(), actionId, to.getId(), reward, nextAction.isRand(), lowTrajectory);
+        movesDAO.saveMove(gameId, moveCounter, from.getId(), actionId, to.getId(), reward, nextAction.isRand(), nextAction.getTrajectoryType().name());
 
     }
 
@@ -669,15 +662,16 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         int randomValue = randomGenerator.nextInt(100);
         Action action;
         if (randomValue < explorationRate * 100) {
-            logger.info("Picked random action");
             //get random action should return more than one id!
             action = qValuesDAO.getRandomAction(currentProblemState.getId());
             action.setRand(true);
+            logger.info("Picked random action, " + action.getTrajectoryType().name() + "| " + action.getTargetObjectString());
         } else {
-            logger.info("Picked currently best available action");
             action = qValuesDAO.getBestAction(currentProblemState.getId());
             action.setRand(false);
+            logger.info("Picked currently best available action, " + action.getTrajectoryType().name() + "| " + action.getTargetObjectString());
         }
+        currentActionName = action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
         return action;
     }
 

@@ -48,7 +48,7 @@ public interface QValuesDAO {
 
     class ActionMapper implements ResultSetMapper<Action> {
         public Action map(int index, ResultSet resultSet, StatementContext ctx) throws SQLException {
-            return new Action(resultSet.getInt("stateId"), resultSet.getString("trajectoryType"), resultSet.getString("actionObject"));
+            return new Action(resultSet.getInt("action"), resultSet.getString("trajectoryType"), resultSet.getString("actionObject"));
         }
     }
 }
