@@ -142,12 +142,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         this.updateCurrentVision();
 
         // check if there are some birds on the sling
-        /*boolean birdsLeft = false;
-        for (ABObject bird : currentVision.findBirdsMBR()){
-            if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
-                birdsLeft = true;
-            }
-        }*/
+        /*
+        boolean birdsLeft = false;
+            for (ABObject bird : currentVision.findBirdsMBR()){
+                if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
+                    birdsLeft = true;
+            }*/
+        
 
         if (birdCounter == 0 || currentVision.findPigsMBR().size() == 0) {
             logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
@@ -248,9 +249,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     // count inital all birds
                     ActionRobot.fullyZoomIn();
                     updateCurrentVision();
-                    birdCounter = currentVision.findBirdsMBR().size();
+                    birdCounter = currentVision.findBirdsRealShape().size();
                     ActionRobot.fullyZoomOut();
                 }
+                logger.info("Current Bird count: " + String.valueOf(birdCounter));
                 updateCurrentVision();
 
                 if (!pigs.isEmpty()) {
