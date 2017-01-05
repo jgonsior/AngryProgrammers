@@ -246,11 +246,24 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 List<ABObject> pigs = currentVision.findPigsMBR();
 
                 if (currentMoveCounter == 0){
-                    // count inital all birds
-                    ActionRobot.fullyZoomIn();
-                    updateCurrentVision();
-                    birdCounter = currentVision.findBirdsRealShape().size();
-                    ActionRobot.fullyZoomOut();
+                    // count inital all birds 
+                    birdCounter = 0;
+
+                    try {
+                        ActionRobot.fullyZoomIn();
+                        updateCurrentVision();
+                        birdCounter = currentVision.findBirdsRealShape().size();
+                        ActionRobot.fullyZoomOut();
+                    } catch (NullPointerException e){
+                        logger.error("Unable to find birds " + e);
+                        e.printStackTrace();
+                    }
+                    
+                    //failed on some lvls (e.g. 1), maybe zooms to pig/structure
+                    if (birdCounter == 0){
+                        updateCurrentVision();
+                        birdCounter = currentVision.findBirdsRealShape().size();
+                    }
                 }
                 logger.info("Current Bird count: " + String.valueOf(birdCounter));
                 updateCurrentVision();
