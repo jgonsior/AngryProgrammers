@@ -95,10 +95,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         logger.info("bef:" + blocksAndPigsBefore);
         logger.info("aft:" + blocksAndPigsAfter);
 
+        int loopCounter = 0;
+
         //wait until shot is being fired
         while (blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {
-                logger.info("Wait for 500");
+                logger.info("Wait for 500 (for shot)");
                 Thread.sleep(500);
 
                 this.updateCurrentVision();
@@ -107,18 +109,24 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
-                logger.info("aftd" + blocksAndPigsAfter);
+                logger.info("aftd:" + blocksAndPigsAfter);
+                loopCounter++;
+                    if (loopCounter > 30){
+                        //possibly we are here without any reasonable reason so dont stay here forever
+                        break;
+                    }
             } catch (InterruptedException e) {
                 logger.error(e);
             }
         }
 
         logger.info("two different screenshots found");
+        loopCounter = 0;
 
         while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {
 
-                logger.info("Wait for 500");
+                logger.info("Wait for 500 (for settled situation)");
                 Thread.sleep(500);
 
                 this.updateCurrentVision();
@@ -130,6 +138,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
                 logger.info("aft:" + blocksAndPigsAfter);
+
+                loopCounter++;
+                    if (loopCounter > 30){
+                        //possibly we are here without any reasonable reason so dont stay here forever
+                        break;
+                    }
 
 
             } catch (InterruptedException e) {
