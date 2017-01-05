@@ -21,12 +21,14 @@ public class ProblemState {
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
+    private boolean initialized;
 
-    public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
+    public ProblemState(Vision vision, ActionRobot actionRobot, int id, boolean initialized) {
         GameStateExtractor.GameState state = actionRobot.getState();
         allObjects = new ArrayList<>();
         this.vision = vision;
         this.id = id;
+        this.initialized = initialized;
 
         if (state == GameStateExtractor.GameState.PLAYING) {
 
@@ -112,5 +114,13 @@ public class ProblemState {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public boolean getInitialized() {
+        return initialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        this.initialized = initialized;
     }
 }

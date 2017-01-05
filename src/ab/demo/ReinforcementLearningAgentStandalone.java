@@ -340,15 +340,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private void updateCurrentProblemState() {
-        // 1. create state and set StateId
-        ProblemState problemState = new ProblemState(currentVision, actionRobot, 0);
-        NotActionPairAnyMore stateIdPair = getStateId(problemState);
-        int stateId = stateIdPair.value;
-        problemState.setId(stateId);
-
-        // 2. if stateId was generated newly create all Objects and link them to this state
-        if (stateIdPair.rand) {
+        // 1. create state
+        ProblemState problemState = getStateId(new ProblemState(currentVision, actionRobot, 0, false));
+        
+        // 2. if state was generated newly create all Objects and link them to this state
+        if (problemState.getInitialized() == false) {
             int objectId;
+            int stateId = problemState.getId();
             for (ABObject object : problemState.getAllObjects()) {
                 objectId = objectsDAO.insertObject((int) object.getCenterX() / 10,
                         (int) object.getCenterX() / 10,
@@ -359,6 +357,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
             // 3. Generate actions in q_values if we have no actions initialised yet
             this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
+            problemState.setInitialized(true);
         }
 
         this.currentProblemState = problemState;
@@ -367,9 +366,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /**
      * ?!
      *
-     * @return NotActionPairAnyMore with boolean if new created id and id as value
+     * @return ProblemState with modified id and modified initialization flag
      */
-    private NotActionPairAnyMore getStateId(ProblemState state) {
+    private ProblemState getStateId(ProblemState state) {
         Set objectIds = new HashSet();
 
         for (ABObject object : state.getAllObjects()) {
@@ -393,7 +392,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             // if they are the same, return objectId
             if (objectIds.equals(targetObjectIds)) {
                 logger.info("Found known state " + stateObject.stateId);
-                return new NotActionPairAnyMore(false, stateObject.stateId);
+                state.setId(stateObject.stateId);
+                state.setInitialized(true);
+                return state;
             } else if (objectIds.size() == targetObjectIds.size()) {
                 //else look for symmetric difference if same length
                 //(we assume the vision can count correctly, just had problems between rect and circle)
@@ -414,10 +415,14 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         if (similarStateIds.size() == 0) {
             logger.info("Init new state");
-            return new NotActionPairAnyMore(true, stateIdDAO.insertStateId());
+            state.setId(stateIdDAO.insertStateId());
+            state.setInitialized(false);
+            return state;
         } else {
             //@todo in the case of multiple similar states we should use the one which is the most similar one to our own one
-            return new NotActionPairAnyMore(false, similarStateIds.get(0));
+            state.setId(similarStateIds.get(0));
+            state.setInitialized(true);
+            return state;
         }
     }
 
@@ -676,17 +681,4 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         logger.info("Selected the following action: " + currentActionName);
         return action;
     }
-
-
-    private class NotActionPairAnyMore {
-        public final boolean rand;
-        public final int value;
-
-        public NotActionPairAnyMore(boolean rand, int value) {
-            this.rand = rand;
-            this.value = value;
-        }
-
-    }
-
 }
