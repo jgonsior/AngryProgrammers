@@ -166,7 +166,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }*/
         
 
-        if (birdCounter == 0 || currentVision.findPigsMBR().size() == 0) {
+        if (birdCounter < 1 || currentVision.findPigsMBR().size() == 0) {
             logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
             logger.info("no pigs or birds (on left side) left, now wait until gamestate changes");
             int loopCounter = 0;
