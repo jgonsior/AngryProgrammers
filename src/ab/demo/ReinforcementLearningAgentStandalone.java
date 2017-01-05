@@ -59,7 +59,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private double currentReward;
     private int currentMoveCounter;
     private int currentGameId;
-    private boolean birdsLeft;
+    private int birdsLeft;
 
     private String currentActionName = "";
 
@@ -141,7 +141,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void checkIfDonePlayingAndWaitForWinningScreen() {
         this.updateCurrentVision();
 
-        if (!birdsLeft || currentVision.findPigsMBR().size() == 0) {
+        if (birdsLeft == 0 || currentVision.findPigsMBR().size() == 0) {
+            logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
+            logger.info("Bird amount: " + String.valueOf(birdsLeft));
             logger.info("no pigs or birds (on left side) left, now wait until gamestate changes");
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
@@ -227,6 +229,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
+
+                if (currentMoveCounter == 0) {
+                    birdsLeft = currentVision.findBirdsMBR().size();
+                }
 
                 if (!pigs.isEmpty()) {
                     updateCurrentVision();
@@ -554,13 +560,8 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             double scaleDifference = Math.pow((slingshot.width - _sling.width), 2) + Math.pow((slingshot.height - _sling.height), 2);
             if (scaleDifference < 25) {
                 if (dx < 0) {
-                    int amountOfBirds = currentVision.findBirdsMBR().size();
                     actionRobot.cshoot(shot);
-                    if (amountOfBirds == 1) {
-                        birdsLeft = false;
-                    } else {
-                        birdsLeft = true;
-                    }
+                    birdsLeft--;
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
