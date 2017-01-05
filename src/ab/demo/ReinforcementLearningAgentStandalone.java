@@ -67,8 +67,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
     // a standalone implementation of the Reinforcement Agent
     public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO, GamesDAO gamesDAO, MovesDAO movesDAO, ObjectsDAO objectsDAO, StateIdDAO stateIdDAO, StatesDAO statesDAO) {
-        LoggingHandler.initFileLog();
-
         this.actionRobot = new ActionRobot();
         this.randomGenerator = new Random();
 
