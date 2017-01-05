@@ -59,6 +59,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private int currentLevel;
     private double currentReward;
     private int currentMoveCounter;
+    private int birdCounter;
     private int currentGameId;
     private Rectangle slingshot;
 
@@ -141,25 +142,28 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         this.updateCurrentVision();
 
         // check if there are some birds on the sling
-        boolean birdsLeft = false;
-        /*for (ABObject bird : currentVision.findBirdsMBR()){
+        /*boolean birdsLeft = false;
+        for (ABObject bird : currentVision.findBirdsMBR()){
             if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
                 birdsLeft = true;
             }
         }*/
 
-        if (actionRobot.getBirdTypeOnSling() != ABType.Unknown){
-            birdsLeft = true;
-        }
-
-        if (!birdsLeft  || currentVision.findPigsMBR().size() == 0) {
+        if (birdCounter == 0 || currentVision.findPigsMBR().size() == 0) {
             logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
             logger.info("no pigs or birds (on left side) left, now wait until gamestate changes");
+            int loopCounter = 0;
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
                 try {
                     Thread.sleep(300);
                     logger.info("sleep 300 for change state (current: " + actionRobot.getState() + ")");
+                    loopCounter++;
+                    if (loopCounter > 30){
+                        //possibly we did not reconize some birds due to bad programmed vision module 
+                        //so after waiting to long break out
+                        break;
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -239,6 +243,15 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
+
+                if (currentMoveCounter == 0){
+                    // count inital all birds
+                    ActionRobot.fullyZoomIn();
+                    updateCurrentVision();
+                    birdCounter = currentVision.findBirdsMBR().size();
+                    ActionRobot.fullyZoomOut();
+                }
+                updateCurrentVision();
 
                 if (!pigs.isEmpty()) {
                     updateCurrentVision();
@@ -565,6 +578,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             if (scaleDifference < 25) {
                 if (dx < 0) {
                     actionRobot.cshoot(shot);
+                    birdCounter--;
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
