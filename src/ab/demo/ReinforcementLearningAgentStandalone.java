@@ -112,6 +112,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 logger.info("aftd:" + blocksAndPigsAfter);
                 loopCounter++;
                     if (loopCounter > 30){
+                        logger.warn("Broke out of shoot-loop");
                         //possibly we are here without any reasonable reason so dont stay here forever
                         break;
                     }
@@ -141,6 +142,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 loopCounter++;
                     if (loopCounter > 30){
+                        logger.warn("Broke out of settle-loop");
                         //possibly we are here without any reasonable reason so dont stay here forever
                         break;
                     }
@@ -158,10 +160,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         // check if there are some birds on the sling
         /*
         boolean birdsLeft = false;
-            for (ABObject bird : currentVision.findBirdsMBR()){
-                if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
-                    birdsLeft = true;
-            }*/
+        for (ABObject bird : currentVision.findBirdsMBR()){
+            if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
+                birdsLeft = true;
+        }*/
         
 
         if (birdCounter == 0 || currentVision.findPigsMBR().size() == 0) {
@@ -175,8 +177,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     logger.info("sleep 300 for change state (current: " + actionRobot.getState() + ")");
                     loopCounter++;
                     if (loopCounter > 30){
+                        logger.warn("Broke out of state-change-loop");
                         //possibly we did not reconize some birds due to bad programmed vision module 
                         //so after waiting to long break out
+                        updateBirdCounter();
                         break;
                     }
                 } catch (InterruptedException e) {
@@ -261,24 +265,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 if (currentMoveCounter == 0){
                     // count inital all birds 
-                    birdCounter = 0;
-                    ActionRobot.fullyZoomIn();
-                    updateCurrentVision();
-
-                    try {  
-                        birdCounter = currentVision.findBirdsRealShape().size();
-                    } catch (NullPointerException e){
-                        logger.error("Unable to find birds, now check after Zooming out " + e);
-                        e.printStackTrace();
-                    }
-
-                    ActionRobot.fullyZoomOut();
-                    
-                    //failed on some lvls (e.g. 1), maybe zooms to pig/structure
-                    if (birdCounter == 0){
-                        updateCurrentVision();
-                        birdCounter = currentVision.findBirdsRealShape().size();
-                    }
+                    updateBirdCounter();
                 }
                 logger.info("Current Bird count: " + String.valueOf(birdCounter));
                 updateCurrentVision();
@@ -392,6 +379,30 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void updateCurrentVision() {
         currentScreenshot = ActionRobot.doScreenShot();
         currentVision = new Vision(currentScreenshot);
+    }
+
+    private void updateBirdCounter(){
+        birdCounter = 0;
+        ActionRobot.fullyZoomIn();
+        updateCurrentVision();
+
+        try {  
+            birdCounter = currentVision.findBirdsRealShape().size();
+            logger.info("Birds: " + currentVision.findBirdsRealShape());
+        } catch (NullPointerException e){
+            logger.error("Unable to find birds, now check after Zooming out " + e);
+            e.printStackTrace();
+        }
+
+        ActionRobot.fullyZoomOut();
+        
+        //failed on some lvls (e.g. 1), maybe zooms to pig/structure
+        if (birdCounter == 0){
+            updateCurrentVision();
+            birdCounter = currentVision.findBirdsRealShape().size();
+            logger.info("Birds: " + currentVision.findBirdsRealShape());
+        }
+
     }
 
     private void updateCurrentProblemState() {
