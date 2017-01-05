@@ -11,6 +11,7 @@ import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
+import ab.vision.ABType;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
@@ -141,11 +142,14 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
         // check if there are some birds on the sling
         boolean birdsLeft = false;
-        for (ABObject bird : currentVision.findBirdsMBR()){
+        /*for (ABObject bird : currentVision.findBirdsMBR()){
             if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
                 birdsLeft = true;
             }
+        }*/
 
+        if (actionRobot.getBirdTypeOnSling() != ABType.Unknown){
+            birdsLeft = true;
         }
 
         if (!birdsLeft  || currentVision.findPigsMBR().size() == 0) {
