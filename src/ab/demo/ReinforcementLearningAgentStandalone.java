@@ -59,7 +59,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private double currentReward;
     private int currentMoveCounter;
     private int currentGameId;
-    private int birdsLeft;
+    private Rectangle slingshot;
 
     private String currentActionName = "";
 
@@ -139,9 +139,17 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void checkIfDonePlayingAndWaitForWinningScreen() {
         this.updateCurrentVision();
 
-        if (birdsLeft == 0 || currentVision.findPigsMBR().size() == 0) {
+        // check if there are some birds on the sling
+        boolean birdsLeft = false;
+        for (ABObject bird : currentVision.findBirdsMBR()){
+            if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
+                birdsLeft = true;
+            }
+
+        }
+
+        if (!birdsLeft  || currentVision.findPigsMBR().size() == 0) {
             logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
-            logger.info("Bird amount: " + String.valueOf(birdsLeft));
             logger.info("no pigs or birds (on left side) left, now wait until gamestate changes");
             // if we have no pigs left or birds, wait for winning screen
             while (actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
@@ -220,17 +228,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             if (currentGameState == GameStateExtractor.GameState.PLAYING) {
 
                 updateCurrentVision();
-                Rectangle slingshot = this.findSlingshot();
+                slingshot = this.findSlingshot();
 
                 updateCurrentProblemState();
                 previousProblemState = currentProblemState;
 
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
-
-                if (currentMoveCounter == 0) {
-                    birdsLeft = currentVision.findBirdsMBR().size();
-                }
 
                 if (!pigs.isEmpty()) {
                     updateCurrentVision();
@@ -240,7 +244,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                     Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
 
-                    Point releasePoint = shootOneBird(nextAction, slingshot);
+                    Point releasePoint = shootOneBird(nextAction);
 
                     logger.info("done shooting");
 
@@ -449,7 +453,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     /**
      * I have no Idea what these function is doing, but maybe it's useful…
      */
-    private Point calculateReleasePoint(Rectangle slingshot, Point targetPoint, ABObject.TrajectoryType trajectoryType) {
+    private Point calculateReleasePoint(Point targetPoint, ABObject.TrajectoryType trajectoryType) {
         Point releasePoint = null;
         // estimate the trajectory
         ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
@@ -480,11 +484,10 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * calculates based on the bird type we want to shoot at if it is a specia bird and if so what is the tapping time
      *
      * @param releasePoint
-     * @param slingshot
      * @param targetPoint
      * @return
      */
-    private int calculateTappingTime(Point releasePoint, Rectangle slingshot, Point targetPoint) {
+    private int calculateTappingTime(Point releasePoint, Point targetPoint) {
         double releaseAngle = trajectoryPlanner.getReleaseAngle(slingshot,
                 releasePoint);
         logger.info("Release Point: " + releasePoint);
@@ -521,19 +524,18 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * open question: what is reference point, what release point?!
      *
      * @param action
-     * @param slingshot
      */
-    public Point shootOneBird(Action action, Rectangle slingshot) {
+    public Point shootOneBird(Action action) {
         Point targetPoint = calculateTargetPointFromActionObject(action);
 
         //ABObject pig = currentVision.findPigsMBR().get(0);
         //targetPoint = pig.getCenter();
 
-        Point releasePoint = this.calculateReleasePoint(slingshot, targetPoint, action.getTrajectoryType());
+        Point releasePoint = this.calculateReleasePoint(targetPoint, action.getTrajectoryType());
 
         int tappingTime = 0;
         if (releasePoint != null) {
-            tappingTime = this.calculateTappingTime(releasePoint, slingshot, targetPoint);
+            tappingTime = this.calculateTappingTime(releasePoint, targetPoint);
         } else {
             logger.error("No release point found -,-");
         }
@@ -559,7 +561,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             if (scaleDifference < 25) {
                 if (dx < 0) {
                     actionRobot.cshoot(shot);
-                    birdsLeft--;
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
@@ -572,17 +573,17 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     }
 
     private Rectangle findSlingshot() {
-        Rectangle slingshot = currentVision.findSlingshotMBR();
+        Rectangle _slingshot = currentVision.findSlingshotMBR();
 
         // confirm the slingshot
-        while (slingshot == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
+        while (_slingshot == null && actionRobot.getState() == GameStateExtractor.GameState.PLAYING) {
             logger.warn("No slingshot detected. Please remove pop up or zoom out");
             ActionRobot.fullyZoomOut();
             this.updateCurrentVision();
-            slingshot = currentVision.findSlingshotMBR();
+            _slingshot = currentVision.findSlingshotMBR();
             ActionRobot.skipPopUp();
         }
-        return slingshot;
+        return _slingshot;
     }
 
     /**
