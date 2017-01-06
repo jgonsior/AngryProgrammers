@@ -340,10 +340,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
                 currentMoveCounter = 0;
             } else if (currentGameState == GameStateExtractor.GameState.LOST) {
-                logger.info("Restart level");
-                actionRobot.restartLevel();
-                currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                currentMoveCounter = 0;
+                restartThisLevel();
             } else if (currentGameState == GameStateExtractor.GameState.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
                         + currentLevel);
@@ -360,6 +357,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 actionRobot.loadLevel(currentLevel);
             }
         }
+    }
+
+    private void restartThisLevel(){
+        logger.info("Restart level");
+        actionRobot.restartLevel();
+        currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        currentMoveCounter = 0;
     }
 
     /**
@@ -422,8 +426,14 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             }
 
             // 3. Generate actions in q_values if we have no actions initialised yet
-            this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
-            problemState.setInitialized(true);
+            try {
+                this.insertsPossibleActionsForProblemStateIntoDatabase(problemState);
+                problemState.setInitialized(true);
+            } catch (NullPointerException e) {
+                logger.error("NullPointer in insertsPossibleActionsForProblemStateIntoDatabase (wrong bird amount counted, better restart level) " + e);
+                //can we do this here or is it to hard?
+                restartThisLevel();
+            }
         }
 
         this.currentProblemState = problemState;
