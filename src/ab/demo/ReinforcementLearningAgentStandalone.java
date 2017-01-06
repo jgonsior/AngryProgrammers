@@ -90,7 +90,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void waitUntilBlocksHaveBeenFallenDown(Set<Object> blocksAndPigsBefore) {
         this.updateCurrentVision();
 
-        Set<Object> blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+        Set<Object> blocksAndPigsAfter = getBlocksAndPigs(currentVision, true);
         saveCurrentScreenshot();
         logger.info("bef:" + blocksAndPigsBefore);
         logger.info("aft:" + blocksAndPigsAfter);
@@ -105,7 +105,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 this.updateCurrentVision();
 
-                blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+                blocksAndPigsAfter = getBlocksAndPigs(currentVision, true);
 
                 saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
@@ -134,7 +134,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 blocksAndPigsBefore = blocksAndPigsAfter;
 
-                blocksAndPigsAfter = getBlocksAndPigs(currentVision);
+                blocksAndPigsAfter = getBlocksAndPigs(currentVision, false);
 
                 saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
@@ -276,7 +276,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     // get next action
                     Action nextAction = getNextAction();
 
-                    Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision);
+                    Set<Object> blocksAndPigsBeforeShot = getBlocksAndPigs(currentVision, true);
 
                     Point releasePoint = shootOneBird(nextAction);
 
@@ -677,11 +677,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * @param vision
      * @return List of current birds and blocks
      */
-    private Set<Object> getBlocksAndPigs(Vision vision) {
+    private Set<Object> getBlocksAndPigs(Vision vision, boolean trajectoryPoints) {
         Set<Object> allObjs = new HashSet<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
-        allObjs.addAll(vision.findTrajPoints());
+        if (trajectoryPoints){
+            allObjs.addAll(vision.findTrajPoints());
+        }
         return allObjs;
     }
 
