@@ -3,7 +3,6 @@ package ab.demo.Agents;
 import ab.demo.Action;
 import ab.demo.DAO.*;
 import ab.demo.ProblemState;
-import ab.demo.other.ActionRobot;
 import ab.demo.qlearning.StateObject;
 import ab.server.Proxy;
 import ab.vision.ABObject;
@@ -11,8 +10,10 @@ import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author jgonsior
@@ -34,8 +35,7 @@ public class ReinforcementLearningAgentStandalone extends Agent {
 
     // a standalone implementation of the Reinforcement Agent
     public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO, GamesDAO gamesDAO, MovesDAO movesDAO, ObjectsDAO objectsDAO, StateIdDAO stateIdDAO, StatesDAO statesDAO) {
-        this.actionRobot = new ActionRobot();
-        this.randomGenerator = new Random();
+        super();
 
         this.qValuesDAO = qValuesDAO;
         this.gamesDAO = gamesDAO;
@@ -43,10 +43,7 @@ public class ReinforcementLearningAgentStandalone extends Agent {
         this.objectsDAO = objectsDAO;
         this.stateIdDAO = stateIdDAO;
         this.statesDAO = statesDAO;
-
-        ActionRobot.GoFromMainMenuToLevelSelection();
     }
-
 
     /**
      * ?!
@@ -183,7 +180,7 @@ public class ReinforcementLearningAgentStandalone extends Agent {
      * @param end        true if the current level was finished (could be either won or lost)
      */
     private void updateQValue(ProblemState from, ProblemState to, Action nextAction, double reward, boolean end, int gameId, int moveCounter) {
-        int actionId = nextAction.getActionId();
+        int actionId = nextAction.getId();
         double oldValue = qValuesDAO.getQValue(from.getId(), actionId);
         double newValue;
 

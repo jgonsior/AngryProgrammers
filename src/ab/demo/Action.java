@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class Action {
     private String name;
-    private int actionId;
+    private int id;
     private ABObject.TrajectoryType trajectoryType;
     private boolean rand;
     private ProblemState problemState;
@@ -18,7 +18,7 @@ public class Action {
     private Point targetPoint;
 
     public Action(int actionId, ABObject.TrajectoryType trajectoryType, ProblemState problemState) {
-        this.actionId = actionId;
+        this.id = actionId;
         this.trajectoryType = trajectoryType;
         this.problemState = problemState;
     }
@@ -37,10 +37,10 @@ public class Action {
 
         //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
         // seems to be error in vision module where it found invisible objects on initialisation
-        if (shootableObjects.size() - 1 < this.getActionId()) {
-            this.setActionId(shootableObjects.size() - 1);
+        if (shootableObjects.size() - 1 < this.getId()) {
+            this.setId(shootableObjects.size() - 1);
         }
-        targetObject = shootableObjects.get(this.getActionId());
+        targetObject = shootableObjects.get(this.getId());
         targetPoint = targetObject.getCenter();
     }
 
@@ -71,12 +71,12 @@ public class Action {
         return targetObject.toString();
     }
 
-    public int getActionId() {
-        return actionId;
+    public int getId() {
+        return id;
     }
 
-    public void setActionId(int actionId) {
-        this.actionId = actionId;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public Point getTargetPoint() {

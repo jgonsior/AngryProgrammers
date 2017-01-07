@@ -1,6 +1,7 @@
 package ab.demo;
 
 import ab.demo.Agents.Agent;
+import ab.demo.Agents.EmpiricalThresholdDeterminationAgent;
 import ab.demo.Agents.NaiveAgent;
 import ab.demo.Agents.ReinforcementLearningAgentStandalone;
 import ab.demo.DAO.*;
@@ -33,7 +34,7 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        args = new String[]{"-su", "-l", "3"};
+        args = new String[]{"-eu", "-l", "3"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
@@ -42,6 +43,7 @@ public class MainEntry {
         options.addOption("c", "competition", false, "runs the naive agent in the server/client competition mode");
         options.addOption("u", "updateDatabaseTables", false, "executes CREATE TABLE IF NOT EXIST commands");
         options.addOption("l", "level", true, "if set the agent is playing only in this one level");
+        options.addOption("e", "empirical", false, "runs the empirical threshold determination agent in standalone mode");
 
 
         CommandLineParser parser = new DefaultParser();
@@ -105,6 +107,8 @@ public class MainEntry {
                 agent = new ReinforcementLearningAgentStandalone(qValuesDAO, gamesDAO, movesDAO, objectsDAO, stateIdDAO, statesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveAgent();
+            } else if (cmd.hasOption("empirical")) {
+                agent = new EmpiricalThresholdDeterminationAgent();
             } else if (cmd.hasOption("competition")) {
                 System.out.println("We haven't implemented a competition ready agent yet.");
                 return;

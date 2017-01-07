@@ -100,9 +100,11 @@ public class ProblemState {
         return shootableObjects;
     }
 
-    public List<Action> getActions() {
-        List<Action> actions = new ArrayList<>();
-        actions.add(new Action(5, ABObject.TrajectoryType.LOW, this));
+    public ArrayList<Action> getActions() {
+        ArrayList<Action> actions = new ArrayList<>();
+        Action action = new Action(5, ABObject.TrajectoryType.LOW, this);
+        action.setName("test action");
+        actions.add(action);
         return actions;
     }
 

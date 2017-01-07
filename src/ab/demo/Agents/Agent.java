@@ -26,6 +26,13 @@ import java.util.List;
  * @author jgonsior
  */
 public abstract class Agent implements Runnable {
+    // a standalone implementation of the Reinforcement Agent
+    public Agent() {
+        this.actionRobot = new ActionRobot();
+        this.randomGenerator = new Random();
+
+        ActionRobot.GoFromMainMenuToLevelSelection();
+    }
 
     private static final Logger logger = Logger.getLogger(Agent.class);
 
@@ -383,7 +390,6 @@ public abstract class Agent implements Runnable {
         }
 
     }
-
 
     protected Rectangle findSlingshot() {
         Rectangle _slingshot = currentVision.findSlingshotMBR();
