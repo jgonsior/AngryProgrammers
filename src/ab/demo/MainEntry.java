@@ -30,14 +30,16 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        //args = new String[]{"-su"};
+        args = new String[]{"-su", "-l", "3"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
         options.addOption("h", "help", false, "displays this help");
         options.addOption("n", "naiveAgent", false, "runs the naive agent in standalone mode");
         options.addOption("c", "competition", false, "runs the naive agent in the server/client competition mode");
-        options.addOption("u", "updateDatabaseTables", false, "runs CREATE TABLE IF NOT EXIST commands");
+        options.addOption("u", "updateDatabaseTables", false, "executes CREATE TABLE IF NOT EXIST commands");
+        options.addOption("l", "level", true, "if set the agent is playing only in this one level");
+
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -52,7 +54,6 @@ public class MainEntry {
             configInputStream = new FileInputStream("config.properties");
 
             properties.load(configInputStream);
-
 
         } catch (IOException exception) {
             exception.printStackTrace();
@@ -118,6 +119,10 @@ public class MainEntry {
                 objectsDAO.createObjectsTable();
                 stateIdDAO.createStateIdsTable();
                 statesDAO.createStatesTable();
+            }
+
+            if (cmd.hasOption("level")) {
+                agent.setFixedLevel(Integer.parseInt(cmd.getOptionValue("level")));
             }
 
         } catch (UnrecognizedOptionException e) {

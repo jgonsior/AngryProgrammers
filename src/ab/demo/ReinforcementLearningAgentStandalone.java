@@ -1,7 +1,6 @@
 package ab.demo;
 
 import ab.demo.DAO.*;
-import ab.demo.logging.LoggingHandler;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.demo.qlearning.Action;
@@ -11,7 +10,6 @@ import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
-import ab.vision.ABType;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
@@ -67,6 +65,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
     private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
 
+    private boolean fixedLevel = false;
+
+
     // a standalone implementation of the Reinforcement Agent
     public ReinforcementLearningAgentStandalone(QValuesDAO qValuesDAO, GamesDAO gamesDAO, MovesDAO movesDAO, ObjectsDAO objectsDAO, StateIdDAO stateIdDAO, StatesDAO statesDAO) {
         this.actionRobot = new ActionRobot();
@@ -111,11 +112,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 logger.info("bef:" + blocksAndPigsBefore);
                 logger.info("aftd:" + blocksAndPigsAfter);
                 loopCounter++;
-                    if (loopCounter > 30){
-                        logger.warn("Broke out of shoot-loop");
-                        //possibly we are here without any reasonable reason so dont stay here forever
-                        break;
-                    }
+                if (loopCounter > 30) {
+                    logger.warn("Broke out of shoot-loop");
+                    //possibly we are here without any reasonable reason so dont stay here forever
+                    break;
+                }
             } catch (InterruptedException e) {
                 logger.error(e);
             }
@@ -141,11 +142,11 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 logger.info("aft:" + blocksAndPigsAfter);
 
                 loopCounter++;
-                    if (loopCounter > 30){
-                        logger.warn("Broke out of settle-loop");
-                        //possibly we are here without any reasonable reason so dont stay here forever
-                        break;
-                    }
+                if (loopCounter > 30) {
+                    logger.warn("Broke out of settle-loop");
+                    //possibly we are here without any reasonable reason so dont stay here forever
+                    break;
+                }
 
 
             } catch (InterruptedException e) {
@@ -164,7 +165,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
                 birdsLeft = true;
         }*/
-        
+
 
         if (birdCounter < 1 || currentVision.findPigsMBR().size() == 0) {
             logger.info("Pig amount: " + String.valueOf(currentVision.findPigsMBR().size()));
@@ -176,7 +177,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                     Thread.sleep(300);
                     logger.info("sleep 300 for change state (current: " + actionRobot.getState() + ")");
                     loopCounter++;
-                    if (loopCounter > 30){
+                    if (loopCounter > 30) {
                         logger.warn("Broke out of state-change-loop");
                         //possibly we did not reconize some birds due to bad programmed vision module 
                         //so after waiting to long break out
@@ -231,11 +232,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
             logger.error("Unable to save screenshot " + e);
             e.printStackTrace();
         }
-        logger.info("Saved screenshot " + outputFile.getName());
+        logger.info("Saved screenshot " + outputFile.getAbsolutePath());
     }
 
     public void run() {
-        currentLevel = 1;
+        if (!this.fixedLevel) {
+            currentLevel = 1;
+        }
         actionRobot.loadLevel(currentLevel);
         trajectoryPlanner = new TrajectoryPlanner();
 
@@ -263,7 +266,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
 
-                if (currentMoveCounter == 0){
+                if (currentMoveCounter == 0) {
                     // count inital all birds 
                     updateBirdCounter();
                 }
@@ -332,7 +335,9 @@ public class ReinforcementLearningAgentStandalone implements Agent {
 
                 this.logScores();
 
-                currentLevel++;
+                if (!fixedLevel) {
+                    currentLevel++;
+                }
                 actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
                 // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
@@ -359,7 +364,13 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }
     }
 
-    private void restartThisLevel(){
+    @Override
+    public void setFixedLevel(int level) {
+        this.fixedLevel = true;
+        this.currentLevel = level;
+    }
+
+    private void restartThisLevel() {
         logger.info("Restart level");
         actionRobot.restartLevel();
         currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
@@ -385,23 +396,23 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         currentVision = new Vision(currentScreenshot);
     }
 
-    private void updateBirdCounter(){
+    private void updateBirdCounter() {
         birdCounter = 0;
         ActionRobot.fullyZoomIn();
         updateCurrentVision();
 
-        try {  
+        try {
             birdCounter = currentVision.findBirdsRealShape().size();
             logger.info("Birds: " + currentVision.findBirdsRealShape());
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             logger.error("Unable to find birds, now check after Zooming out " + e);
             e.printStackTrace();
         }
 
         ActionRobot.fullyZoomOut();
-        
+
         //failed on some lvls (e.g. 1), maybe zooms to pig/structure
-        if (birdCounter == 0){
+        if (birdCounter == 0) {
             updateCurrentVision();
             birdCounter = currentVision.findBirdsRealShape().size();
             logger.info("Birds: " + currentVision.findBirdsRealShape());
@@ -412,7 +423,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
     private void updateCurrentProblemState() {
         // 1. create state
         ProblemState problemState = getStateId(new ProblemState(currentVision, actionRobot, 0, false));
-        
+
         // 2. if state was generated newly create all Objects and link them to this state
         if (problemState.getInitialized() == false) {
             int objectId;
@@ -502,22 +513,6 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         }
     }
 
-
-    private Point calculateTargetPointFromActionObject(Action action) {
-        int nextAction = action.getActionId();
-
-        List<ABObject> shootableObjects = currentProblemState.getShootableObjects();
-
-        //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
-        // seems to be error in vision module where it found invisible objects on initialisation 
-        if (shootableObjects.size() - 1 < nextAction) {
-            nextAction = shootableObjects.size() - 1;
-        }
-
-        ABObject targetObject = shootableObjects.get(nextAction);
-        return targetObject.getCenter();
-    }
-
     /**
      * I have no Idea what these function is doing, but maybe it's useful…
      */
@@ -594,7 +589,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
      * @param action
      */
     public Point shootOneBird(Action action) {
-        Point targetPoint = calculateTargetPointFromActionObject(action);
+        Point targetPoint = action.getTargetPoint();
 
         //ABObject pig = currentVision.findPigsMBR().get(0);
         //targetPoint = pig.getCenter();
@@ -681,7 +676,7 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         Set<Object> allObjs = new HashSet<>();
         allObjs.addAll(vision.findPigsMBR());
         allObjs.addAll(vision.findBlocksMBR());
-        if (trajectoryPoints){
+        if (trajectoryPoints) {
             allObjs.addAll(vision.findTrajPoints());
         }
         return allObjs;
@@ -742,10 +737,12 @@ public class ReinforcementLearningAgentStandalone implements Agent {
         if (randomValue < explorationRate * 100) {
             //get random action should return more than one id!
             action = qValuesDAO.getRandomAction(currentProblemState.getId());
+            action.setProblemState(currentProblemState);
             action.setRand(true);
             currentActionName = "random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
         } else {
             action = qValuesDAO.getBestAction(currentProblemState.getId());
+            action.setProblemState(currentProblemState);
             action.setRand(false);
             currentActionName = "best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString();
         }

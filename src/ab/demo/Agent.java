@@ -7,4 +7,6 @@ package ab.demo;
  */
 public interface Agent extends Runnable {
     void run();
+
+    void setFixedLevel(int level);
 }

@@ -25,6 +25,7 @@ public class ABObject extends Rectangle {
     //is Hollow or not
     public boolean hollow = false;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
+
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
         this.type = type;
@@ -49,12 +50,12 @@ public class ABObject extends Rectangle {
         this.type = ABType.Unknown;
     }
 
-    public String toString() {
-        return this.id + this.type.toString() + this.shape.toString();
-    }
-
     public static void resetCounter() {
         counter = 0;
+    }
+
+    public String toString() {
+        return this.id + this.type.toString() + this.shape.toString();
     }
 
     public TrajectoryType getTrajectoryType() {

@@ -104,6 +104,11 @@ public class NaiveAgent implements Runnable, Agent {
 
     }
 
+    @Override
+    public void setFixedLevel(int level) {
+        System.out.println("Method setFixedLevel() ot implemented for naive agent.");
+    }
+
     private double distance(Point p1, Point p2) {
         return Math
                 .sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y)

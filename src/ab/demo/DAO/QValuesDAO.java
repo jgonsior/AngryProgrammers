@@ -1,6 +1,7 @@
 package ab.demo.DAO;
 
 import ab.demo.qlearning.Action;
+import ab.vision.ABObject;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -48,7 +49,7 @@ public interface QValuesDAO {
 
     class ActionMapper implements ResultSetMapper<Action> {
         public Action map(int index, ResultSet resultSet, StatementContext ctx) throws SQLException {
-            return new Action(resultSet.getInt("action"), resultSet.getString("trajectoryType"), resultSet.getString("actionObject"));
+            return new Action(resultSet.getInt("action"), ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")), null);
         }
     }
 }

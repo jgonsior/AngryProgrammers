@@ -2,13 +2,46 @@ package ab.demo.qlearning;
 
 import ab.vision.ABObject;
 
+import java.awt.*;
+import java.util.List;
+
 /**
  * @author: Julius Gonsior
  */
 public class Action {
     private int actionId;
     private ABObject.TrajectoryType trajectoryType;
-    private String targetObjectString;
+    private boolean rand;
+    private ProblemState problemState;
+    private ABObject targetObject;
+    private Point targetPoint;
+
+    public Action(int actionId, ABObject.TrajectoryType trajectoryType, ProblemState problemState) {
+        this.actionId = actionId;
+        this.trajectoryType = trajectoryType;
+        this.problemState = problemState;
+    }
+
+    private void calculateTargetObject() {
+        //calculate targetPoint
+        List<ABObject> shootableObjects = problemState.getShootableObjects();
+
+        //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
+        // seems to be error in vision module where it found invisible objects on initialisation
+        if (shootableObjects.size() - 1 < this.getActionId()) {
+            this.setActionId(shootableObjects.size() - 1);
+        }
+        targetObject = shootableObjects.get(this.getActionId());
+        targetPoint = targetObject.getCenter();
+    }
+
+    public ProblemState getProblemState() {
+        return problemState;
+    }
+
+    public void setProblemState(ProblemState problemState) {
+        this.problemState = problemState;
+    }
 
     public boolean isRand() {
         return rand;
@@ -18,36 +51,29 @@ public class Action {
         this.rand = rand;
     }
 
-    private boolean rand;
-
-    public Action(int actionId, String trajectoryTypeString, String targetObjectString) {
-        this.actionId = actionId;
-        this.trajectoryType = ABObject.TrajectoryType.valueOf(trajectoryTypeString);
-        this.targetObjectString = targetObjectString;
-    }
-
     public ABObject.TrajectoryType getTrajectoryType() {
         return trajectoryType;
     }
 
-    public void setTrajectoryType(ABObject.TrajectoryType trajectoryType) {
-        this.trajectoryType = trajectoryType;
-    }
-
     public String getTargetObjectString() {
-        return targetObjectString;
-    }
-
-    public void setTargetObjectString(String targetObjectString) {
-        this.targetObjectString = targetObjectString;
+        if (this.targetObject == null) {
+            this.calculateTargetObject();
+        }
+        return targetObject.toString();
     }
 
     public int getActionId() {
-
         return actionId;
     }
 
     public void setActionId(int actionId) {
         this.actionId = actionId;
+    }
+
+    public Point getTargetPoint() {
+        if (this.targetObject == null) {
+            this.calculateTargetObject();
+        }
+        return targetPoint;
     }
 }

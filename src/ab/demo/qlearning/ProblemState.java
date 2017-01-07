@@ -100,6 +100,12 @@ public class ProblemState {
         return shootableObjects;
     }
 
+    public List<Action> getActions() {
+        List<Action> actions = new ArrayList<>();
+        actions.add(new Action(5, ABObject.TrajectoryType.LOW, this));
+        return actions;
+    }
+
     public List<ABObject> getShootableObjects() {
         return shootableObjects;
     }
