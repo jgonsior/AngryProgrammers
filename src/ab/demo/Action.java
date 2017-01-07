@@ -33,13 +33,13 @@ public class Action {
 
     private void calculateTargetObject() {
         //calculate targetPoint
-        ArrayList<ABObject> shootableObjects = problemState.getShootableObjects();
+        ArrayList<ABObject> shootableObjects = problemState.targetObjects;
 
         //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
         // seems to be error in vision module where it found invisible objects on initialisation
-        if (shootableObjects.size() - 1 < this.getId()) {
+        /*if (shootableObjects.size() - 1 < this.getId()) {
             this.setId(shootableObjects.size() - 1);
-        }
+        }*/
         targetObject = shootableObjects.get(this.getId());
         targetPoint = targetObject.getCenter();
     }

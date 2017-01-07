@@ -2,14 +2,13 @@ package ab.demo;
 
 import ab.demo.other.ActionRobot;
 import ab.vision.ABObject;
+import ab.vision.ABShape;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
-import ab.vision.ABShape;
 import ab.vision.real.shape.Circle;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.*;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -22,7 +21,7 @@ public class ProblemState {
 
     public ArrayList<ABObject> shootableObjects;
 
-    public List<ABObject> targetObjects;
+    public ArrayList<ABObject> targetObjects;
 
     private Vision vision;
     private List<ABObject> allObjects;
@@ -50,9 +49,9 @@ public class ProblemState {
         }
     }
 
-    private List<ABObject> calculateTargetObjects(){
+    private ArrayList<ABObject> calculateTargetObjects() {
         // 1. TNTs
-        List<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
+        ArrayList<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
         // 2. big round objects
         for (ABObject obj : vision.findBlocksRealShape()){
             if (obj.shape == ABShape.Circle){
@@ -113,6 +112,7 @@ public class ProblemState {
             pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX()-pigX)),2) + Math.pow((Math.abs(obj.getCenterY()-pigY)),2));
                         
             obj.setObjectsAround(above, left, right, pigDistance);
+            targetObjects.add(obj);
         }
 
         // 4. pigs
@@ -180,7 +180,7 @@ public class ProblemState {
     public ArrayList<Action> getActions() {
         ArrayList<Action> actions = new ArrayList<>();
         int i = 0;
-        for (ABObject shootableObject : shootableObjects) {
+        for (ABObject shootableObject : targetObjects) {
             Action action = new Action(i, shootableObject.getTrajectoryType(), this);
             action.setName(shootableObject.myToString());
             actions.add(action);
