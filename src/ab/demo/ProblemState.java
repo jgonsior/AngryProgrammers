@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class ProblemState {
 
-    public List<ABObject> shootableObjects;
+    public ArrayList<ABObject> shootableObjects;
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
@@ -65,7 +65,7 @@ public class ProblemState {
      *
      * @return list of approximation of shootableObjects objects
      */
-    private List<ABObject> calculateShootableObjects() {
+    private ArrayList<ABObject> calculateShootableObjects() {
         List<ABObject> lowShootableObjects = new ArrayList<>(vision.findBlocksRealShape());
         lowShootableObjects.addAll(vision.findHills());
         lowShootableObjects.addAll(vision.findPigsRealShape());
@@ -90,7 +90,7 @@ public class ProblemState {
             }
         }
 
-        List<ABObject> shootableObjects = new ArrayList<>(lowShootableObjects);
+        ArrayList<ABObject> shootableObjects = new ArrayList<>(lowShootableObjects);
         for (ABObject lowShootableObject : lowShootableObjects) {
             ABObject highShootableObject = (ABObject) lowShootableObject.clone();
             highShootableObject.setTrajectoryType(ABObject.TrajectoryType.HIGH);
@@ -102,13 +102,17 @@ public class ProblemState {
 
     public ArrayList<Action> getActions() {
         ArrayList<Action> actions = new ArrayList<>();
-        Action action = new Action(5, ABObject.TrajectoryType.LOW, this);
-        action.setName("test action");
-        actions.add(action);
+        int i = 0;
+        for (ABObject shootableObject : shootableObjects) {
+            Action action = new Action(i, shootableObject.getTrajectoryType(), this);
+            action.setName(shootableObject.myToString());
+            actions.add(action);
+            i++;
+        }
         return actions;
     }
 
-    public List<ABObject> getShootableObjects() {
+    public ArrayList<ABObject> getShootableObjects() {
         return shootableObjects;
     }
 

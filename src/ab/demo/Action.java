@@ -3,7 +3,7 @@ package ab.demo;
 import ab.vision.ABObject;
 
 import java.awt.*;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * @author: Julius Gonsior
@@ -33,7 +33,7 @@ public class Action {
 
     private void calculateTargetObject() {
         //calculate targetPoint
-        List<ABObject> shootableObjects = problemState.getShootableObjects();
+        ArrayList<ABObject> shootableObjects = problemState.getShootableObjects();
 
         //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
         // seems to be error in vision module where it found invisible objects on initialisation

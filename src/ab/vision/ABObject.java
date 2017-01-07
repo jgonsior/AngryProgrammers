@@ -54,8 +54,8 @@ public class ABObject extends Rectangle {
         counter = 0;
     }
 
-    public String toString() {
-        return this.id + this.type.toString() + this.shape.toString();
+    public String myToString() {
+        return this.toString() + " " + this.getTrajectoryType().name();
     }
 
     public TrajectoryType getTrajectoryType() {

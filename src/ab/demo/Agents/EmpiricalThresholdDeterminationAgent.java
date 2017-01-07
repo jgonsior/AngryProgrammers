@@ -78,7 +78,7 @@ public class EmpiricalThresholdDeterminationAgent extends Agent {
         ArrayList<Action> possibleActions = currentProblemState.getActions();
         for (int i = 0; i < possibleActions.size(); i++) {
             Action possibleAction = possibleActions.get(i);
-            System.out.println("(" + i + ") " + possibleAction.getName());
+            System.out.println("(" + i + ")\t" + possibleAction.getName());
         }
         System.out.println("Enter the actionId you want to shoot at: ");
         Scanner input = new Scanner(System.in);
