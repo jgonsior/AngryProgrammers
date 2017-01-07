@@ -7,8 +7,7 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import ab.vision.real.shape.Circle;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -53,47 +52,52 @@ public class ProblemState {
         // 1. TNTs
         ArrayList<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
         // 2. big round objects
-        for (ABObject obj : vision.findBlocksRealShape()){
-            if (obj.shape == ABShape.Circle){
+        for (ABObject obj : vision.findBlocksRealShape()) {
+            if (obj.shape == ABShape.Circle) {
                 Circle objC = (Circle) obj;
                 // have to see if 9000 is too big
-                if (objC.r > 9000){
+                if (objC.r > 9000) {
                     System.out.println("-" + obj.toString());
                     targetObjects.add(obj);
                 }
             }
         }
+        List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
+        Collections.sort(blocksRealShapeSorted);
+
         // 3. structural objects with their "scores"
-        for (ABObject obj : vision.findBlocksRealShape()){
-            int above, left, right;
-            above = left = right = 0;
+        for (ABObject obj : blocksRealShapeSorted) {
+            int left, right;
+            Set<ABObject> aboveObjects = new HashSet<>();
+            left = right = 0;
+
             double oxmin, oxmax, oymin, oymax;
             oxmin = obj.x;
             oxmax = obj.x + obj.width;
             oymin = obj.y;
             oymax = obj.y + obj.height;
-            for (ABObject n : vision.findBlocksMBR()){
+            for (ABObject neighbor : vision.findBlocksMBR()) {
                 double nxmin, nxmax, nymin, nymax;
-                nxmin = n.x;
-                nxmax = n.x + n.width;
-                nymin = n.y;
-                nymax = n.y + n.height;
+                nxmin = neighbor.x;
+                nxmax = neighbor.x + neighbor.width;
+                nymin = neighbor.y;
+                nymax = neighbor.y + neighbor.height;
 
                 boolean nearX, nearY;
                 nearX = nearY = false;
-                if ((oxmin >= nxmin-10 && oxmin <= nxmax+10) || (nxmin >= oxmin-10 && nxmin <= oxmax+10)){
+                if ((oxmin >= nxmin - 10 && oxmin <= nxmax + 10) || (nxmin >= oxmin - 10 && nxmin <= oxmax + 10)) {
                     nearX = true;
                 }
 
-                if ((oymin >= nymin-10 && oymin <= nymax+10) || (nymin >= oymin-10 && nymin <= oymax+10)){
+                if ((oymin >= nymin - 10 && oymin <= nymax + 10) || (nymin >= oymin - 10 && nymin <= oymax + 10)) {
                     nearY = true;
                 }
 
-                if (nearX && nymax <= oymin){
-                    above++;
-                } else if (nearY && nxmax <= oxmin && oxmin-nxmax < 20){
+                if (nearX && nymax <= oymin) {
+                    aboveObjects.addAll(neighbor.getObjectsAboveSet());
+                } else if (nearY && nxmax <= oxmin && oxmin - nxmax < 20) {
                     left++;
-                } else if (nearY && nxmin >= oxmax && nxmin-oxmax < 20){
+                } else if (nearY && nxmin >= oxmax && nxmin - oxmax < 20) {
                     right++;
                 }
             }
@@ -102,16 +106,18 @@ public class ProblemState {
             double pigX, pigY, pigAmount, pigDistance;
             pigX = pigY = 0;
             pigAmount = (double) vision.findPigsMBR().size();
-            for (ABObject pig : vision.findPigsMBR()){
+            for (ABObject pig : vision.findPigsMBR()) {
                 pigX += pig.getCenterX();
                 pigY += pig.getCenterY();
             }
             pigX = pigX / pigAmount;
             pigY = pigY / pigAmount;
 
-            pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX()-pigX)),2) + Math.pow((Math.abs(obj.getCenterY()-pigY)),2));
-                        
-            obj.setObjectsAround(above, left, right, pigDistance);
+            pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX() - pigX)), 2) + Math.pow((Math.abs(obj.getCenterY() - pigY)), 2));
+
+            obj.setObjectsAboveSet(aboveObjects);
+
+            obj.setObjectsAround(obj.getObjectsAboveSet().size(), left, right, pigDistance);
             targetObjects.add(obj);
         }
 

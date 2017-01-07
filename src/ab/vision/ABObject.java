@@ -9,8 +9,10 @@
 package ab.vision;
 
 import java.awt.*;
+import java.util.HashSet;
+import java.util.Set;
 
-public class ABObject extends Rectangle {
+public class ABObject extends Rectangle implements Comparable<ABObject> {
 
     private static final long serialVersionUID = 1L;
     private static int counter = 0;
@@ -24,40 +26,58 @@ public class ABObject extends Rectangle {
     public double angle = 0;
     //is Hollow or not
     public boolean hollow = false;
+    public int objectsAbove = 0;
+    public int objectsLeft = -1;
+    public int objectsRight = -1;
+    public double pigDistance = -1;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
-
-    public int objectsAbove;
-    public int objectsLeft;
-    public int objectsRight;
-    public double pigDistance;
+    private Set<ABObject> objectsAboveSet;
 
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = type;
         this.id = counter++;
     }
-
     public ABObject(Rectangle mbr, ABType type, int id) {
         super(mbr);
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = type;
         this.id = id;
     }
 
     public ABObject(ABObject ab) {
         super(ab.getBounds());
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = ab.type;
         this.id = ab.id;
     }
 
-
     public ABObject() {
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.id = counter++;
         this.type = ABType.Unknown;
     }
 
-    public void setObjectsAround(int above, int left, int right, double pigDistance){
-        this.objectsAbove = above; 
-        this.objectsLeft = left; 
+    public static void resetCounter() {
+        counter = 0;
+    }
+
+    public Set<ABObject> getObjectsAboveSet() {
+        return objectsAboveSet;
+    }
+
+    public void setObjectsAboveSet(Set<ABObject> objectsAboveSet) {
+        this.objectsAboveSet = objectsAboveSet;
+    }
+
+    public void setObjectsAround(int above, int left, int right, double pigDistance) {
+        this.objectsAbove = above;
+        this.objectsLeft = left;
         this.objectsRight = right;
         this.pigDistance = pigDistance;
     }
@@ -66,12 +86,8 @@ public class ABObject extends Rectangle {
         return this.id + this.type.toString() + this.shape.toString();
     }
 
-    public static void resetCounter() {
-        counter = 0;
-    }
-
     public String myToString() {
-        return this.toString() + " " + this.getTrajectoryType().name();
+        return String.format("%03d %03d %03d %06f", objectsAbove, objectsLeft, objectsRight, pigDistance) + " | " + this.toString() + " " + this.getTrajectoryType().name();
     }
 
     public TrajectoryType getTrajectoryType() {
@@ -88,6 +104,11 @@ public class ABObject extends Rectangle {
 
     public Point getCenter() {
         return new Point((int) getCenterX(), (int) getCenterY());
+    }
+
+    @Override
+    public int compareTo(ABObject abObject) {
+        return this.y - abObject.y;
     }
 
     public enum TrajectoryType {HIGH, LOW}
