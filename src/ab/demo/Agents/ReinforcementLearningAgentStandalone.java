@@ -1,12 +1,11 @@
 package ab.demo.Agents;
 
+import ab.demo.Action;
 import ab.demo.DAO.*;
 import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
 import ab.demo.qlearning.StateObject;
-import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
-import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
@@ -46,136 +45,6 @@ public class ReinforcementLearningAgentStandalone extends Agent {
         this.statesDAO = statesDAO;
 
         ActionRobot.GoFromMainMenuToLevelSelection();
-    }
-
-
-    public void run() {
-        if (!this.fixedLevel) {
-            currentLevel = 1;
-        }
-        actionRobot.loadLevel(currentLevel);
-        trajectoryPlanner = new TrajectoryPlanner();
-
-        currentMoveCounter = 0;
-        int score;
-        ProblemState previousProblemState;
-
-        // id which will be generated randomly every lvl so that we can connect moves to games
-        currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-
-        //one cycle means one shot was being executed
-        while (true) {
-            logger.info("Next iteration of the all mighty while loop");
-
-            currentGameStateEnum = actionRobot.getState();
-
-            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.PLAYING) {
-
-                updateCurrentVision();
-                slingshot = this.findSlingshot();
-
-                updateCurrentProblemState();
-                previousProblemState = currentProblemState;
-
-                // check if there are still pigs available
-                List<ABObject> pigs = currentVision.findPigsMBR();
-
-                if (currentMoveCounter == 0) {
-                    // count inital all birds 
-                    updateBirdCounter();
-                }
-                logger.info("Current Bird count: " + String.valueOf(birdCounter));
-                updateCurrentVision();
-
-                if (!pigs.isEmpty()) {
-                    updateCurrentVision();
-
-                    // get next action
-                    calculateCurrentAction();
-
-                    Set<Object> blocksAndPigsBeforeShot = currentVision.getBlocksAndPigs(true);
-
-                    Point releasePoint = shootOneBird(currentAction);
-
-                    logger.info("done shooting");
-
-                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot);
-
-                    logger.info("done waiting for blocks to fall down");
-
-                    //save the information about the current zooming for the next shot
-                    List<Point> trajectoryPoints = currentVision.findTrajPoints();
-                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
-
-                    checkIfDonePlayingAndWaitForWinningScreen();
-
-                    //update currentGameStateEnum
-                    currentGameStateEnum = actionRobot.getState();
-
-                    currentReward = getReward(currentGameStateEnum);
-
-                    if (currentGameStateEnum == GameStateExtractor.GameStateEnum.PLAYING) {
-                        updateCurrentProblemState();
-                        updateQValue(previousProblemState, currentProblemState, currentAction, currentReward, false, currentGameId, currentMoveCounter);
-                    } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.WON || currentGameStateEnum == GameStateExtractor.GameStateEnum.LOST) {
-                        updateQValue(previousProblemState, currentProblemState, currentAction, currentReward, true, currentGameId, currentMoveCounter);
-                    }
-
-                    currentMoveCounter++;
-                } else {
-                    logger.error("No pig's found anymore!!!!!!!!!");
-                }
-            } else {
-                logger.warn("Accidentally in solving method without being in PLAYING state");
-            }
-
-            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.WON) {
-                logger.info("Wait for 3000 after won screen");
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    logger.error("Sleep thread was being interrupted" + e);
-                }
-
-                score = StateUtil.getScore(ActionRobot.proxy);
-
-                // update the local list of highscores
-                if (!scores.containsKey(currentLevel)) {
-                    scores.put(currentLevel, score);
-                } else {
-                    if (scores.get(currentLevel) < score)
-                        scores.put(currentLevel, score);
-                }
-
-                this.logScores();
-
-                if (!fixedLevel) {
-                    currentLevel++;
-                }
-                actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
-                // make a new trajectory planner whenever a new level is entered because of reasons
-                trajectoryPlanner = new TrajectoryPlanner();
-
-                currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-                currentMoveCounter = 0;
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LOST) {
-                restartThisLevel();
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LEVEL_SELECTION) {
-                logger.warn("Unexpected level selection page, go to the last current level : "
-                        + currentLevel);
-                actionRobot.loadLevel(currentLevel);
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.MAIN_MENU) {
-                logger.warn("Unexpected main menu page, go to the last current level : "
-                        + currentLevel);
-                ActionRobot.GoFromMainMenuToLevelSelection();
-                actionRobot.loadLevel(currentLevel);
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.EPISODE_MENU) {
-                logger.warn("Unexpected episode menu page, go to the last current level : "
-                        + currentLevel);
-                ActionRobot.GoFromMainMenuToLevelSelection();
-                actionRobot.loadLevel(currentLevel);
-            }
-        }
     }
 
 
@@ -281,6 +150,11 @@ public class ReinforcementLearningAgentStandalone extends Agent {
         return trajectoryPlanner.getTapTime(slingshot, releasePoint, targetPoint, tappingInterval);
     }
 
+    @Override
+    protected void calculateCurrentGameId() {
+        currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+    }
+
 
     /**
      * checks if highest q_value is 0.0 which means that we have never been in this state,
@@ -326,12 +200,47 @@ public class ReinforcementLearningAgentStandalone extends Agent {
     }
 
 
+    @Override
+    protected void afterShotHook(ProblemState previousProblemState) {
+        if (currentGameStateEnum == GameStateExtractor.GameStateEnum.PLAYING) {
+            updateCurrentProblemState();
+            updateQValue(previousProblemState, currentProblemState, currentAction, currentReward, false, currentGameId, currentMoveCounter);
+        } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.WON || currentGameStateEnum == GameStateExtractor.GameStateEnum.LOST) {
+            updateQValue(previousProblemState, currentProblemState, currentAction, currentReward, true, currentGameId, currentMoveCounter);
+        }
+    }
+
+    /**
+     * Returns next action, with explorationrate as probability of taking a random action
+     * and else look for the so far best action
+     *
+     * @return
+     */
+    protected void calculateNextAction() {
+        int randomValue = randomGenerator.nextInt(100);
+        Action action;
+        if (randomValue < explorationRate * 100) {
+            //get random action should return more than one id!
+            action = qValuesDAO.getRandomAction(currentProblemState.getId());
+            action.setProblemState(currentProblemState);
+            action.setRand(true);
+            action.setName("random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
+        } else {
+            action = qValuesDAO.getBestAction(currentProblemState.getId());
+            action.setProblemState(currentProblemState);
+            action.setRand(false);
+            action.setName("best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
+        }
+        logger.info("Selected the following action: " + action.getName());
+        currentAction = action;
+    }
+
     protected void updateCurrentProblemState() {
         // 1. create state
         ProblemState problemState = getStateId(new ProblemState(currentVision, actionRobot, 0, false));
 
         // 2. if state was generated newly create all Objects and link them to this state
-        if (problemState.getInitialized() == false) {
+        if (problemState.isInitialized() == false) {
             int objectId;
             int stateId = problemState.getId();
             for (ABObject object : problemState.getAllObjects()) {
@@ -352,41 +261,6 @@ public class ReinforcementLearningAgentStandalone extends Agent {
                 restartThisLevel();
             }
         }
-
         this.currentProblemState = problemState;
     }
-
-    protected void restartThisLevel() {
-        logger.info("Restart level");
-        actionRobot.restartLevel();
-        currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-        currentMoveCounter = 0;
-    }
-
-
-    /**
-     * Returns next action, with explorationrate as probability of taking a random action
-     * and else look for the so far best action
-     *
-     * @return
-     */
-    private void calculateCurrentAction() {
-        int randomValue = randomGenerator.nextInt(100);
-        Action action;
-        if (randomValue < explorationRate * 100) {
-            //get random action should return more than one id!
-            action = qValuesDAO.getRandomAction(currentProblemState.getId());
-            action.setProblemState(currentProblemState);
-            action.setRand(true);
-            action.setName("random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
-        } else {
-            action = qValuesDAO.getBestAction(currentProblemState.getId());
-            action.setProblemState(currentProblemState);
-            action.setRand(false);
-            action.setName("best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
-        }
-        logger.info("Selected the following action: " + action.getName());
-        currentAction = action;
-    }
-
 }

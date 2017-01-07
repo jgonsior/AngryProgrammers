@@ -5,6 +5,7 @@ import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
+import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
@@ -17,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 
 /**
  * interface for an agent which can play angry birds
@@ -33,7 +35,7 @@ public abstract class Agent implements Runnable {
     protected ProblemState currentProblemState;
     protected GameStateExtractor.GameStateEnum currentGameStateEnum;
     protected int currentLevel;
-    protected Action currentAction;
+    protected ab.demo.Action currentAction;
     protected double currentReward;
     protected int currentMoveCounter;
     protected int birdCounter;
@@ -75,6 +77,137 @@ public abstract class Agent implements Runnable {
     public void saveCurrentScreenshot() {
         saveCurrentScreenshot(currentAction.getName());
     }
+
+    public void run() {
+        if (!this.fixedLevel) {
+            currentLevel = 1;
+        }
+        actionRobot.loadLevel(currentLevel);
+        trajectoryPlanner = new TrajectoryPlanner();
+
+        currentMoveCounter = 0;
+        int score;
+        ProblemState previousProblemState;
+
+        // id which will be generated randomly every lvl so that we can connect moves to games
+        calculateCurrentGameId();
+
+        //one cycle means one shot was being executed
+        while (true) {
+            logger.info("Next iteration of the all mighty while loop");
+
+            currentGameStateEnum = actionRobot.getState();
+
+            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.PLAYING) {
+
+                updateCurrentVision();
+                slingshot = this.findSlingshot();
+
+                updateCurrentProblemState();
+                previousProblemState = currentProblemState;
+
+                // check if there are still pigs available
+                List<ABObject> pigs = currentVision.findPigsMBR();
+
+                if (currentMoveCounter == 0) {
+                    // count inital all birds 
+                    updateBirdCounter();
+                }
+                logger.info("Current Bird count: " + String.valueOf(birdCounter));
+                updateCurrentVision();
+
+                if (!pigs.isEmpty()) {
+                    updateCurrentVision();
+
+                    // get next action
+                    calculateNextAction();
+
+                    Set<Object> blocksAndPigsBeforeShot = currentVision.getBlocksAndPigs(true);
+
+                    Point releasePoint = shootOneBird(currentAction);
+
+                    logger.info("done shooting");
+
+                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot);
+
+                    logger.info("done waiting for blocks to fall down");
+
+                    //save the information about the current zooming for the next shot
+                    List<Point> trajectoryPoints = currentVision.findTrajPoints();
+                    trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
+
+                    checkIfDonePlayingAndWaitForWinningScreen();
+
+                    //update currentGameStateEnum
+                    currentGameStateEnum = actionRobot.getState();
+
+                    currentReward = getReward(currentGameStateEnum);
+
+                    this.afterShotHook(previousProblemState);
+
+
+                    currentMoveCounter++;
+                } else {
+                    logger.error("No pig's found anymore!!!!!!!!!");
+                }
+            } else {
+                logger.warn("Accidentally in solving method without being in PLAYING state");
+            }
+
+            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.WON) {
+                logger.info("Wait for 3000 after won screen");
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    logger.error("Sleep thread was being interrupted" + e);
+                }
+
+                score = StateUtil.getScore(ActionRobot.proxy);
+
+                // update the local list of highscores
+                if (!scores.containsKey(currentLevel)) {
+                    scores.put(currentLevel, score);
+                } else {
+                    if (scores.get(currentLevel) < score)
+                        scores.put(currentLevel, score);
+                }
+
+                this.logScores();
+
+                if (!fixedLevel) {
+                    currentLevel++;
+                }
+                actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
+                // make a new trajectory planner whenever a new level is entered because of reasons
+                trajectoryPlanner = new TrajectoryPlanner();
+                calculateCurrentGameId();
+                currentMoveCounter = 0;
+            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LOST) {
+                restartThisLevel();
+            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LEVEL_SELECTION) {
+                logger.warn("Unexpected level selection page, go to the last current level : "
+                        + currentLevel);
+                actionRobot.loadLevel(currentLevel);
+            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.MAIN_MENU) {
+                logger.warn("Unexpected main menu page, go to the last current level : "
+                        + currentLevel);
+                ActionRobot.GoFromMainMenuToLevelSelection();
+                actionRobot.loadLevel(currentLevel);
+            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.EPISODE_MENU) {
+                logger.warn("Unexpected episode menu page, go to the last current level : "
+                        + currentLevel);
+                ActionRobot.GoFromMainMenuToLevelSelection();
+                actionRobot.loadLevel(currentLevel);
+            }
+        }
+    }
+
+    protected abstract void updateCurrentProblemState();
+
+    protected abstract void afterShotHook(ProblemState previousProblemState);
+
+    protected abstract void calculateNextAction();
+
 
     /***
      * waits until the shoot was successfully being executed
@@ -320,7 +453,7 @@ public abstract class Agent implements Runnable {
      *
      * @param action
      */
-    protected Point shootOneBird(Action action) {
+    protected Point shootOneBird(ab.demo.Action action) {
         Point targetPoint = action.getTargetPoint();
 
         //ABObject pig = currentVision.findPigsMBR().get(0);
@@ -366,6 +499,16 @@ public abstract class Agent implements Runnable {
         }
 
         return releasePoint;
+    }
+
+    protected abstract void calculateCurrentGameId();
+
+
+    protected void restartThisLevel() {
+        logger.info("Restart level");
+        actionRobot.restartLevel();
+        calculateCurrentGameId();
+        currentMoveCounter = 0;
     }
 
 }

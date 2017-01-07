@@ -8,6 +8,7 @@
  *****************************************************************************/
 package ab.demo.Agents;
 
+import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
@@ -101,6 +102,21 @@ public class NaiveAgent extends Agent {
             }
 
         }
+
+    }
+
+    @Override
+    protected void updateCurrentProblemState() {
+        
+    }
+
+    @Override
+    protected void afterShotHook(ProblemState previousProblemState) {
+
+    }
+
+    @Override
+    protected void calculateNextAction() {
 
     }
 
@@ -257,5 +273,10 @@ public class NaiveAgent extends Agent {
     @Override
     protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
         return 0;
+    }
+
+    @Override
+    protected void calculateCurrentGameId() {
+
     }
 }

@@ -1,6 +1,5 @@
-package ab.demo.Agents;
+package ab.demo;
 
-import ab.demo.ProblemState;
 import ab.vision.ABObject;
 
 import java.awt.*;
@@ -17,6 +16,7 @@ public class Action {
     private ProblemState problemState;
     private ABObject targetObject;
     private Point targetPoint;
+
     public Action(int actionId, ABObject.TrajectoryType trajectoryType, ProblemState problemState) {
         this.actionId = actionId;
         this.trajectoryType = trajectoryType;
