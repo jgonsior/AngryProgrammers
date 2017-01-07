@@ -4,9 +4,12 @@ import ab.demo.other.ActionRobot;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
+import ab.vision.ABShape;
+import ab.vision.real.shape.Circle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.*;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -18,6 +21,7 @@ import java.util.List;
 public class ProblemState {
 
     public List<ABObject> shootableObjects;
+    public List<ABObject> targetObjects;
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
@@ -41,6 +45,51 @@ public class ProblemState {
             shootableObjects = calculateShootableObjects();
 
         }
+    }
+
+    private List<ABObject> calculateTargetObjects(){
+        // 1. TNTs
+        List<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
+        // 2. big round objects
+        for (ABObject obj : vision.findBlocksRealShape()){
+            if (obj.shape == ABShape.Circle){
+                Circle objC = (Circle) obj;
+                // have to see if 9000 is too big
+                if (objC.r > 9000){
+                    targetObjects.add(obj);
+                }
+            }
+        }
+        // 3. structural objects with their "scores"
+        for (ABObject obj : vision.findBlocksRealShape()){
+            int above, left, right;
+            above = left = right = 0;
+            double x, y;
+            x = obj.getCenterX();
+            y = obj.getCenterY();
+            for (ABObject n : vision.findBlocksRealShape()){
+                double nx, ny;
+                nx = n.getCenterX();
+                ny = n.getCenterY();
+                // above: nearly same x and count all which lies above (maybe incorrect if too much empty space inbetween)
+                if (Math.abs(x - nx) < 20 && y < ny){
+                    above++;
+                }
+                // left: nearly same y and count all which are in reach within 20 pixels
+                if (Math.abs(y - ny) < 20 && x > nx && x - nx < 20){
+                    left++;
+                }
+                // right: nearly same y and count all which are in reach within 20 pixels
+                if (Math.abs(y - ny) < 20 && x < nx && nx - x < 20){
+                    right++;
+                }
+            }
+            obj.setObjectsAround(above, left, right);
+        }
+
+        // 4. pigs
+        targetObjects.addAll(vision.findPigsRealShape());
+        return targetObjects;
     }
 
     /**
