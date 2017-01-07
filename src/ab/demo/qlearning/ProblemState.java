@@ -43,6 +43,7 @@ public class ProblemState {
             allObjects.addAll(vision.findTNTs());
 
             shootableObjects = calculateShootableObjects();
+            targetObjects = calculateTargetObjects();
 
         }
     }
@@ -56,6 +57,7 @@ public class ProblemState {
                 Circle objC = (Circle) obj;
                 // have to see if 9000 is too big
                 if (objC.r > 9000){
+                    System.out.println("-" + obj.toString());
                     targetObjects.add(obj);
                 }
             }
@@ -64,27 +66,51 @@ public class ProblemState {
         for (ABObject obj : vision.findBlocksRealShape()){
             int above, left, right;
             above = left = right = 0;
-            double x, y;
-            x = obj.getCenterX();
-            y = obj.getCenterY();
-            for (ABObject n : vision.findBlocksRealShape()){
-                double nx, ny;
-                nx = n.getCenterX();
-                ny = n.getCenterY();
-                // above: nearly same x and count all which lies above (maybe incorrect if too much empty space inbetween)
-                if (Math.abs(x - nx) < 20 && y < ny){
+            double oxmin, oxmax, oymin, oymax;
+            oxmin = obj.x;
+            oxmax = obj.x + obj.width;
+            oymin = obj.y;
+            oymax = obj.y + obj.height;
+            for (ABObject n : vision.findBlocksMBR()){
+                double nxmin, nxmax, nymin, nymax;
+                nxmin = n.x;
+                nxmax = n.x + n.width;
+                nymin = n.y;
+                nymax = n.y + n.height;
+
+                boolean nearX, nearY;
+                nearX = nearY = false;
+                if ((oxmin >= nxmin-10 && oxmin <= nxmax+10) || (nxmin >= oxmin-10 && nxmin <= oxmax+10)){
+                    nearX = true;
+                }
+
+                if ((oymin >= nymin-10 && oymin <= nymax+10) || (nymin >= oymin-10 && nymin <= oymax+10)){
+                    nearY = true;
+                }
+
+                if (nearX && nymax <= oymin){
                     above++;
-                }
-                // left: nearly same y and count all which are in reach within 20 pixels
-                if (Math.abs(y - ny) < 20 && x > nx && x - nx < 20){
+                } else if (nearY && nxmax <= oxmin && oxmin-nxmax < 20){
                     left++;
-                }
-                // right: nearly same y and count all which are in reach within 20 pixels
-                if (Math.abs(y - ny) < 20 && x < nx && nx - x < 20){
+                } else if (nearY && nxmin >= oxmax && nxmin-oxmax < 20){
                     right++;
                 }
             }
-            obj.setObjectsAround(above, left, right);
+
+            // calculates distance to averagePig
+            double pigX, pigY, pigAmount, pigDistance;
+            pigX = pigY = 0;
+            pigAmount = (double) vision.findPigsMBR().size();
+            for (ABObject pig : vision.findPigsMBR()){
+                pigX += pig.getCenterX();
+                pigY += pig.getCenterY();
+            }
+            pigX = pigX / pigAmount;
+            pigY = pigY / pigAmount;
+
+            pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX()-pigX)),2) + Math.pow((Math.abs(obj.getCenterY()-pigY)),2));
+                        
+            obj.setObjectsAround(above, left, right, pigDistance);
         }
 
         // 4. pigs

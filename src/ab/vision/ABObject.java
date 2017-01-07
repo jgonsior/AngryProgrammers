@@ -28,6 +28,7 @@ public class ABObject extends Rectangle {
     public int objectsAbove;
     public int objectsLeft;
     public int objectsRight;
+    public double pigDistance;
 
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
@@ -53,10 +54,11 @@ public class ABObject extends Rectangle {
         this.type = ABType.Unknown;
     }
 
-    public void setObjectsAround(int above, int left, int right){
+    public void setObjectsAround(int above, int left, int right, double pigDistance){
         this.objectsAbove = above; 
         this.objectsLeft = left; 
         this.objectsRight = right;
+        this.pigDistance = pigDistance;
     }
 
     public String toString() {
