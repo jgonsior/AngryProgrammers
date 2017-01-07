@@ -26,6 +26,11 @@ public class ABObject extends Rectangle {
     public boolean hollow = false;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
 
+    public int objectsAbove;
+    public int objectsLeft;
+    public int objectsRight;
+    public double pigDistance;
+
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
         this.type = type;
@@ -48,6 +53,17 @@ public class ABObject extends Rectangle {
     public ABObject() {
         this.id = counter++;
         this.type = ABType.Unknown;
+    }
+
+    public void setObjectsAround(int above, int left, int right, double pigDistance){
+        this.objectsAbove = above; 
+        this.objectsLeft = left; 
+        this.objectsRight = right;
+        this.pigDistance = pigDistance;
+    }
+
+    public String toString() {
+        return this.id + this.type.toString() + this.shape.toString();
     }
 
     public static void resetCounter() {

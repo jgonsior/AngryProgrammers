@@ -4,9 +4,12 @@ import ab.demo.other.ActionRobot;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
+import ab.vision.ABShape;
+import ab.vision.real.shape.Circle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.*;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -18,6 +21,9 @@ import java.util.List;
 public class ProblemState {
 
     public ArrayList<ABObject> shootableObjects;
+
+    public List<ABObject> targetObjects;
+
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
@@ -39,8 +45,79 @@ public class ProblemState {
             allObjects.addAll(vision.findTNTs());
 
             shootableObjects = calculateShootableObjects();
+            targetObjects = calculateTargetObjects();
 
         }
+    }
+
+    private List<ABObject> calculateTargetObjects(){
+        // 1. TNTs
+        List<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
+        // 2. big round objects
+        for (ABObject obj : vision.findBlocksRealShape()){
+            if (obj.shape == ABShape.Circle){
+                Circle objC = (Circle) obj;
+                // have to see if 9000 is too big
+                if (objC.r > 9000){
+                    System.out.println("-" + obj.toString());
+                    targetObjects.add(obj);
+                }
+            }
+        }
+        // 3. structural objects with their "scores"
+        for (ABObject obj : vision.findBlocksRealShape()){
+            int above, left, right;
+            above = left = right = 0;
+            double oxmin, oxmax, oymin, oymax;
+            oxmin = obj.x;
+            oxmax = obj.x + obj.width;
+            oymin = obj.y;
+            oymax = obj.y + obj.height;
+            for (ABObject n : vision.findBlocksMBR()){
+                double nxmin, nxmax, nymin, nymax;
+                nxmin = n.x;
+                nxmax = n.x + n.width;
+                nymin = n.y;
+                nymax = n.y + n.height;
+
+                boolean nearX, nearY;
+                nearX = nearY = false;
+                if ((oxmin >= nxmin-10 && oxmin <= nxmax+10) || (nxmin >= oxmin-10 && nxmin <= oxmax+10)){
+                    nearX = true;
+                }
+
+                if ((oymin >= nymin-10 && oymin <= nymax+10) || (nymin >= oymin-10 && nymin <= oymax+10)){
+                    nearY = true;
+                }
+
+                if (nearX && nymax <= oymin){
+                    above++;
+                } else if (nearY && nxmax <= oxmin && oxmin-nxmax < 20){
+                    left++;
+                } else if (nearY && nxmin >= oxmax && nxmin-oxmax < 20){
+                    right++;
+                }
+            }
+
+            // calculates distance to averagePig
+            double pigX, pigY, pigAmount, pigDistance;
+            pigX = pigY = 0;
+            pigAmount = (double) vision.findPigsMBR().size();
+            for (ABObject pig : vision.findPigsMBR()){
+                pigX += pig.getCenterX();
+                pigY += pig.getCenterY();
+            }
+            pigX = pigX / pigAmount;
+            pigY = pigY / pigAmount;
+
+            pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX()-pigX)),2) + Math.pow((Math.abs(obj.getCenterY()-pigY)),2));
+                        
+            obj.setObjectsAround(above, left, right, pigDistance);
+        }
+
+        // 4. pigs
+        targetObjects.addAll(vision.findPigsRealShape());
+        return targetObjects;
     }
 
     /**
