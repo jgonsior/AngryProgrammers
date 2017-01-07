@@ -1,8 +1,8 @@
-package ab.demo;
+package ab.demo.Agents;
 
+import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
-import ab.demo.qlearning.Action;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.vision.ABObject;

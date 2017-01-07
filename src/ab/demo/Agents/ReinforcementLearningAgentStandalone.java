@@ -1,8 +1,8 @@
-package ab.demo;
+package ab.demo.Agents;
 
 import ab.demo.DAO.*;
+import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
-import ab.demo.qlearning.Action;
 import ab.demo.qlearning.StateObject;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;

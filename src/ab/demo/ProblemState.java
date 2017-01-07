@@ -1,7 +1,7 @@
 package ab.demo;
 
+import ab.demo.Agents.Action;
 import ab.demo.other.ActionRobot;
-import ab.demo.qlearning.Action;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;

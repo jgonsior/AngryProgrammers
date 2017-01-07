@@ -1,4 +1,4 @@
-package ab.demo.qlearning;
+package ab.demo.Agents;
 
 import ab.demo.ProblemState;
 import ab.vision.ABObject;

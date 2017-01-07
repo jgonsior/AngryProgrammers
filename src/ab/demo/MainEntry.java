@@ -1,5 +1,8 @@
 package ab.demo;
 
+import ab.demo.Agents.Agent;
+import ab.demo.Agents.NaiveAgent;
+import ab.demo.Agents.ReinforcementLearningAgentStandalone;
 import ab.demo.DAO.*;
 import ab.demo.logging.LoggingHandler;
 import ab.server.Proxy;
