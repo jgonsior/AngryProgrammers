@@ -1,6 +1,7 @@
-package ab.demo.qlearning;
+package ab.demo;
 
 import ab.demo.other.ActionRobot;
+import ab.demo.qlearning.Action;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
@@ -24,13 +25,13 @@ public class ProblemState {
     private boolean initialized;
 
     public ProblemState(Vision vision, ActionRobot actionRobot, int id, boolean initialized) {
-        GameStateExtractor.GameState state = actionRobot.getState();
+        GameStateExtractor.GameStateEnum state = actionRobot.getState();
         allObjects = new ArrayList<>();
         this.vision = vision;
         this.id = id;
         this.initialized = initialized;
 
-        if (state == GameStateExtractor.GameState.PLAYING) {
+        if (state == GameStateExtractor.GameStateEnum.PLAYING) {
 
             allObjects.addAll(vision.findBirdsRealShape());
             allObjects.addAll(vision.findBlocksRealShape());

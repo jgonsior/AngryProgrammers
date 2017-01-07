@@ -13,7 +13,7 @@ import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor.GameStateEnum;
 import ab.vision.Vision;
 
 import java.awt.*;
@@ -21,7 +21,7 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
-public class NaiveAgent implements Runnable, Agent {
+public class NaiveAgent extends Agent {
 
     public static int time_limit = 12;
     public int currentLevel = 1;
@@ -50,8 +50,8 @@ public class NaiveAgent implements Runnable, Agent {
 
         aRobot.loadLevel(currentLevel);
         while (true) {
-            GameState state = solve();
-            if (state == GameState.WON) {
+            GameStateEnum state = solve();
+            if (state == GameStateEnum.WON) {
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
@@ -78,21 +78,21 @@ public class NaiveAgent implements Runnable, Agent {
 
                 // first shot on this level, try high shot first
                 firstShot = true;
-            } else if (state == GameState.LOST) {
+            } else if (state == GameStateEnum.LOST) {
                 System.out.println("Restart");
                 aRobot.restartLevel();
-            } else if (state == GameState.LEVEL_SELECTION) {
+            } else if (state == GameStateEnum.LEVEL_SELECTION) {
                 System.out
                         .println("Unexpected level selection page, go to the last current level : "
                                 + currentLevel);
                 aRobot.loadLevel(currentLevel);
-            } else if (state == GameState.MAIN_MENU) {
+            } else if (state == GameStateEnum.MAIN_MENU) {
                 System.out
                         .println("Unexpected main menu page, go to the last current level : "
                                 + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 aRobot.loadLevel(currentLevel);
-            } else if (state == GameState.EPISODE_MENU) {
+            } else if (state == GameStateEnum.EPISODE_MENU) {
                 System.out
                         .println("Unexpected episode menu page, go to the last current level : "
                                 + currentLevel);
@@ -104,18 +104,13 @@ public class NaiveAgent implements Runnable, Agent {
 
     }
 
-    @Override
-    public void setFixedLevel(int level) {
-        System.out.println("Method setFixedLevel() ot implemented for naive agent.");
-    }
-
     private double distance(Point p1, Point p2) {
         return Math
                 .sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y)
                         * (p1.y - p2.y)));
     }
 
-    public GameState solve() {
+    public GameStateEnum solve() {
 
         // capture Image
         BufferedImage screenshot = ActionRobot.doScreenShot();
@@ -127,7 +122,7 @@ public class NaiveAgent implements Runnable, Agent {
         Rectangle sling = vision.findSlingshotMBR();
 
         // confirm the slingshot
-        while (sling == null && aRobot.getState() == GameState.PLAYING) {
+        while (sling == null && aRobot.getState() == GameStateEnum.PLAYING) {
             System.out
                     .println("No slingshot detected. Please remove pop up or zoom out");
             ActionRobot.fullyZoomOut();
@@ -138,7 +133,7 @@ public class NaiveAgent implements Runnable, Agent {
         // get all the pigs
         List<ABObject> pigs = vision.findPigsMBR();
 
-        GameState state = aRobot.getState();
+        GameStateEnum state = aRobot.getState();
 
         // if there is a sling, then play, otherwise just skip.
         if (sling != null) {
@@ -239,7 +234,7 @@ public class NaiveAgent implements Runnable, Agent {
                             if (dx < 0) {
                                 aRobot.cshoot(shot);
                                 state = aRobot.getState();
-                                if (state == GameState.PLAYING) {
+                                if (state == GameStateEnum.PLAYING) {
                                     screenshot = ActionRobot.doScreenShot();
                                     vision = new Vision(screenshot);
                                     List<Point> traj = vision.findTrajPoints();
@@ -257,5 +252,10 @@ public class NaiveAgent implements Runnable, Agent {
 
         }
         return state;
+    }
+
+    @Override
+    protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
+        return 0;
     }
 }

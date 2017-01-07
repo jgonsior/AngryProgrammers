@@ -1,5 +1,6 @@
 package ab.demo.qlearning;
 
+import ab.demo.ProblemState;
 import ab.vision.ABObject;
 
 import java.awt.*;
@@ -9,17 +10,25 @@ import java.util.List;
  * @author: Julius Gonsior
  */
 public class Action {
+    private String name;
     private int actionId;
     private ABObject.TrajectoryType trajectoryType;
     private boolean rand;
     private ProblemState problemState;
     private ABObject targetObject;
     private Point targetPoint;
-
     public Action(int actionId, ABObject.TrajectoryType trajectoryType, ProblemState problemState) {
         this.actionId = actionId;
         this.trajectoryType = trajectoryType;
         this.problemState = problemState;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     private void calculateTargetObject() {

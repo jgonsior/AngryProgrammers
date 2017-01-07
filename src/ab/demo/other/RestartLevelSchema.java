@@ -12,7 +12,8 @@ import ab.server.Proxy;
 import ab.server.proxy.message.ProxyClickMessage;
 import ab.server.proxy.message.ProxyMouseWheelMessage;
 import ab.utils.StateUtil;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor;
+import ab.vision.GameStateExtractor.GameStateEnum;
 
 public class RestartLevelSchema {
     private Proxy proxy;
@@ -23,9 +24,9 @@ public class RestartLevelSchema {
     }
 
     public boolean restartLevel() {
-        GameState state = StateUtil.getGameState(proxy);
+        GameStateExtractor.GameStateEnum state = StateUtil.getGameState(proxy);
 
-        if (state == GameState.WON || state == GameState.LOST) {
+        if (state == GameStateEnum.WON || state == GameStateEnum.LOST) {
             proxy.send(new ProxyClickMessage(420, 380));//Click the left most button at the end page
             System.out.println(" restart the level ");
             try {
@@ -33,7 +34,7 @@ public class RestartLevelSchema {
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
-        } else if (state == GameState.PLAYING) {
+        } else if (state == GameStateEnum.PLAYING) {
             proxy.send(new ProxyClickMessage(100, 39));
             try {
                 Thread.sleep(1000);

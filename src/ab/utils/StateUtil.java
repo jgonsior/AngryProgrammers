@@ -12,7 +12,7 @@ package ab.utils;
 import ab.server.Proxy;
 import ab.server.proxy.message.ProxyScreenshotMessage;
 import ab.vision.GameStateExtractor;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor.GameStateEnum;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -24,9 +24,9 @@ public class StateUtil {
     /**
      * Get the current game state
      *
-     * @return GameState: the current state
+     * @return GameStateEnum: the current state
      */
-    public static GameState getGameState(Proxy proxy) {
+    public static GameStateEnum getGameState(Proxy proxy) {
         byte[] imageBytes = proxy.send(new ProxyScreenshotMessage());
 
         BufferedImage image = null;
@@ -36,7 +36,7 @@ public class StateUtil {
 
         }
         GameStateExtractor gameStateExtractor = new GameStateExtractor();
-        GameStateExtractor.GameState state = gameStateExtractor.getGameState(image);
+        GameStateEnum state = gameStateExtractor.getGameState(image);
         return state;
     }
 
@@ -52,10 +52,10 @@ public class StateUtil {
         }
 
         GameStateExtractor gameStateExtractor = new GameStateExtractor();
-        GameState state = gameStateExtractor.getGameState(image);
-        if (state == GameState.PLAYING)
+        GameStateEnum state = gameStateExtractor.getGameState(image);
+        if (state == GameStateEnum.PLAYING)
             score = gameStateExtractor.getScoreInGame(image);
-        else if (state == GameState.WON)
+        else if (state == GameStateEnum.WON)
             score = gameStateExtractor.getScoreEndGame(image);
         if (score == -1)
             System.out.println(" Game score is unavailable ");
@@ -77,7 +77,7 @@ public class StateUtil {
 
                 e.printStackTrace();
             }
-            if (getGameState(proxy) == GameState.WON) {
+            if (getGameState(proxy) == GameStateExtractor.GameStateEnum.WON) {
                 current_score = _getScore(proxy);
             } else
                 System.out.println(" Unexpected state: PLAYING");

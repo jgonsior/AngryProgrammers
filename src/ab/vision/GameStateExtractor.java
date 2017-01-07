@@ -111,7 +111,7 @@ public class GameStateExtractor {
         return numberImage.getSubimage(number[0].x, number[0].y, number[0].width, number[0].height);
     }
 
-    public GameState getGameState(BufferedImage screenshot) {
+    public GameStateEnum getGameState(BufferedImage screenshot) {
 
         // pixel colour deviation threshold for valid detection
         final int avgColourThreshold = 5;
@@ -123,18 +123,18 @@ public class GameStateExtractor {
         int numBytes = 3 * wnd.getWidth() * wnd.getHeight();
         if (VisionUtils.imageDifference(wnd, _mainmenu) < numBytes
                 * avgColourThreshold) {
-            return GameState.MAIN_MENU;
+            return GameStateEnum.MAIN_MENU;
         } else if (VisionUtils.imageDifference(wnd, _episodemenu) < numBytes
                 * avgColourThreshold) {
-            return GameState.EPISODE_MENU;
+            return GameStateEnum.EPISODE_MENU;
         } else if (VisionUtils.imageDifference(wnd, _levelselection) < numBytes
                 * avgColourThreshold) {
-            return GameState.LEVEL_SELECTION;
+            return GameStateEnum.LEVEL_SELECTION;
         } else if ((VisionUtils.imageDifference(wnd, _loading) < numBytes
                 * avgColourThreshold)
                 || (VisionUtils.imageDifference(wnd, _loading2) < numBytes
                 * avgColourThreshold)) {
-            return GameState.LOADING;
+            return GameStateEnum.LOADING;
         }
         // otherwise check for end game or playing
         wnd = screenshot.getSubimage(467, 350, 61, 60);
@@ -142,7 +142,7 @@ public class GameStateExtractor {
         if (VisionUtils.imageDifference(wnd, _gamewon1) < numBytes
                 * avgColourThreshold || VisionUtils.imageDifference(wnd, _gamewon2) < numBytes
                 * avgColourThreshold) {
-            return GameState.WON;
+            return GameStateEnum.WON;
         }
 
 
@@ -150,10 +150,10 @@ public class GameStateExtractor {
         numBytes = 3 * wnd.getWidth() * wnd.getHeight();
         if (VisionUtils.imageDifference(wnd, _gamelost) < numBytes
                 * avgColourThreshold) {
-            return GameState.LOST;
+            return GameStateEnum.LOST;
         }
 
-        return GameState.PLAYING;
+        return GameStateEnum.PLAYING;
     }
 
     public int getScoreInGame(BufferedImage screenshot) {
@@ -329,7 +329,7 @@ public class GameStateExtractor {
         return VisionUtils.imageDifference(letter, template);
     }
 
-    public enum GameState {
+    public enum GameStateEnum {
         UNKNOWN, MAIN_MENU, EPISODE_MENU, LEVEL_SELECTION, LOADING, PLAYING, WON, LOST
     }
 
