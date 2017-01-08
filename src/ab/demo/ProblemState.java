@@ -92,9 +92,10 @@ public class ProblemState {
             ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(vision.findSlingshotMBR(), ptp);
             ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoints.get(0)));
 
-            ArrayList<ABObject> pigsOnTraj, objsOnTraj;
+            ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs;
             pigsOnTraj = new ArrayList<>();
             objsOnTraj = new ArrayList<>();
+            correctedPigs = new ArrayList<>();
 
             for (ABObject obj : allObjects){
                 boolean isPig = false;
@@ -119,23 +120,23 @@ public class ProblemState {
             // now check which pigs would be hitten behind 1st object
             if (!pigsOnTraj.isEmpty()){
                 // get MinX Value and remove all pigs behind this x
-                int minX = 1000;
+                int minX = 10000;
                 for (ABObject obj : objsOnTraj){
-                    if (obj.x > minX){
+                    if (obj.x < minX){
                         minX = obj.x;
                     }
                 }
 
                 for (ABObject pig : pigsOnTraj){
-                    if (pig.x > minX){
-                        pigsOnTraj.remove(pig);
+                    if (pig.x < minX){
+                        correctedPigs.add(pig);
                     }
                 }                
             }
 
             // now we got the corrected value of pigs on this trajectory, now return the best?!
-            if (pigsOnTraj.size() > maxAmountOfTargetsOnTraj){
-                maxAmountOfTargetsOnTraj = pigsOnTraj.size();
+            if (correctedPigs.size() > maxAmountOfTargetsOnTraj){
+                maxAmountOfTargetsOnTraj = correctedPigs.size();
                 bestShot = ptp;
             }           
         }
