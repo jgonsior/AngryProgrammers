@@ -89,10 +89,10 @@ public class ProblemState {
             }
         }
         // TODO: maybe also use better slingshot finding function
+        Rectangle sling = vision.findSlingshotMBR();
         for (Point ptp : possibleTargetPoints){
             //get predicted trajectory and check for every object if it gets hit
-            //break if it is no pig?!
-            ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(vision.findSlingshotMBR(), ptp);
+            ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(sling, ptp);
             ABObject.TrajectoryType currentTrajectoryType = null;
             for (int i = 0; i < estimatedLaunchPoints.size(); i++){
                 Point estimatedLaunchPoint = estimatedLaunchPoints.get(i);
@@ -104,7 +104,7 @@ public class ProblemState {
 
                 ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoint));
 
-                ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs;
+                ArrayList<Point> pigsOnTraj, objsOnTraj, correctedPigs;
                 pigsOnTraj = new ArrayList<>();
                 objsOnTraj = new ArrayList<>();
                 correctedPigs = new ArrayList<>();
@@ -117,13 +117,15 @@ public class ProblemState {
                         // birds would be shown as blocking all objects on trajectory
                         continue;
                     }
+
+                    // TODO: in level 2 he hits mysterious Point near (300,300) which ist object Hill but not visible in image
                     for (Point p : predictedTrajectory){
                         currentBird.setCoordinates(p.x, p.y);
                         if (intersects(currentBird, obj, 3)){
                             if (isPig){
-                                pigsOnTraj.add(obj);
+                                pigsOnTraj.add(p);
                             } else {
-                                objsOnTraj.add(obj);
+                                objsOnTraj.add(p);
                             }
                             // object intersects so dont need to check rest of points
                             break;
@@ -133,16 +135,17 @@ public class ProblemState {
 
                 // now we know which objects intersect with the trajectory, 
                 // now check which pigs would be hitten behind 1st object
+                // get MinX Value and remove all pigs behind this x
+                int minX = 10000;
                 if (!pigsOnTraj.isEmpty()){
-                    // get MinX Value and remove all pigs behind this x
-                    int minX = 10000;
-                    for (ABObject obj : objsOnTraj){
+                    
+                    for (Point obj : objsOnTraj){
                         if (obj.x < minX){
                             minX = obj.x;
                         }
                     }
 
-                    for (ABObject pig : pigsOnTraj){
+                    for (Point pig : pigsOnTraj){
                         if (pig.x <= minX){
                             correctedPigs.add(pig);
                         }
