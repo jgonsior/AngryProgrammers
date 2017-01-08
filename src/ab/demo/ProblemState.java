@@ -3,6 +3,7 @@ package ab.demo;
 import ab.demo.other.ActionRobot;
 import ab.vision.ABObject;
 import ab.vision.ABShape;
+import ab.vision.ABType;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import ab.vision.real.shape.Circle;
@@ -10,6 +11,7 @@ import ab.planner.TrajectoryPlanner;
 
 import java.util.*;
 import java.awt.Point;
+import java.awt.Rectangle;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -47,10 +49,6 @@ public class ProblemState {
 
             shootableObjects = calculateShootableObjects();
             targetObjects = calculateTargetObjects();
-            this.currentBird = findCurrentBird();
-
-            calculateBestMultiplePigShot();
-
         }
     }
 
@@ -67,15 +65,19 @@ public class ProblemState {
         return currentHighest;
     }
 
-    private Point calculateBestMultiplePigShot(){
+    public ABObject calculateBestMultiplePigShot(){
         // idea: try to find shot which maximize pigs on the trajectory
         // -> : just search around every pig for shot and check this trajectorys
         TrajectoryPlanner tp = new TrajectoryPlanner();
         ArrayList<ABObject> pigs = new ArrayList<>(vision.findPigsRealShape());
+        ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
         ArrayList<Point> possibleTargetPoints = new ArrayList<>();
+        this.currentBird = findCurrentBird();
         int birdRadius = (int)((Circle) currentBird).r;
         Point bestShot = null;
-        int maxAmountOfTargetsOnTraj = -1;
+        ABObject.TrajectoryType bestTrajType = null;
+        int maxAmountOfPigsOnTraj = -1;
+        int safeAmountOfPigsOnTraj = -1;
         // identify possible targetPoints
         for (ABObject pig : pigs){
             int pigRadius = (int)((Circle) pig).r;
@@ -90,77 +92,108 @@ public class ProblemState {
             //get predicted trajectory and check for every object if it gets hit
             //break if it is no pig?!
             ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(vision.findSlingshotMBR(), ptp);
-            ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoints.get(0)));
+            ABObject.TrajectoryType currentTrajectoryType = null;
+            for (int i = 0; i < estimatedLaunchPoints.size(); i++){
+                Point estimatedLaunchPoint = estimatedLaunchPoints.get(i);
+                if (i == 0){
+                    currentTrajectoryType = ABObject.TrajectoryType.LOW;
+                } else {
+                    currentTrajectoryType = ABObject.TrajectoryType.HIGH;
+                }
 
-            ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs;
-            pigsOnTraj = new ArrayList<>();
-            objsOnTraj = new ArrayList<>();
-            correctedPigs = new ArrayList<>();
+                ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoint));
 
-            for (ABObject obj : allObjects){
-                boolean isPig = false;
-                if (pigs.contains(obj)){
-                    isPig = true;
-                } 
-                for (Point p : predictedTrajectory){
-                    currentBird.setCoordinates(p.x, p.y);
-                    if (intersects(currentBird, obj)){
-                        if (isPig){
-                            pigsOnTraj.add(obj);
-                        } else {
-                            objsOnTraj.add(obj);
+                ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs;
+                pigsOnTraj = new ArrayList<>();
+                objsOnTraj = new ArrayList<>();
+                correctedPigs = new ArrayList<>();
+
+                for (ABObject obj : allObjects){
+                    boolean isPig = false;
+                    if (pigs.contains(obj)){
+                        isPig = true;
+                    } else if (birds.contains(obj)){
+                        // birds would be shown as blocking all objects on trajectory
+                        continue;
+                    }
+                    for (Point p : predictedTrajectory){
+                        currentBird.setCoordinates(p.x, p.y);
+                        if (intersects(currentBird, obj)){
+                            if (isPig){
+                                pigsOnTraj.add(obj);
+                            } else {
+                                objsOnTraj.add(obj);
+                            }
+                            // object intersects so dont need to check rest of points
+                            break;
                         }
-                        // object intersects so dont need to check rest of points
-                        break;
-                    }
-                }
-            }
-
-            // now we know which objects intersect with the trajectory, 
-            // now check which pigs would be hitten behind 1st object
-            if (!pigsOnTraj.isEmpty()){
-                // get MinX Value and remove all pigs behind this x
-                int minX = 10000;
-                for (ABObject obj : objsOnTraj){
-                    if (obj.x < minX){
-                        minX = obj.x;
                     }
                 }
 
-                for (ABObject pig : pigsOnTraj){
-                    if (pig.x < minX){
-                        correctedPigs.add(pig);
+                // now we know which objects intersect with the trajectory, 
+                // now check which pigs would be hitten behind 1st object
+                if (!pigsOnTraj.isEmpty()){
+                    // get MinX Value and remove all pigs behind this x
+                    int minX = 10000;
+                    for (ABObject obj : objsOnTraj){
+                        if (obj.x < minX){
+                            minX = obj.x;
+                        }
                     }
-                }                
-            }
 
-            // now we got the corrected value of pigs on this trajectory, now return the best?!
-            if (correctedPigs.size() > maxAmountOfTargetsOnTraj){
-                maxAmountOfTargetsOnTraj = correctedPigs.size();
-                bestShot = ptp;
-            }           
+                    for (ABObject pig : pigsOnTraj){
+                        if (pig.x <= minX){
+                            correctedPigs.add(pig);
+                        }
+                    }             
+                }
+
+                // now we got the corrected value of pigs on this trajectory, now return the best?!
+                if (correctedPigs.size() > safeAmountOfPigsOnTraj){
+                    safeAmountOfPigsOnTraj = correctedPigs.size();
+                    maxAmountOfPigsOnTraj = pigsOnTraj.size();
+                    bestTrajType = currentTrajectoryType;
+                    bestShot = ptp;
+                } 
+
+            }
+                      
         }
+        ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.Unknown);
+        pseudoObject.setTrajectoryType(bestTrajType);
+        System.out.println("Best shot: " + bestShot + " - "+ bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
-        System.out.println("Best shot: " + bestShot + " will kill approx: " + maxAmountOfTargetsOnTraj);
-
-        return bestShot;
+        return pseudoObject;
     }
 
-    private boolean intersects(ABObject circleAB, ABObject rect) {
-        Circle circle = (Circle) circleAB;
-        int circleDistance_x = Math.abs(circle.x - rect.x);
-        int circleDistance_y = Math.abs(circle.y - rect.y);
+    private boolean intersects(ABObject birdAB, ABObject target) {
+        Circle circle = (Circle) birdAB;
+        int circleDistance_x = Math.abs(circle.x - target.x);
+        int circleDistance_y = Math.abs(circle.y - target.y);
 
-        if (circleDistance_x > (rect.width/2 + circle.r)) { return false; }
-        if (circleDistance_y > (rect.height/2 + circle.r)) { return false; }
+        if (target.shape == ABShape.Circle){
+            Circle circle2 = (Circle) target;
+            if ((circleDistance_x-circle.r-circle2.r <= 0) && (circleDistance_y-circle.r -circle2.r <= 0)){
+                return true;
+            } else {
+                return false;
+            }
 
-        if (circleDistance_x <= (rect.width/2)) { return true; } 
-        if (circleDistance_y <= (rect.height/2)) { return true; }
+        } else {
+            ABObject rect = target;
+            if (circleDistance_x > (rect.width/2 + circle.r)) { return false; }
+            if (circleDistance_y > (rect.height/2 + circle.r)) { return false; }
 
-        int cornerDistance_sq = (circleDistance_x - rect.width/2)^2 +
-                             (circleDistance_y - rect.height/2)^2;
+            if (circleDistance_x <= (rect.width/2)) { return true; } 
+            if (circleDistance_y <= (rect.height/2)) { return true; }
 
-        return (cornerDistance_sq <= (Math.pow(circle.r,2)));
+            int cornerDistance_sq = (circleDistance_x - rect.width/2)^2 +
+                                 (circleDistance_y - rect.height/2)^2;
+
+            return (cornerDistance_sq <= (Math.pow(circle.r,2)));
+
+        }
+        
     }
 
     private ArrayList<ABObject> calculateTargetObjects() {
@@ -238,6 +271,9 @@ public class ProblemState {
 
         // 4. pigs
         targetObjects.addAll(vision.findPigsRealShape());
+
+        //5. best pigShot
+        targetObjects.add(calculateBestMultiplePigShot());
         return targetObjects;
     }
 
