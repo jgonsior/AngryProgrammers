@@ -81,8 +81,9 @@ public class ProblemState {
         // identify possible targetPoints
         for (ABObject pig : pigs){
             int pigRadius = (int)((Circle) pig).r;
-            for (int xoff = 0; xoff < pigRadius + birdRadius; xoff+=2){
-                for (int yoff = 0; yoff < pigRadius + birdRadius; yoff+=2){
+            int fromTo = pigRadius + birdRadius;
+            for (int xoff = - fromTo; xoff < fromTo; xoff+=2){
+                for (int yoff = - fromTo; yoff < fromTo; yoff+=2){
                     possibleTargetPoints.add(new Point((int)(pig.getCenterX()+xoff), (int)(pig.getCenterY()+yoff)));
                 }
             }
@@ -118,7 +119,7 @@ public class ProblemState {
                     }
                     for (Point p : predictedTrajectory){
                         currentBird.setCoordinates(p.x, p.y);
-                        if (intersects(currentBird, obj)){
+                        if (intersects(currentBird, obj, 3)){
                             if (isPig){
                                 pigsOnTraj.add(obj);
                             } else {
@@ -166,14 +167,14 @@ public class ProblemState {
         return pseudoObject;
     }
 
-    private boolean intersects(ABObject birdAB, ABObject target) {
+    private boolean intersects(ABObject birdAB, ABObject target, int minPixelOverlap) {
         Circle circle = (Circle) birdAB;
         int circleDistance_x = Math.abs(circle.x - target.x);
         int circleDistance_y = Math.abs(circle.y - target.y);
 
         if (target.shape == ABShape.Circle){
             Circle circle2 = (Circle) target;
-            if ((circleDistance_x-circle.r-circle2.r <= 0) && (circleDistance_y-circle.r -circle2.r <= 0)){
+            if ((circleDistance_x-circle.r-circle2.r -minPixelOverlap <= 0) && (circleDistance_y-circle.r -circle2.r -minPixelOverlap<= 0)){
                 return true;
             } else {
                 return false;
@@ -181,16 +182,16 @@ public class ProblemState {
 
         } else {
             ABObject rect = target;
-            if (circleDistance_x > (rect.width/2 + circle.r)) { return false; }
-            if (circleDistance_y > (rect.height/2 + circle.r)) { return false; }
+            if (circleDistance_x + minPixelOverlap > (rect.width/2 + circle.r)) { return false; }
+            if (circleDistance_y + minPixelOverlap > (rect.height/2 + circle.r)) { return false; }
 
-            if (circleDistance_x <= (rect.width/2)) { return true; } 
-            if (circleDistance_y <= (rect.height/2)) { return true; }
+            if (circleDistance_x + minPixelOverlap <= (rect.width/2)) { return true; } 
+            if (circleDistance_y + minPixelOverlap <= (rect.height/2)) { return true; }
 
             int cornerDistance_sq = (circleDistance_x - rect.width/2)^2 +
                                  (circleDistance_y - rect.height/2)^2;
 
-            return (cornerDistance_sq <= (Math.pow(circle.r,2)));
+            return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r,2)));
 
         }
         
