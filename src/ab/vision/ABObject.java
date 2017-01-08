@@ -106,6 +106,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         return new Point((int) getCenterX(), (int) getCenterY());
     }
 
+    public void setCoordinates(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     @Override
     public int compareTo(ABObject abObject) {
         return this.y - abObject.y;
