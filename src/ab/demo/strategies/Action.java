@@ -1,5 +1,6 @@
-package ab.demo;
+package ab.demo.strategies;
 
+import ab.demo.ProblemState;
 import ab.vision.ABObject;
 
 import java.awt.*;

@@ -1,11 +1,12 @@
 package ab.demo;
 
-import ab.demo.Agents.Agent;
-import ab.demo.Agents.EmpiricalThresholdDeterminationAgent;
-import ab.demo.Agents.NaiveAgent;
-import ab.demo.Agents.ReinforcementLearningAgentStandalone;
+import ab.demo.Agents.NaiveStandaloneAgent;
+import ab.demo.Agents.StandaloneAgent;
 import ab.demo.DAO.*;
 import ab.demo.logging.LoggingHandler;
+import ab.demo.strategies.ManualGamePlayStrategy;
+import ab.demo.strategies.ReinforcementLearningStrategy;
+import ab.demo.strategies.Strategy;
 import ab.server.Proxy;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
@@ -34,7 +35,7 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        args = new String[]{"-eu", "-l", "1"};
+        args = new String[]{"-eu", "-l", "2"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
@@ -43,12 +44,13 @@ public class MainEntry {
         options.addOption("c", "competition", false, "runs the naive agent in the server/client competition mode");
         options.addOption("u", "updateDatabaseTables", false, "executes CREATE TABLE IF NOT EXIST commands");
         options.addOption("l", "level", true, "if set the agent is playing only in this one level");
-        options.addOption("e", "empirical", false, "runs the empirical threshold determination agent in standalone mode");
+        options.addOption("m", "manual", false, "runs the empirical threshold determination agent in standalone mode");
 
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
-        Agent agent;
+        StandaloneAgent agent;
+        Strategy strategy = new ManualGamePlayStrategy();
 
         Properties properties = new Properties();
         InputStream configInputStream = null;
@@ -104,20 +106,21 @@ public class MainEntry {
             LoggingHandler.initFileLog();
 
             if (cmd.hasOption("standalone")) {
-                agent = new ReinforcementLearningAgentStandalone(qValuesDAO, gamesDAO, movesDAO, objectsDAO, stateIdDAO, statesDAO);
+                strategy = new ReinforcementLearningStrategy(qValuesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
-                agent = new NaiveAgent();
+                agent = new NaiveStandaloneAgent();
             } else if (cmd.hasOption("empirical")) {
-                agent = new EmpiricalThresholdDeterminationAgent();
+                strategy = new ManualGamePlayStrategy();
             } else if (cmd.hasOption("competition")) {
                 System.out.println("We haven't implemented a competition ready agent yet.");
                 return;
             } else {
-                System.out.println("Please specify which agent we should be running.");
+                System.out.println("Please specify which solving strategy we should be using.");
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("help", options);
                 return;
             }
+            agent = new StandaloneAgent(strategy, gamesDAO, movesDAO, objectsDAO, stateIdDAO, statesDAO);
 
             if (cmd.hasOption("updateDatabaseTables")) {
                 qValuesDAO.createQValuesTable();

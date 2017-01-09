@@ -261,7 +261,7 @@ public class ShowSeg implements Runnable {
 
         frame.close();
     }
-    //add for LoadLevel Agent
+    //add for LoadLevel StandaloneAgent
 
     @Override
     public void run() {

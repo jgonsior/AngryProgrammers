@@ -1,22 +1,17 @@
 package ab.demo;
 
 import ab.demo.other.ActionRobot;
-import ab.vision.ABObject;
-import ab.vision.ABShape;
-import ab.vision.ABType;
-import ab.vision.GameStateExtractor;
-import ab.vision.Vision;
-import ab.vision.real.shape.Circle;
+import ab.demo.strategies.Action;
 import ab.planner.TrajectoryPlanner;
+import ab.vision.*;
+import ab.vision.real.shape.Circle;
 
+import java.awt.*;
 import java.util.*;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.util.List;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
- * <p>
- * Example: RedBird 4.5 4.5 RectRedBird 2.5 5.0 RectRedBird 3.5 4.0 RectWood 1.0 9.5 RectWood 0.0 0.5 RectWood 3.5 1.0 RectWood 2.0 2.5 RectWood 3.5 2.0 RectWood 4.0 0.0 RectIce 5.0 6.0 RectWood 5.0 3.5 RectWood 4.0 4.0 RectStone 5.0 3.5 RectWood 5.0 0.5 RectIce 2.5 6.0 RectWood 7.0 2.5 RectWood 6.0 0.0 RectWood 5.0 9.5 RectRedBird 4.5 4.5 RectRedBird 2.5 5.0 RectRedBird 3.5 4.0 Rect
  *
  * @author jgonsior
  */
@@ -30,7 +25,6 @@ public class ProblemState {
     private List<ABObject> allObjects;
     private int id;
     private boolean isInitialized;
-    private ABObject currentBird;
 
     public ProblemState(Vision vision, ActionRobot actionRobot, int id, boolean initialized) {
         GameStateExtractor.GameStateEnum state = actionRobot.getState();
@@ -52,51 +46,51 @@ public class ProblemState {
         }
     }
 
-    private ABObject findCurrentBird(){
+    private ABObject getCurrentBird() {
         ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
-        int ymax = 0;
-        ABObject currentHighest = null;
-        for (ABObject bird : birds){
-            if (bird.y > ymax){
-                ymax = bird.y;
-                currentHighest = bird;
+        int maxY = 0;
+        ABObject currentBird = null;
+        for (ABObject bird : birds) {
+            if (bird.y > maxY) {
+                maxY = bird.y;
+                currentBird = bird;
             }
         }
-        return currentHighest;
+        return currentBird;
     }
 
-    public ABObject calculateBestMultiplePigShot(){
+    public ABObject calculateBestMultiplePigShot() {
         // idea: try to find shot which maximize pigs on the trajectory
         // -> : just search around every pig for shot and check this trajectorys
         TrajectoryPlanner tp = new TrajectoryPlanner();
         ArrayList<ABObject> pigs = new ArrayList<>(vision.findPigsRealShape());
         ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
         ArrayList<Point> possibleTargetPoints = new ArrayList<>();
-        this.currentBird = findCurrentBird();
-        int birdRadius = (int)((Circle) currentBird).r;
+        ABObject currentBird = getCurrentBird();
+        int birdRadius = (int) ((Circle) currentBird).r;
         Point bestShot = null;
         ABObject.TrajectoryType bestTrajType = null;
         int maxAmountOfPigsOnTraj = -1;
         int safeAmountOfPigsOnTraj = -1;
         // identify possible targetPoints
-        for (ABObject pig : pigs){
-            int pigRadius = (int)((Circle) pig).r;
+        for (ABObject pig : pigs) {
+            int pigRadius = (int) ((Circle) pig).r;
             int fromTo = pigRadius + birdRadius;
-            for (int xoff = - fromTo; xoff < fromTo; xoff+=2){
-                for (int yoff = - fromTo; yoff < fromTo; yoff+=2){
-                    possibleTargetPoints.add(new Point((int)(pig.getCenterX()+xoff), (int)(pig.getCenterY()+yoff)));
+            for (int xoff = -fromTo; xoff < fromTo; xoff += 2) {
+                for (int yoff = -fromTo; yoff < fromTo; yoff += 2) {
+                    possibleTargetPoints.add(new Point((int) (pig.getCenterX() + xoff), (int) (pig.getCenterY() + yoff)));
                 }
             }
         }
         // TODO: maybe also use better slingshot finding function
         Rectangle sling = vision.findSlingshotMBR();
-        for (Point ptp : possibleTargetPoints){
+        for (Point ptp : possibleTargetPoints) {
             //get predicted trajectory and check for every object if it gets hit
             ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(sling, ptp);
             ABObject.TrajectoryType currentTrajectoryType = null;
-            for (int i = 0; i < estimatedLaunchPoints.size(); i++){
+            for (int i = 0; i < estimatedLaunchPoints.size(); i++) {
                 Point estimatedLaunchPoint = estimatedLaunchPoints.get(i);
-                if (i == 0){
+                if (i == 0) {
                     currentTrajectoryType = ABObject.TrajectoryType.LOW;
                 } else {
                     currentTrajectoryType = ABObject.TrajectoryType.HIGH;
@@ -109,20 +103,20 @@ public class ProblemState {
                 objsOnTraj = new ArrayList<>();
                 correctedPigs = new ArrayList<>();
 
-                for (ABObject obj : allObjects){
+                for (ABObject obj : allObjects) {
                     boolean isPig = false;
-                    if (pigs.contains(obj)){
+                    if (pigs.contains(obj)) {
                         isPig = true;
-                    } else if (birds.contains(obj)){
+                    } else if (birds.contains(obj)) {
                         // birds would be shown as blocking all objects on trajectory
                         continue;
                     }
 
                     // TODO: in level 2 he hits mysterious Point near (300,300) which ist object Hill but not visible in image
-                    for (Point p : predictedTrajectory){
+                    for (Point p : predictedTrajectory) {
                         currentBird.setCoordinates(p.x, p.y);
-                        if (intersects(currentBird, obj, 3)){
-                            if (isPig){
+                        if (intersects(currentBird, obj, 3)) {
+                            if (isPig) {
                                 pigsOnTraj.add(p);
                             } else {
                                 objsOnTraj.add(p);
@@ -133,39 +127,39 @@ public class ProblemState {
                     }
                 }
 
-                // now we know which objects intersect with the trajectory, 
+                // now we know which objects intersect with the trajectory,
                 // now check which pigs would be hitten behind 1st object
                 // get MinX Value and remove all pigs behind this x
                 int minX = 10000;
-                if (!pigsOnTraj.isEmpty()){
-                    
-                    for (Point obj : objsOnTraj){
-                        if (obj.x < minX){
+                if (!pigsOnTraj.isEmpty()) {
+
+                    for (Point obj : objsOnTraj) {
+                        if (obj.x < minX) {
                             minX = obj.x;
                         }
                     }
 
-                    for (Point pig : pigsOnTraj){
-                        if (pig.x <= minX){
+                    for (Point pig : pigsOnTraj) {
+                        if (pig.x <= minX) {
                             correctedPigs.add(pig);
                         }
-                    }             
+                    }
                 }
 
                 // now we got the corrected value of pigs on this trajectory, now return the best?!
-                if (correctedPigs.size() > safeAmountOfPigsOnTraj){
+                if (correctedPigs.size() > safeAmountOfPigsOnTraj) {
                     safeAmountOfPigsOnTraj = correctedPigs.size();
                     maxAmountOfPigsOnTraj = pigsOnTraj.size();
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
-                } 
+                }
 
             }
-                      
+
         }
         ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.Unknown);
         pseudoObject.setTrajectoryType(bestTrajType);
-        System.out.println("Best shot: " + bestShot + " - "+ bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
+        System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
         return pseudoObject;
     }
@@ -175,9 +169,9 @@ public class ProblemState {
         int circleDistance_x = Math.abs(circle.x - target.x);
         int circleDistance_y = Math.abs(circle.y - target.y);
 
-        if (target.shape == ABShape.Circle){
+        if (target.shape == ABShape.Circle) {
             Circle circle2 = (Circle) target;
-            if ((circleDistance_x-circle.r-circle2.r -minPixelOverlap <= 0) && (circleDistance_y-circle.r -circle2.r -minPixelOverlap<= 0)){
+            if ((circleDistance_x - circle.r - circle2.r - minPixelOverlap <= 0) && (circleDistance_y - circle.r - circle2.r - minPixelOverlap <= 0)) {
                 return true;
             } else {
                 return false;
@@ -185,19 +179,27 @@ public class ProblemState {
 
         } else {
             ABObject rect = target;
-            if (circleDistance_x + minPixelOverlap > (rect.width/2 + circle.r)) { return false; }
-            if (circleDistance_y + minPixelOverlap > (rect.height/2 + circle.r)) { return false; }
+            if (circleDistance_x + minPixelOverlap > (rect.width / 2 + circle.r)) {
+                return false;
+            }
+            if (circleDistance_y + minPixelOverlap > (rect.height / 2 + circle.r)) {
+                return false;
+            }
 
-            if (circleDistance_x + minPixelOverlap <= (rect.width/2)) { return true; } 
-            if (circleDistance_y + minPixelOverlap <= (rect.height/2)) { return true; }
+            if (circleDistance_x + minPixelOverlap <= (rect.width / 2)) {
+                return true;
+            }
+            if (circleDistance_y + minPixelOverlap <= (rect.height / 2)) {
+                return true;
+            }
 
-            int cornerDistance_sq = (circleDistance_x - rect.width/2)^2 +
-                                 (circleDistance_y - rect.height/2)^2;
+            int cornerDistance_sq = (circleDistance_x - rect.width / 2) ^ 2 +
+                    (circleDistance_y - rect.height / 2) ^ 2;
 
-            return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r,2)));
+            return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r, 2)));
 
         }
-        
+
     }
 
     private ArrayList<ABObject> calculateTargetObjects() {
@@ -341,9 +343,9 @@ public class ProblemState {
     public ArrayList<Action> getActions() {
         ArrayList<Action> actions = new ArrayList<>();
         int i = 0;
-        for (ABObject shootableObject : targetObjects) {
-            Action action = new Action(i, shootableObject.getTrajectoryType(), this);
-            action.setName(shootableObject.myToString());
+        for (ABObject targetObject : targetObjects) {
+            Action action = new Action(i, targetObject.getTrajectoryType(), this);
+            action.setName(targetObject.myToString());
             actions.add(action);
             i++;
         }

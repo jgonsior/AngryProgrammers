@@ -40,6 +40,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.type = type;
         this.id = counter++;
     }
+
     public ABObject(Rectangle mbr, ABType type, int id) {
         super(mbr);
         objectsAboveSet = new HashSet<>();

@@ -22,7 +22,7 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
-public class NaiveAgent extends Agent {
+public class NaiveStandaloneAgent extends StandaloneAgent {
 
     public static int time_limit = 12;
     public int currentLevel = 1;
@@ -33,8 +33,8 @@ public class NaiveAgent extends Agent {
     private boolean firstShot;
     private Point prevTarget;
 
-    // a standalone implementation of the Naive Agent
-    public NaiveAgent() {
+    // a standalone implementation of the Naive StandaloneAgent
+    public NaiveStandaloneAgent() {
 
         aRobot = new ActionRobot();
         tp = new TrajectoryPlanner();
@@ -107,7 +107,7 @@ public class NaiveAgent extends Agent {
 
     @Override
     protected void updateCurrentProblemState() {
-        
+
     }
 
     @Override

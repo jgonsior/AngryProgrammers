@@ -1,8 +1,12 @@
 package ab.demo.Agents;
 
+import ab.demo.DAO.*;
 import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
+import ab.demo.other.GameState;
 import ab.demo.other.Shot;
+import ab.demo.strategies.Action;
+import ab.demo.strategies.Strategy;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.utils.StateUtil;
@@ -21,59 +25,112 @@ import java.util.*;
 import java.util.List;
 
 /**
- * interface for an agent which can play angry birds
+ * Standalone Agent which can play AngryBirds
  *
  * @author jgonsior
  */
-public abstract class Agent implements Runnable {
-    // a standalone implementation of the Reinforcement Agent
-    public Agent() {
+public class StandaloneAgent implements Runnable {
+
+    private GameState gameState;
+
+    private double discountFactor = 0.9;
+    private double learningRate = 0.1;
+    private double explorationRate = 0.7;
+
+    private static final Logger logger = Logger.getLogger(StandaloneAgent.class);
+    private Vision currentVision;
+    private TrajectoryPlanner trajectoryPlanner;
+    private ab.demo.strategies.Action nextAction;
+    private Random randomGenerator;
+    private ActionRobot actionRobot;
+    private Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
+    private int fixedLevel = -1;
+    private int currentLevel;
+    private GamesDAO gamesDAO;
+    private MovesDAO movesDAO;
+    private ObjectsDAO objectsDAO;
+    private StateIdDAO stateIdDAO;
+    private StatesDAO statesDAO;
+
+    private Strategy strategy;
+
+    public Strategy getStrategy() {
+        return strategy;
+    }
+
+    // a standalone implementation of the Reinforcement StandaloneAgent
+    public StandaloneAgent(Strategy strategy, GamesDAO gamesDAO, MovesDAO movesDAO, ObjectsDAO objectsDAO, StateIdDAO stateIdDAO, StatesDAO statesDAO) {
+        this.strategy = strategy;
+        this.gamesDAO = gamesDAO;
+        this.movesDAO = movesDAO;
+        this.objectsDAO = objectsDAO;
+        this.stateIdDAO = stateIdDAO;
+        this.statesDAO = statesDAO;
         this.actionRobot = new ActionRobot();
         this.randomGenerator = new Random();
 
         ActionRobot.GoFromMainMenuToLevelSelection();
     }
 
-    private static final Logger logger = Logger.getLogger(Agent.class);
 
-    protected Vision currentVision;
-    protected TrajectoryPlanner trajectoryPlanner;
-    protected BufferedImage currentScreenshot;
-    protected ProblemState currentProblemState;
-    protected GameStateExtractor.GameStateEnum currentGameStateEnum;
-    protected int currentLevel;
-    protected ab.demo.Action currentAction;
-    protected double currentReward;
-    protected int currentMoveCounter;
-    protected int birdCounter;
-    protected int currentGameId;
-    protected Random randomGenerator;
-    protected Rectangle slingshot;
-    protected ActionRobot actionRobot;
+    /**
+     * calculates based on the bird type we want to shoot at if it is a specia bird and if so what is the tapping time
+     *
+     * @param releasePoint
+     * @param targetPoint
+     * @return
+     */
+    protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
+        double releaseAngle = trajectoryPlanner.getReleaseAngle(gameState.getSlingshot(),
+                releasePoint);
+        logger.info("Release Point: " + releasePoint);
+        logger.info("Release Angle: "
+                + Math.toDegrees(releaseAngle));
+        int tappingInterval = 0;
+        switch (actionRobot.getBirdTypeOnSling()) {
 
+            case RedBird:
+                tappingInterval = 0;
+                break;               // start of trajectory
+            case YellowBird:
+                tappingInterval = 65 + randomGenerator.nextInt(25);
+                break; // 65-90% of the way
+            case WhiteBird:
+                tappingInterval = 70 + randomGenerator.nextInt(20);
+                break; // 70-90% of the way
+            case BlackBird:
+                tappingInterval = 70 + randomGenerator.nextInt(20);
+                break; // 70-90% of the way
+            case BlueBird:
+                tappingInterval = 65 + randomGenerator.nextInt(20);
+                break; // 65-85% of the way
+            default:
+                tappingInterval = 60;
+        }
 
-    protected Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
-    protected boolean fixedLevel = false;
+        return trajectoryPlanner.getTapTime(gameState.getSlingshot(), releasePoint, targetPoint, tappingInterval);
+    }
 
     protected void updateCurrentVision() {
-        currentScreenshot = ActionRobot.doScreenShot();
-        currentVision = new Vision(currentScreenshot);
+        BufferedImage screenshot = ActionRobot.doScreenShot();
+        gameState.setCurrentScreenshot(screenshot);
+        currentVision = new Vision(screenshot);
     }
 
     public void showCurrentScreenshot() {
         JDialog frame = new JDialog();
         frame.setModal(true);
         frame.getContentPane().setLayout(new FlowLayout());
-        frame.getContentPane().add(new JLabel(new ImageIcon(currentScreenshot)));
+        frame.getContentPane().add(new JLabel(new ImageIcon(gameState.getCurrentScreenshot())));
         frame.pack();
         frame.setVisible(true);
     }
 
     public void saveCurrentScreenshot(String title) {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + currentGameId + "/" + currentLevel + "_" + currentMoveCounter + "_" + title + "_" + System.currentTimeMillis() + ".gif");
+        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + gameState.getCurrentGameId() + "/" + currentLevel + "_" + gameState.getCurrentMoveCounter() + "_" + title + "_" + System.currentTimeMillis() + ".gif");
         try {
             outputFile.getParentFile().mkdirs();
-            ImageIO.write(currentScreenshot, "gif", outputFile);
+            ImageIO.write(gameState.getCurrentScreenshot(), "gif", outputFile);
         } catch (IOException e) {
             logger.error("Unable to save screenshot " + e);
             e.printStackTrace();
@@ -82,56 +139,49 @@ public abstract class Agent implements Runnable {
     }
 
     public void saveCurrentScreenshot() {
-        saveCurrentScreenshot(currentAction.getName());
+        saveCurrentScreenshot(nextAction.getName());
     }
 
-    public void run() {
-        if (!this.fixedLevel) {
-            currentLevel = 1;
-        }
-        actionRobot.loadLevel(currentLevel);
-        trajectoryPlanner = new TrajectoryPlanner();
 
-        currentMoveCounter = 0;
-        int score;
+    private void playLevel() {
         ProblemState previousProblemState;
 
-        // id which will be generated randomly every lvl so that we can connect moves to games
-        calculateCurrentGameId();
+        actionRobot.loadLevel(currentLevel);
 
-        //one cycle means one shot was being executed
-        while (true) {
-            logger.info("Next iteration of the all mighty while loop");
-
-            currentGameStateEnum = actionRobot.getState();
-
-            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.PLAYING) {
+        gameState = new GameState(currentLevel, gamesDAO, explorationRate, learningRate, discountFactor);
+        gameState.setCurrentGameStateEnum(actionRobot.getState());
+        int birdCounter = countBirds();
+        while (birdCounter >= 0) {
+            if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
                 updateCurrentVision();
-                slingshot = this.findSlingshot();
+                Rectangle slingshot = this.findSlingshot();
 
                 updateCurrentProblemState();
-                previousProblemState = currentProblemState;
+                previousProblemState = gameState.getCurrentProblemState();
 
                 // check if there are still pigs available
                 List<ABObject> pigs = currentVision.findPigsMBR();
 
-                if (currentMoveCounter == 0) {
-                    // count inital all birds 
-                    updateBirdCounter();
+                if (gameState.getCurrentMoveCounter() == 0) {
+                    // count initally all birds
+                    countBirds();
                 }
-                logger.info("Current Bird count: " + String.valueOf(birdCounter));
+                logger.info("Current Bird count: " + birdCounter);
                 updateCurrentVision();
 
                 if (!pigs.isEmpty()) {
                     updateCurrentVision();
 
                     // get next action
-                    calculateNextAction();
+                    nextAction = this.getStrategy().getNextAction();
 
                     Set<Object> blocksAndPigsBeforeShot = currentVision.getBlocksAndPigs(true);
 
-                    Point releasePoint = shootOneBird(currentAction);
+                    Point releasePoint = shootOneBird(nextAction);
+
+                    //and one bird less…
+                    birdCounter--;
 
                     logger.info("done shooting");
 
@@ -143,17 +193,16 @@ public abstract class Agent implements Runnable {
                     List<Point> trajectoryPoints = currentVision.findTrajPoints();
                     trajectoryPlanner.adjustTrajectory(trajectoryPoints, slingshot, releasePoint);
 
-                    checkIfDonePlayingAndWaitForWinningScreen();
+                    checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
 
                     //update currentGameStateEnum
-                    currentGameStateEnum = actionRobot.getState();
+                    gameState.setCurrentGameStateEnum(actionRobot.getState());
 
-                    currentReward = getReward(currentGameStateEnum);
+                    // currentReward = getCurrentWonReward(gameState.getCurrentGameStateEnum());
 
-                    this.afterShotHook(previousProblemState);
+                    this.getStrategy().afterShotHook(previousProblemState);
 
-
-                    currentMoveCounter++;
+                    gameState.incrementMoveCounter();
                 } else {
                     logger.error("No pig's found anymore!!!!!!!!!");
                 }
@@ -161,7 +210,30 @@ public abstract class Agent implements Runnable {
                 logger.warn("Accidentally in solving method without being in PLAYING state");
             }
 
-            if (currentGameStateEnum == GameStateExtractor.GameStateEnum.WON) {
+            //if we've won or lost the game already we don't need to shoot any other birds anymore
+            if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.WON || gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
+                birdCounter = 0;
+            }
+        }
+    }
+
+
+    public void run() {
+        currentLevel = fixedLevel;
+        if (this.fixedLevel != -1) {
+            currentLevel = 1;
+        }
+        trajectoryPlanner = new TrajectoryPlanner();
+
+        int score;
+
+        //one cycle means one shot was being executed
+        while (true) {
+            logger.info("Next iteration of the all mighty while loop");
+
+            this.playLevel();
+
+            if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.WON) {
                 logger.info("Wait for 3000 after won screen");
                 try {
                     Thread.sleep(3000);
@@ -181,26 +253,25 @@ public abstract class Agent implements Runnable {
 
                 this.logScores();
 
-                if (!fixedLevel) {
+                if (fixedLevel != -1) {
                     currentLevel++;
                 }
                 actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
                 // make a new trajectory planner whenever a new level is entered because of reasons
                 trajectoryPlanner = new TrajectoryPlanner();
-                calculateCurrentGameId();
-                currentMoveCounter = 0;
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LOST) {
-                restartThisLevel();
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.LEVEL_SELECTION) {
+            } else if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
+                logger.info("Restart level");
+                actionRobot.restartLevel();
+            } else if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "
                         + currentLevel);
                 actionRobot.loadLevel(currentLevel);
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.MAIN_MENU) {
+            } else if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.MAIN_MENU) {
                 logger.warn("Unexpected main menu page, go to the last current level : "
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
-            } else if (currentGameStateEnum == GameStateExtractor.GameStateEnum.EPISODE_MENU) {
+            } else if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.EPISODE_MENU) {
                 logger.warn("Unexpected episode menu page, go to the last current level : "
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
@@ -208,13 +279,6 @@ public abstract class Agent implements Runnable {
             }
         }
     }
-
-    protected abstract void updateCurrentProblemState();
-
-    protected abstract void afterShotHook(ProblemState previousProblemState);
-
-    protected abstract void calculateNextAction();
-
 
     /***
      * waits until the shoot was successfully being executed
@@ -288,7 +352,7 @@ public abstract class Agent implements Runnable {
         }
     }
 
-    protected void checkIfDonePlayingAndWaitForWinningScreen() {
+    protected void checkIfDonePlayingAndWaitForWinningScreen(int birdCounter) {
         this.updateCurrentVision();
 
         // check if there are some birds on the sling
@@ -314,7 +378,7 @@ public abstract class Agent implements Runnable {
                         logger.warn("Broke out of state-change-loop");
                         //possibly we did not reconize some birds due to bad programmed vision module
                         //so after waiting to long break out
-                        updateBirdCounter();
+                        countBirds();
                         break;
                     }
                 } catch (InterruptedException e) {
@@ -326,13 +390,13 @@ public abstract class Agent implements Runnable {
             if (actionRobot.getState() == GameStateExtractor.GameStateEnum.WON) {
                 logger.info("in WON state now wait until stable reward");
                 double rewardBefore = -1.0;
-                double rewardAfter = getReward(actionRobot.getState());
+                double rewardAfter = getCurrentWonReward();
                 while (rewardBefore != rewardAfter) {
                     try {
                         Thread.sleep(300);
                         logger.info("sleep 300 for new reward (current: " + String.valueOf(rewardAfter) + ")");
                         rewardBefore = rewardAfter;
-                        rewardAfter = getReward(actionRobot.getState());
+                        rewardAfter = getCurrentWonReward();
                         this.updateCurrentVision();
                         saveCurrentScreenshot("scoreScreenshot");
                     } catch (InterruptedException e) {
@@ -345,12 +409,6 @@ public abstract class Agent implements Runnable {
             saveCurrentScreenshot();
         }
     }
-
-    public void setFixedLevel(int level) {
-        this.fixedLevel = true;
-        this.currentLevel = level;
-    }
-
 
     /**
      * logs the current higscores for each level
@@ -367,8 +425,8 @@ public abstract class Agent implements Runnable {
     }
 
 
-    protected void updateBirdCounter() {
-        birdCounter = 0;
+    protected int countBirds() {
+        int birdCounter = 0;
         ActionRobot.fullyZoomIn();
         updateCurrentVision();
 
@@ -388,6 +446,7 @@ public abstract class Agent implements Runnable {
             birdCounter = currentVision.findBirdsRealShape().size();
             logger.info("Birds: " + currentVision.findBirdsRealShape());
         }
+        return birdCounter;
 
     }
 
@@ -408,14 +467,13 @@ public abstract class Agent implements Runnable {
     /**
      * returns reward as highscore difference
      *
-     * @param state
      * @return if the game is lost or the move was not the finishing one the reward is -1, else it is the highscore of the current level
      */
-    protected double getReward(GameStateExtractor.GameStateEnum state) {
-        if (state == GameStateExtractor.GameStateEnum.WON) {
+    protected double getCurrentWonReward() {
+        if (gameState.getCurrentGameStateEnum() == GameStateExtractor.GameStateEnum.WON) {
             GameStateExtractor gameStateExtractor = new GameStateExtractor();
             this.updateCurrentVision();
-            BufferedImage scoreScreenshot = this.currentScreenshot;
+            BufferedImage scoreScreenshot = gameState.getCurrentScreenshot();
             return gameStateExtractor.getScoreEndGame(scoreScreenshot);
         } else {
             return -1;
@@ -428,10 +486,9 @@ public abstract class Agent implements Runnable {
     private Point calculateReleasePoint(Point targetPoint, ABObject.TrajectoryType trajectoryType) {
         Point releasePoint = null;
         // estimate the trajectory
-        ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
+        ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(gameState.getSlingshot(), targetPoint);
 
 
-        //@todo: the stuff with the trajectory needs to be somehow converted into getNextAction because it IS an action
         // do a high shot when entering a level to find an accurate velocity
         if (estimateLaunchPoints.size() == 1) {
             if (trajectoryType != ABObject.TrajectoryType.LOW) {
@@ -447,20 +504,19 @@ public abstract class Agent implements Runnable {
         } else if (estimateLaunchPoints.isEmpty()) {
             logger.info("No release point found for the target");
             logger.info("Try a shot with 45 degree");
-            releasePoint = trajectoryPlanner.findReleasePoint(slingshot, Math.PI / 4);
+            releasePoint = trajectoryPlanner.findReleasePoint(gameState.getSlingshot(), Math.PI / 4);
         }
         return releasePoint;
     }
-
-    protected abstract int calculateTappingTime(Point releasePoint, Point targetPoint);
 
     /**
      * open question: what is reference point, what release point?!
      *
      * @param action
      */
-    protected Point shootOneBird(ab.demo.Action action) {
+    protected Point shootOneBird(Action action) {
         Point targetPoint = action.getTargetPoint();
+        Rectangle slingshot = gameState.getSlingshot();
 
         //ABObject pig = currentVision.findPigsMBR().get(0);
         //targetPoint = pig.getCenter();
@@ -495,7 +551,6 @@ public abstract class Agent implements Runnable {
             if (scaleDifference < 25) {
                 if (dx < 0) {
                     actionRobot.cshoot(shot);
-                    birdCounter--;
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
@@ -507,14 +562,7 @@ public abstract class Agent implements Runnable {
         return releasePoint;
     }
 
-    protected abstract void calculateCurrentGameId();
-
-
-    protected void restartThisLevel() {
-        logger.info("Restart level");
-        actionRobot.restartLevel();
-        calculateCurrentGameId();
-        currentMoveCounter = 0;
+    public void setFixedLevel(int level) {
+        this.fixedLevel = level;
     }
-
 }
