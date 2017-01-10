@@ -9,7 +9,7 @@ import ab.demo.other.ProblemState;
 public abstract class Strategy {
     protected GameState gameState;
 
-    protected void setGameState(GameState gameState) {
+    public void setGameState(GameState gameState) {
         this.gameState = gameState;
     }
 
@@ -19,6 +19,4 @@ public abstract class Strategy {
 
     public void setQLearningParameters(double discountFactor, double learningRate, double explorationRate) {
     }
-
-    ;
 }

@@ -21,14 +21,18 @@ public class ManualGamePlayStrategy extends Strategy {
      */
     public Action getNextAction() {
         ArrayList<Action> possibleActions = gameState.getProblemState().getActions();
-        for (int i = 0; i < possibleActions.size(); i++) {
-            Action possibleAction = possibleActions.get(i);
-            System.out.println("(" + i + ")\t" + possibleAction.getName());
+        int actionId = Integer.MAX_VALUE;
+
+        while (actionId > possibleActions.size()) {
+            for (int i = 0; i < possibleActions.size(); i++) {
+                Action possibleAction = possibleActions.get(i);
+                System.out.println("(" + i + ")\t" + possibleAction.getName());
+            }
+            System.out.println("Enter the actionId you want to shoot at: ");
+            Scanner input = new Scanner(System.in);
+            actionId = input.nextInt();
+            input.nextLine();
         }
-        System.out.println("Enter the actionId you want to shoot at: ");
-        Scanner input = new Scanner(System.in);
-        int actionId = input.nextInt();
-        input.nextLine();
 
         Action action = possibleActions.get(actionId);
         logger.info("You selected the following action: " + action.getName());

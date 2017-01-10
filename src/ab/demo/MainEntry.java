@@ -38,7 +38,7 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        args = new String[]{"-eu", "-l", "2"};
+        args = new String[]{"-mu", "-l", "2"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");
@@ -111,7 +111,7 @@ public class MainEntry {
                 strategy = new ReinforcementLearningStrategy(qValuesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveStandaloneAgent();
-            } else if (cmd.hasOption("empirical")) {
+            } else if (cmd.hasOption("manual")) {
                 strategy = new ManualGamePlayStrategy();
             } else if (cmd.hasOption("competition")) {
                 System.out.println("We haven't implemented a competition ready agent yet.");

@@ -146,9 +146,11 @@ public class StandaloneAgent implements Runnable {
         actionRobot.loadLevel(currentLevel);
 
         gameState = new GameState(currentLevel, gamesDAO, explorationRate, learningRate, discountFactor);
+        strategy.setGameState(gameState);
         gameState.setGameStateEnum(actionRobot.getState());
+
         int birdCounter = countBirds();
-        while (birdCounter >= 0) {
+        while (birdCounter > 0) {
             if (gameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
                 updateCurrentVision();
@@ -223,7 +225,7 @@ public class StandaloneAgent implements Runnable {
 
     public void run() {
         currentLevel = fixedLevel;
-        if (this.fixedLevel != -1) {
+        if (this.fixedLevel == -1) {
             currentLevel = 1;
         }
         trajectoryPlanner = new TrajectoryPlanner();
@@ -256,7 +258,7 @@ public class StandaloneAgent implements Runnable {
 
                 this.logScores();
 
-                if (fixedLevel != -1) {
+                if (fixedLevel == -1) {
                     currentLevel++;
                 }
                 actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
