@@ -1,6 +1,6 @@
 package ab.demo.strategies;
 
-import ab.demo.ProblemState;
+import ab.demo.other.ProblemState;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class ManualGamePlayStrategy extends Strategy {
      * @return
      */
     public Action getNextAction() {
-        ArrayList<Action> possibleActions = this.getProblemState().getActions();
+        ArrayList<Action> possibleActions = gameState.getProblemState().getActions();
         for (int i = 0; i < possibleActions.size(); i++) {
             Action possibleAction = possibleActions.get(i);
             System.out.println("(" + i + ")\t" + possibleAction.getName());

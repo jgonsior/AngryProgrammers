@@ -1,8 +1,11 @@
 package ab.demo;
 
-import ab.demo.Agents.NaiveStandaloneAgent;
-import ab.demo.Agents.StandaloneAgent;
-import ab.demo.DAO.*;
+import ab.demo.DAO.GamesDAO;
+import ab.demo.DAO.MovesDAO;
+import ab.demo.DAO.ProblemStatesDAO;
+import ab.demo.DAO.QValuesDAO;
+import ab.demo.agents.NaiveStandaloneAgent;
+import ab.demo.agents.StandaloneAgent;
 import ab.demo.logging.LoggingHandler;
 import ab.demo.strategies.ManualGamePlayStrategy;
 import ab.demo.strategies.ReinforcementLearningStrategy;
@@ -84,9 +87,8 @@ public class MainEntry {
         QValuesDAO qValuesDAO = dbi.open(QValuesDAO.class);
         GamesDAO gamesDAO = dbi.open(GamesDAO.class);
         MovesDAO movesDAO = dbi.open(MovesDAO.class);
-        ObjectsDAO objectsDAO = dbi.open(ObjectsDAO.class);
-        StateIdDAO stateIdDAO = dbi.open(StateIdDAO.class);
-        StatesDAO statesDAO = dbi.open(StatesDAO.class);
+        ProblemStatesDAO stateIdDAO = dbi.open(ProblemStatesDAO.class);
+        ProblemStatesDAO problemStatesDAO = dbi.open(ProblemStatesDAO.class);
 
         try {
             cmd = parser.parse(options, args);
@@ -120,15 +122,14 @@ public class MainEntry {
                 formatter.printHelp("help", options);
                 return;
             }
-            agent = new StandaloneAgent(strategy, gamesDAO, movesDAO, objectsDAO, stateIdDAO, statesDAO);
+            agent = new StandaloneAgent(strategy, gamesDAO, movesDAO, problemStatesDAO);
 
             if (cmd.hasOption("updateDatabaseTables")) {
-                qValuesDAO.createQValuesTable();
-                gamesDAO.createGamesTable();
-                movesDAO.createMovesTable();
-                objectsDAO.createObjectsTable();
-                stateIdDAO.createStateIdsTable();
-                statesDAO.createStatesTable();
+                qValuesDAO.createTable();
+                gamesDAO.createTable();
+                movesDAO.createTable();
+                stateIdDAO.createTable();
+                problemStatesDAO.createTable();
             }
 
             if (cmd.hasOption("level")) {

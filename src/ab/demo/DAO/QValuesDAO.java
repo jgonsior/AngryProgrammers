@@ -18,29 +18,29 @@ import java.sql.SQLException;
 @RegisterMapper(QValuesDAO.ActionMapper.class)
 public interface QValuesDAO {
 
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, state INT, action INT, trajectoryType VARCHAR(4), actionObject VARCHAR(150), PRIMARY KEY(state, action))")
-    void createQValuesTable();
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values (q_value DOUBLE PRECISION, stateId INT, actionId INT, trajectoryType VARCHAR(4), targetObject VARCHAR(150), PRIMARY KEY(stateId, actionId))")
+    void createTable();
 
-    @SqlUpdate("UPDATE q_values SET q_value=:q_value WHERE state=:state AND action=:action;")
-    void updateQValue(@Bind("q_value") double qValue, @Bind("state") int state, @Bind("action") int action);
+    @SqlUpdate("UPDATE q_values SET q_value=:q_value WHERE stateId=:stateId AND actionId=:actionId;")
+    void updateQValue(@Bind("q_value") double qValue, @Bind("stateId") int stateId, @Bind("actionId") int actionId);
 
-    @SqlUpdate("INSERT INTO q_values(q_value, state, action, trajectoryType, actionObject) VALUES (:q_value, :state, :action, :trajectoryType, :actionObject);")
-    void insertNewAction(@Bind("q_value") double qValue, @Bind("state") int state, @Bind("action") int action, @Bind("trajectoryType") String trajectoryType, @Bind("actionObject") String actionObject);
+    @SqlUpdate("INSERT INTO q_values(q_value, stateId, actionId, trajectoryType, targetObject) VALUES (:q_value, :stateId, :actionId, :trajectoryType, :targetObject);")
+    void insertNewAction(@Bind("q_value") double qValue, @Bind("stateId") int stateId, @Bind("actionId") int actionId, @Bind("trajectoryType") String trajectoryType, @Bind("targetObject") String targetObject);
 
-    @SqlQuery("SELECT q_value FROM q_values WHERE state=:state AND action=:action;")
-    double getQValue(@Bind("state") int state, @Bind("action") int action);
+    @SqlQuery("SELECT q_value FROM q_values WHERE stateId=:stateId AND actionId=:actionId;")
+    double getQValue(@Bind("stateId") int stateId, @Bind("actionId") int actionId);
 
-    @SqlQuery("SELECT MAX(q_value) FROM q_values WHERE state=:state;")
-    double getHighestQValue(@Bind("state") int state);
+    @SqlQuery("SELECT MAX(q_value) FROM q_values WHERE stateId=:stateId;")
+    double getHighestQValue(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT action, trajectoryType, actionObject FROM q_values WHERE state=:state ORDER BY q_value DESC LIMIT 1;")
-    Action getBestAction(@Bind("state") int state);
+    @SqlQuery("SELECT actionId, trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY q_value DESC LIMIT 1;")
+    Action getBestAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT action, trajectoryType, actionObject FROM q_values WHERE state=:state ORDER BY RANDOM() LIMIT 1;")
-    Action getRandomAction(@Bind("state") int state);
+    @SqlQuery("SELECT actionId, trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY RANDOM() LIMIT 1;")
+    Action getRandomAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT COUNT(action) FROM q_values WHERE state=:state;")
-    int getActionCount(@Bind("state") int state);
+    @SqlQuery("SELECT COUNT(actionId) FROM q_values WHERE stateId=:stateId;")
+    int getActionCount(@Bind("stateId") int stateId);
 
     /**
      * closes the connection
@@ -49,7 +49,7 @@ public interface QValuesDAO {
 
     class ActionMapper implements ResultSetMapper<Action> {
         public Action map(int index, ResultSet resultSet, StatementContext ctx) throws SQLException {
-            return new Action(resultSet.getInt("action"), ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")), null);
+            return new Action(resultSet.getInt("actionId"), ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")), null);
         }
     }
 }

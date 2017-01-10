@@ -1,10 +1,11 @@
 package ab.demo.other;
 
 import ab.demo.DAO.GamesDAO;
-import ab.demo.ProblemState;
+import ab.demo.strategies.Action;
 import ab.server.Proxy;
 import ab.vision.GameStateExtractor;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
@@ -12,52 +13,77 @@ import java.awt.image.BufferedImage;
  */
 public class GameState {
 
-    private BufferedImage currentScreenshot;
-    private ProblemState currentProblemState;
-    private GameStateExtractor.GameStateEnum currentGameStateEnum;
-    private int currentMoveCounter;
-    private int currentGameId;
+    private BufferedImage screenshot;
+    private ProblemState problemState;
+    private GameStateExtractor.GameStateEnum gameStateEnum;
+    private int moveCounter;
+    private int gameId;
+    private Rectangle slingshot;
+    private double reward;
+    private Action nextAction;
 
     public GameState(int currentLevel, GamesDAO gamesDAO, double explorationRate, double learningRate, double discountFactor) {
-        this.currentGameId = gamesDAO.saveGame(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-        this.currentMoveCounter = 0;
+        this.gameId = gamesDAO.save(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        this.moveCounter = 0;
     }
 
-    public BufferedImage getCurrentScreenshot() {
-        return currentScreenshot;
+    public Rectangle getSlingshot() {
+        return slingshot;
     }
 
-    public void setCurrentScreenshot(BufferedImage currentScreenshot) {
-        this.currentScreenshot = currentScreenshot;
+    public void setSlingshot(Rectangle slingshot) {
+        this.slingshot = slingshot;
     }
 
-    public ProblemState getCurrentProblemState() {
-        return currentProblemState;
+    public BufferedImage getScreenshot() {
+        return screenshot;
     }
 
-    public void setCurrentProblemState(ProblemState currentProblemState) {
-        this.currentProblemState = currentProblemState;
+    public void setScreenshot(BufferedImage screenshot) {
+        this.screenshot = screenshot;
     }
 
-    public GameStateExtractor.GameStateEnum getCurrentGameStateEnum() {
-        return currentGameStateEnum;
+    public ProblemState getProblemState() {
+        return problemState;
     }
 
-    public void setCurrentGameStateEnum(GameStateExtractor.GameStateEnum currentGameStateEnum) {
-        this.currentGameStateEnum = currentGameStateEnum;
+    public void setProblemState(ProblemState problemState) {
+        this.problemState = problemState;
     }
 
+    public GameStateExtractor.GameStateEnum getGameStateEnum() {
+        return gameStateEnum;
+    }
 
-    public int getCurrentMoveCounter() {
-        return currentMoveCounter;
+    public void setGameStateEnum(GameStateExtractor.GameStateEnum gameStateEnum) {
+        this.gameStateEnum = gameStateEnum;
+    }
+
+    public int getMoveCounter() {
+        return moveCounter;
     }
 
     public void incrementMoveCounter() {
-        this.currentMoveCounter++;
+        this.moveCounter++;
     }
 
+    public int getGameId() {
+        return gameId;
+    }
 
-    public int getCurrentGameId() {
-        return currentGameId;
+    public double getReward() {
+        return reward;
+    }
+
+    public void setReward(double reward) {
+        this.reward = reward;
+    }
+
+    public Action getNextAction() {
+        return nextAction;
+    }
+
+    public void setNextAction(Action nextAction) {
+        this.nextAction = nextAction;
     }
 }

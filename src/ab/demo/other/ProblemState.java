@@ -1,6 +1,5 @@
-package ab.demo;
+package ab.demo.other;
 
-import ab.demo.other.ActionRobot;
 import ab.demo.strategies.Action;
 import ab.planner.TrajectoryPlanner;
 import ab.vision.*;
@@ -24,14 +23,12 @@ public class ProblemState {
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
-    private boolean isInitialized;
 
-    public ProblemState(Vision vision, ActionRobot actionRobot, int id, boolean initialized) {
+    public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
         GameStateExtractor.GameStateEnum state = actionRobot.getState();
         allObjects = new ArrayList<>();
         this.vision = vision;
         this.id = id;
-        this.isInitialized = initialized;
 
         if (state == GameStateExtractor.GameStateEnum.PLAYING) {
 
@@ -368,11 +365,4 @@ public class ProblemState {
         this.id = id;
     }
 
-    public boolean isInitialized() {
-        return isInitialized;
-    }
-
-    public void setInitialized(boolean initialized) {
-        this.isInitialized = initialized;
-    }
 }

@@ -6,9 +6,8 @@
  **This work is licensed under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  **To view a copy of this license, visit http://www.gnu.org/licenses/
  *****************************************************************************/
-package ab.demo.Agents;
+package ab.demo.agents;
 
-import ab.demo.ProblemState;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
@@ -35,6 +34,7 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
 
     // a standalone implementation of the Naive StandaloneAgent
     public NaiveStandaloneAgent() {
+        super(null, null, null, null);
 
         aRobot = new ActionRobot();
         tp = new TrajectoryPlanner();
@@ -102,21 +102,6 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
             }
 
         }
-
-    }
-
-    @Override
-    protected void updateCurrentProblemState() {
-
-    }
-
-    @Override
-    protected void afterShotHook(ProblemState previousProblemState) {
-
-    }
-
-    @Override
-    protected void calculateNextAction() {
 
     }
 
@@ -275,8 +260,4 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
         return 0;
     }
 
-    @Override
-    protected void calculateCurrentGameId() {
-
-    }
 }
