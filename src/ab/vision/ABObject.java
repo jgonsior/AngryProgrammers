@@ -26,10 +26,10 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public double angle = 0;
     //is Hollow or not
     public boolean hollow = false;
-    public int objectsAbove = 0;
-    public int objectsLeft = -1;
-    public int objectsRight = -1;
-    public double pigDistance = -1;
+    public int objectsAboveCount = 0;
+    public int objectsLeftCount = -1;
+    public int objectsRightCount = -1;
+    public double distanceToPigs = -1;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
     private Set<ABObject> objectsAboveSet;
 
@@ -76,11 +76,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.objectsAboveSet = objectsAboveSet;
     }
 
-    public void setObjectsAround(int above, int left, int right, double pigDistance) {
-        this.objectsAbove = above;
-        this.objectsLeft = left;
-        this.objectsRight = right;
-        this.pigDistance = pigDistance;
+    public void setObjectsAround(int objectsAboveCount, int objectsLeftCount, int objectsRightCount, double distanceToPigs) {
+        this.objectsAboveCount = objectsAboveCount;
+        this.objectsLeftCount = objectsLeftCount;
+        this.objectsRightCount = objectsRightCount;
+        this.distanceToPigs = distanceToPigs;
     }
 
     public String toString() {
@@ -88,7 +88,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %06f", objectsAbove, objectsLeft, objectsRight, pigDistance) + " | " + this.toString() + " " + this.getTrajectoryType().name();
+        return String.format("%03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs) + " | " + this.toString() + " " + this.getTrajectoryType().name();
     }
 
     public TrajectoryType getTrajectoryType() {

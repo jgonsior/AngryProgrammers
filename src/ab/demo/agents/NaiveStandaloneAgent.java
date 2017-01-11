@@ -8,7 +8,9 @@
  *****************************************************************************/
 package ab.demo.agents;
 
+import ab.demo.other.Action;
 import ab.demo.other.ActionRobot;
+import ab.demo.other.ProblemState;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
@@ -34,7 +36,7 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
 
     // a standalone implementation of the Naive StandaloneAgent
     public NaiveStandaloneAgent() {
-        super(null, null, null, null);
+        super(null, null, null);
 
         aRobot = new ActionRobot();
         tp = new TrajectoryPlanner();
@@ -258,6 +260,16 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
     @Override
     protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
         return 0;
+    }
+
+    @Override
+    protected void afterShotHook(ProblemState previousProblemState) {
+
+    }
+
+    @Override
+    protected Action getNextAction() {
+        return null;
     }
 
 }

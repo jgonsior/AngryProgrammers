@@ -1,6 +1,6 @@
 package ab.demo.DAO;
 
-import ab.demo.strategies.Action;
+import ab.demo.other.Action;
 import ab.vision.ABObject;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;

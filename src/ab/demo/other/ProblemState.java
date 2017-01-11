@@ -1,7 +1,7 @@
 package ab.demo.other;
 
-import ab.demo.strategies.Action;
 import ab.planner.TrajectoryPlanner;
+import ab.utils.ABUtil;
 import ab.vision.*;
 import ab.vision.real.shape.Circle;
 
@@ -15,15 +15,11 @@ import java.util.List;
  * @author jgonsior
  */
 public class ProblemState {
-
     public ArrayList<ABObject> shootableObjects;
-
     public ArrayList<ABObject> targetObjects;
-
     private Vision vision;
     private List<ABObject> allObjects;
     private int id;
-
     public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
         GameStateExtractor.GameStateEnum state = actionRobot.getState();
         allObjects = new ArrayList<>();
@@ -43,6 +39,7 @@ public class ProblemState {
         }
     }
 
+
     private ABObject getCurrentBird() {
         ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
         int maxY = 0;
@@ -56,7 +53,7 @@ public class ProblemState {
         return currentBird;
     }
 
-    public ABObject calculateBestMultiplePigShot() {
+    private ABObject calculateBestMultiplePigShot() {
         // idea: try to find shot which maximize pigs on the trajectory
         // -> : just search around every pig for shot and check this trajectorys
         TrajectoryPlanner tp = new TrajectoryPlanner();
@@ -150,11 +147,9 @@ public class ProblemState {
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
                 }
-
             }
-
         }
-        ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.Unknown);
+        ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.BestMultiplePigShot);
         pseudoObject.setTrajectoryType(bestTrajType);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
@@ -213,16 +208,17 @@ public class ProblemState {
                 }
             }
         }
+
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
         Collections.sort(blocksRealShapeSorted);
 
         // 3. structural objects with their "scores"
         for (ABObject obj : blocksRealShapeSorted) {
-            int left, right;
+            int objectsLeftCount = 0, objectsRightCount = 0;
             Set<ABObject> aboveObjects = new HashSet<>();
-            left = right = 0;
 
             double oxmin, oxmax, oymin, oymax;
+
             oxmin = obj.x;
             oxmax = obj.x + obj.width;
             oymin = obj.y;
@@ -234,8 +230,8 @@ public class ProblemState {
                 nymin = neighbor.y;
                 nymax = neighbor.y + neighbor.height;
 
-                boolean nearX, nearY;
-                nearX = nearY = false;
+                boolean nearX = false, nearY = false;
+
                 if ((oxmin >= nxmin - 10 && oxmin <= nxmax + 10) || (nxmin >= oxmin - 10 && nxmin <= oxmax + 10)) {
                     nearX = true;
                 }
@@ -247,28 +243,37 @@ public class ProblemState {
                 if (nearX && nymax <= oymin) {
                     aboveObjects.addAll(neighbor.getObjectsAboveSet());
                 } else if (nearY && nxmax <= oxmin && oxmin - nxmax < 20) {
-                    left++;
+                    objectsLeftCount++;
                 } else if (nearY && nxmin >= oxmax && nxmin - oxmax < 20) {
-                    right++;
+                    objectsRightCount++;
                 }
             }
 
             // calculates distance to averagePig
-            double pigX, pigY, pigAmount, pigDistance;
-            pigX = pigY = 0;
-            pigAmount = (double) vision.findPigsMBR().size();
+            double pigX = 0, pigY = 0, distanceToPigs;
+
+            double pigCount = (double) vision.findPigsMBR().size();
             for (ABObject pig : vision.findPigsMBR()) {
                 pigX += pig.getCenterX();
                 pigY += pig.getCenterY();
             }
-            pigX = pigX / pigAmount;
-            pigY = pigY / pigAmount;
+            pigX = pigX / pigCount;
+            pigY = pigY / pigCount;
 
-            pigDistance = Math.sqrt(Math.pow((Math.abs(obj.getCenterX() - pigX)), 2) + Math.pow((Math.abs(obj.getCenterY() - pigY)), 2));
+            distanceToPigs = Math.sqrt(Math.pow((Math.abs(obj.getCenterX() - pigX)), 2) + Math.pow((Math.abs(obj.getCenterY() - pigY)), 2));
 
             obj.setObjectsAboveSet(aboveObjects);
+            Point targetPoint = new Point(obj.x, obj.y);
 
-            obj.setObjectsAround(obj.getObjectsAboveSet().size(), left, right, pigDistance);
+            Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, ABObject.TrajectoryType.HIGH, GameState.getTrajectoryPlanner(), GameState.getSlingshot());
+
+            //@todo include actual tap time
+            Shot shot = ABUtil.generateShot(GameState.getSlingshot(), GameState.getTrajectoryPlanner(), 0, releasePoint);
+
+            objectsLeftCount = ABUtil.getObjectsOnTrajectory(vision, targetPoint, shot).size();
+
+
+            obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
             targetObjects.add(obj);
         }
 
@@ -277,6 +282,7 @@ public class ProblemState {
 
         //5. best pigShot
         targetObjects.add(calculateBestMultiplePigShot());
+
         return targetObjects;
     }
 

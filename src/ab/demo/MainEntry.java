@@ -4,12 +4,11 @@ import ab.demo.DAO.GamesDAO;
 import ab.demo.DAO.MovesDAO;
 import ab.demo.DAO.ProblemStatesDAO;
 import ab.demo.DAO.QValuesDAO;
+import ab.demo.agents.ManualGamePlayAgent;
 import ab.demo.agents.NaiveStandaloneAgent;
+import ab.demo.agents.ReinforcementLearningAgent;
 import ab.demo.agents.StandaloneAgent;
 import ab.demo.logging.LoggingHandler;
-import ab.demo.strategies.ManualGamePlayStrategy;
-import ab.demo.strategies.ReinforcementLearningStrategy;
-import ab.demo.strategies.Strategy;
 import ab.server.Proxy;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
@@ -53,7 +52,6 @@ public class MainEntry {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
         StandaloneAgent agent;
-        Strategy strategy = new ManualGamePlayStrategy();
 
         Properties properties = new Properties();
         InputStream configInputStream = null;
@@ -108,11 +106,11 @@ public class MainEntry {
             LoggingHandler.initFileLog();
 
             if (cmd.hasOption("standalone")) {
-                strategy = new ReinforcementLearningStrategy(qValuesDAO);
+                agent = new ReinforcementLearningAgent(gamesDAO, movesDAO, problemStatesDAO, qValuesDAO);
             } else if (cmd.hasOption("naiveAgent")) {
                 agent = new NaiveStandaloneAgent();
             } else if (cmd.hasOption("manual")) {
-                strategy = new ManualGamePlayStrategy();
+                agent = new ManualGamePlayAgent(gamesDAO, movesDAO, problemStatesDAO);
             } else if (cmd.hasOption("competition")) {
                 System.out.println("We haven't implemented a competition ready agent yet.");
                 return;
@@ -122,7 +120,6 @@ public class MainEntry {
                 formatter.printHelp("help", options);
                 return;
             }
-            agent = new StandaloneAgent(strategy, gamesDAO, movesDAO, problemStatesDAO);
 
             if (cmd.hasOption("updateDatabaseTables")) {
                 qValuesDAO.createTable();

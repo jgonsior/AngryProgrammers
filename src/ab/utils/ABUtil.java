@@ -4,13 +4,16 @@ import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.Vision;
+import org.apache.log4j.Logger;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ABUtil {
 
+    private static final Logger logger = Logger.getLogger(ABUtil.class);
     public static int gap = 5; //vision tolerance.
     private static TrajectoryPlanner tp = new TrajectoryPlanner();
 
@@ -58,18 +61,66 @@ public class ABUtil {
         boolean result = true;
         List<Point> points = tp.predictTrajectory(vision.findSlingshotMBR(), releasePoint);
         for (Point point : points) {
-            if (point.x < 840 && point.y < 480 && point.y > 100 && point.x > 400)
+            if (point.x < 840 && point.y < 480 && point.y > 100 && point.x > 400) {
                 for (ABObject ab : vision.findBlocksMBR()) {
-                    if (
-                            ((ab.contains(point) && !ab.contains(target)) || Math.abs(vision.getMBRVision()._scene[point.y][point.x] - 72) < 10)
-                                    && point.x < target.x
-                            )
+                    if (((ab.contains(point) && !ab.contains(target)) || Math.abs(vision.getMBRVision()._scene[point.y][point.x] - 72) < 10)
+                            && point.x < target.x) {
                         return false;
+                    }
                 }
-
+            }
         }
         return result;
     }
 
+    public static List<ABObject> getObjectsOnTrajectory(Vision vision, Point target, Shot shot) {
+        List<ABObject> objectsOnTrajectory = new ArrayList<>();
+
+
+        return objectsOnTrajectory;
+    }
+
+    /**
+     * I have no Idea what these function is doing, but maybe it's useful…
+     */
+    public static Point calculateReleasePoint(Point targetPoint, ABObject.TrajectoryType trajectoryType, TrajectoryPlanner trajectoryPlanner, Rectangle slingshot) {
+        Point releasePoint = null;
+        // estimate the trajectory
+        ArrayList<Point> estimateLaunchPoints = trajectoryPlanner.estimateLaunchPoint(slingshot, targetPoint);
+
+
+        // do a high shot when entering a level to find an accurate velocity
+        if (estimateLaunchPoints.size() == 1) {
+            if (trajectoryType != ABObject.TrajectoryType.LOW) {
+                logger.error("Somehow there was only one launch point found and therefore we can only do a LOW shot, eventhoug a HIGH shot was being requested.");
+            }
+            releasePoint = estimateLaunchPoints.get(0);
+        } else if (estimateLaunchPoints.size() == 2) {
+            if (trajectoryType == ABObject.TrajectoryType.HIGH) {
+                releasePoint = estimateLaunchPoints.get(1);
+            } else if (trajectoryType == ABObject.TrajectoryType.LOW) {
+                releasePoint = estimateLaunchPoints.get(0);
+            }
+        } else if (estimateLaunchPoints.isEmpty()) {
+            logger.info("No release point found for the target");
+            logger.info("Try a shot with 45 degree");
+            releasePoint = trajectoryPlanner.findReleasePoint(slingshot, Math.PI / 4);
+        }
+        return releasePoint;
+    }
+
+    public static Shot generateShot(Rectangle slingshot, TrajectoryPlanner trajectoryPlanner, int tappingTime, Point releasePoint) {
+        if (releasePoint == null) {
+            logger.error("No release point found -,-");
+        }
+
+        Point referencePoint = trajectoryPlanner.getReferencePoint(slingshot);
+
+        int dx = (int) releasePoint.getX() - referencePoint.x;
+        int dy = (int) releasePoint.getY() - referencePoint.y;
+
+        return new Shot(referencePoint.x, referencePoint.y, dx, dy, 1, tappingTime);
+
+    }
 
 }

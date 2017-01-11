@@ -1,5 +1,10 @@
-package ab.demo.strategies;
+package ab.demo.agents;
 
+import ab.demo.DAO.GamesDAO;
+import ab.demo.DAO.MovesDAO;
+import ab.demo.DAO.ProblemStatesDAO;
+import ab.demo.other.Action;
+import ab.demo.other.GameState;
 import ab.demo.other.ProblemState;
 import org.apache.log4j.Logger;
 
@@ -9,9 +14,18 @@ import java.util.Scanner;
 /**
  * @author: Julius Gonsior
  */
-public class ManualGamePlayStrategy extends Strategy {
+public class ManualGamePlayAgent extends StandaloneAgent {
 
-    private static final Logger logger = Logger.getLogger(ManualGamePlayStrategy.class);
+    private static final Logger logger = Logger.getLogger(ManualGamePlayAgent.class);
+
+    public ManualGamePlayAgent(GamesDAO gamesDAO, MovesDAO movesDAO, ProblemStatesDAO problemStatesDAO) {
+        super(gamesDAO, movesDAO, problemStatesDAO);
+    }
+
+    @Override
+    protected void afterShotHook(ProblemState previousProblemState) {
+
+    }
 
     /**
      * Returns next action, with explorationrate as probability of taking a random action
@@ -20,7 +34,7 @@ public class ManualGamePlayStrategy extends Strategy {
      * @return
      */
     public Action getNextAction() {
-        ArrayList<Action> possibleActions = gameState.getProblemState().getActions();
+        ArrayList<Action> possibleActions = GameState.getProblemState().getActions();
         int actionId = Integer.MAX_VALUE;
 
         while (actionId > possibleActions.size()) {
@@ -37,10 +51,5 @@ public class ManualGamePlayStrategy extends Strategy {
         Action action = possibleActions.get(actionId);
         logger.info("You selected the following action: " + action.getName());
         return action;
-    }
-
-    @Override
-    public void afterShotHook(ProblemState previousProblemState) {
-
     }
 }

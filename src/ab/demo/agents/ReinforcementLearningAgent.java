@@ -1,35 +1,26 @@
-package ab.demo.strategies;
+package ab.demo.agents;
 
+import ab.demo.DAO.GamesDAO;
+import ab.demo.DAO.MovesDAO;
+import ab.demo.DAO.ProblemStatesDAO;
 import ab.demo.DAO.QValuesDAO;
+import ab.demo.other.Action;
+import ab.demo.other.GameState;
 import ab.demo.other.ProblemState;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
-import java.util.Random;
-
 /**
  * @author: Julius Gonsior
  */
-public class ReinforcementLearningStrategy extends Strategy {
+public class ReinforcementLearningAgent extends StandaloneAgent {
+    private static final Logger logger = Logger.getLogger(ReinforcementLearningAgent.class);
+    private QValuesDAO qValuesDAO;
 
-    private static final Logger logger = Logger.getLogger(ReinforcementLearningStrategy.class);
-    QValuesDAO qValuesDAO;
-    private Random randomGenerator;
-    private double discountFactor;
-    private double learningRate;
-    private double explorationRate;
-
-    public ReinforcementLearningStrategy(QValuesDAO qValuesDAO) {
-        super();
-        this.randomGenerator = new Random();
+    public ReinforcementLearningAgent(GamesDAO gamesDAO, MovesDAO movesDAO, ProblemStatesDAO problemStatesDAO, QValuesDAO qValuesDAO) {
+        super(gamesDAO, movesDAO, problemStatesDAO);
         this.qValuesDAO = qValuesDAO;
-    }
-
-    public void setQLearningParameters(double discountFactor, double learningRate, double explorationRate) {
-        this.discountFactor = discountFactor;
-        this.learningRate = learningRate;
-        this.explorationRate = explorationRate;
     }
 
     /**
@@ -75,12 +66,12 @@ public class ReinforcementLearningStrategy extends Strategy {
     }
 
     public void afterShotHook(ProblemState previousProblemState) {
-        if (gameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
-            updateQValue(previousProblemState, gameState.getProblemState(), gameState.getNextAction(),
-                    gameState.getReward(), false, gameState.getGameId(), gameState.getMoveCounter());
-        } else if (gameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || gameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
-            updateQValue(previousProblemState, gameState.getProblemState(), gameState.getNextAction(),
-                    gameState.getReward(), true, gameState.getGameId(), gameState.getMoveCounter());
+        if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
+            updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
+                    GameState.getReward(), false, GameState.getGameId(), GameState.getMoveCounter());
+        } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
+            updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
+                    GameState.getReward(), true, GameState.getGameId(), GameState.getMoveCounter());
         }
     }
 
@@ -96,13 +87,13 @@ public class ReinforcementLearningStrategy extends Strategy {
         Action action;
         if (randomValue < explorationRate * 100) {
             //get random action should return more than one id!
-            action = qValuesDAO.getRandomAction(gameState.getProblemState().getId());
-            action.setProblemState(gameState.getProblemState());
+            action = qValuesDAO.getRandomAction(GameState.getProblemState().getId());
+            action.setProblemState(GameState.getProblemState());
             action.setRand(true);
             action.setName("random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
         } else {
-            action = qValuesDAO.getBestAction(gameState.getProblemState().getId());
-            action.setProblemState(gameState.getProblemState());
+            action = qValuesDAO.getBestAction(GameState.getProblemState().getId());
+            action.setProblemState(GameState.getProblemState());
             action.setRand(false);
             action.setName("best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
         }

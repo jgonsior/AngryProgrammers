@@ -1,7 +1,7 @@
 package ab.demo.other;
 
 import ab.demo.DAO.GamesDAO;
-import ab.demo.strategies.Action;
+import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.vision.GameStateExtractor;
 
@@ -13,77 +13,86 @@ import java.awt.image.BufferedImage;
  */
 public class GameState {
 
-    private BufferedImage screenshot;
-    private ProblemState problemState;
-    private GameStateExtractor.GameStateEnum gameStateEnum;
-    private int moveCounter;
-    private int gameId;
-    private Rectangle slingshot;
-    private double reward;
-    private Action nextAction;
+    private static BufferedImage screenshot;
+    private static ProblemState problemState;
+    private static GameStateExtractor.GameStateEnum gameStateEnum;
+    private static int moveCounter;
+    private static int gameId;
+    private static Rectangle slingshot;
+    private static double reward;
+    private static Action nextAction;
+    private static TrajectoryPlanner trajectoryPlanner = new TrajectoryPlanner();
 
-    public GameState(int currentLevel, GamesDAO gamesDAO, double explorationRate, double learningRate, double discountFactor) {
-        this.gameId = gamesDAO.save(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
-        this.moveCounter = 0;
+    public static TrajectoryPlanner getTrajectoryPlanner() {
+        return trajectoryPlanner;
     }
 
-    public Rectangle getSlingshot() {
+    public static void initNewGameState(int currentLevel, GamesDAO gamesDAO, double explorationRate, double learningRate, double discountFactor) {
+        gameId = gamesDAO.save(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
+        moveCounter = 0;
+    }
+
+    public static Rectangle getSlingshot() {
         return slingshot;
     }
 
-    public void setSlingshot(Rectangle slingshot) {
-        this.slingshot = slingshot;
+    public static void setSlingshot(Rectangle slingshot) {
+        GameState.slingshot = slingshot;
     }
 
-    public BufferedImage getScreenshot() {
+    public static BufferedImage getScreenshot() {
         return screenshot;
     }
 
-    public void setScreenshot(BufferedImage screenshot) {
-        this.screenshot = screenshot;
+    public static void setScreenshot(BufferedImage screenshot) {
+        GameState.screenshot = screenshot;
     }
 
-    public ProblemState getProblemState() {
+    public static ProblemState getProblemState() {
         return problemState;
     }
 
-    public void setProblemState(ProblemState problemState) {
-        this.problemState = problemState;
+    public static void setProblemState(ProblemState problemState) {
+        GameState.problemState = problemState;
     }
 
-    public GameStateExtractor.GameStateEnum getGameStateEnum() {
+    public static GameStateExtractor.GameStateEnum getGameStateEnum() {
         return gameStateEnum;
     }
 
-    public void setGameStateEnum(GameStateExtractor.GameStateEnum gameStateEnum) {
-        this.gameStateEnum = gameStateEnum;
+    public static void setGameStateEnum(GameStateExtractor.GameStateEnum gameStateEnum) {
+        GameState.gameStateEnum = gameStateEnum;
     }
 
-    public int getMoveCounter() {
+    public static int getMoveCounter() {
         return moveCounter;
     }
 
-    public void incrementMoveCounter() {
-        this.moveCounter++;
+    public static void incrementMoveCounter() {
+        GameState.moveCounter++;
     }
 
-    public int getGameId() {
+    public static int getGameId() {
         return gameId;
     }
 
-    public double getReward() {
+    public static double getReward() {
         return reward;
     }
 
-    public void setReward(double reward) {
-        this.reward = reward;
+    public static void setReward(double reward) {
+        GameState.reward = reward;
     }
 
-    public Action getNextAction() {
+    public static Action getNextAction() {
         return nextAction;
     }
 
-    public void setNextAction(Action nextAction) {
-        this.nextAction = nextAction;
+    public static void setNextAction(Action nextAction) {
+        GameState.nextAction = nextAction;
+    }
+
+    public static void refreshTrajectoryPlanner() {
+        trajectoryPlanner = new TrajectoryPlanner();
     }
 }

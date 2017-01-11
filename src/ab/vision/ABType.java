@@ -23,7 +23,9 @@ public enum ABType {
     Wood(11),
     Stone(12),
     TNT(18),
+    BestMultiplePigShot(20),
     Unknown(0);
+
     public int id;
 
     private ABType(int id) {
