@@ -2,7 +2,6 @@ package ab.utils;
 
 import ab.demo.other.GameState;
 import ab.demo.other.Shot;
-import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
@@ -16,7 +15,6 @@ public class ABUtil {
 
     private static final Logger logger = Logger.getLogger(ABUtil.class);
     public static int gap = 5; //vision tolerance.
-    private static TrajectoryPlanner tp = new TrajectoryPlanner();
 
     // If o1 supports o2, return true
     public static boolean isSupport(ABObject o2, ABObject o1) {
@@ -54,13 +52,13 @@ public class ABUtil {
     public static boolean isReachable(Vision vision, Point target, Shot shot) {
         //test whether the trajectory can pass the target without considering obstructions
         Point releasePoint = new Point(shot.getX() + shot.getDx(), shot.getY() + shot.getDy());
-        int traY = tp.getYCoordinate(vision.findSlingshotMBR(), releasePoint, target.x);
+        int traY = GameState.getTrajectoryPlanner().getYCoordinate(vision.findSlingshotMBR(), releasePoint, target.x);
         if (Math.abs(traY - target.y) > 100) {
             //System.out.println(Math.abs(traY - target.y));
             return false;
         }
         boolean result = true;
-        List<Point> points = tp.predictTrajectory(vision.findSlingshotMBR(), releasePoint);
+        List<Point> points = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getSlingshot(), releasePoint);
         for (Point point : points) {
             if (point.x < 840 && point.y < 480 && point.y > 100 && point.x > 400) {
                 for (ABObject ab : vision.findBlocksMBR()) {
@@ -76,13 +74,29 @@ public class ABUtil {
 
     public static List<ABObject> getObjectsOnTrajectory(Point targetPoint, ABObject.TrajectoryType trajectoryType) {
         Vision vision = GameState.getVision();
-        Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, ABObject.TrajectoryType.HIGH);
+        Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, trajectoryType);
         //@todo include actual tap time
-        Shot shot = ABUtil.generateShot(0, releasePoint);
+
+        int traY = GameState.getTrajectoryPlanner().getYCoordinate(vision.findSlingshotMBR(), releasePoint, targetPoint.x);
+        if (Math.abs(traY - targetPoint.y) > 100) {
+            logger.info("Trajectory too low to hit anything.");
+            //System.out.println(Math.abs(traY - target.y));
+            return null;
+        }
 
         List<ABObject> objectsOnTrajectory = new ArrayList<>();
 
-
+        List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getSlingshot(), releasePoint);
+        for (Point trajectoryPoint : trajectoryPoints) {
+            if (trajectoryPoint.x < 840 && trajectoryPoint.y < 480 && trajectoryPoint.y > 100 && trajectoryPoint.x > 400) {
+                for (ABObject possibleObject : vision.findBlocksMBR()) {
+                    if (((possibleObject.contains(trajectoryPoint) && !possibleObject.contains(targetPoint)) || Math.abs(vision.getMBRVision()._scene[trajectoryPoint.y][trajectoryPoint.x] - 72) < 10)
+                            && trajectoryPoint.x < targetPoint.x) {
+                        objectsOnTrajectory.add(possibleObject);
+                    }
+                }
+            }
+        }
 
         return objectsOnTrajectory;
     }
@@ -94,7 +108,6 @@ public class ABUtil {
         Point releasePoint = null;
         // estimate the trajectory
         ArrayList<Point> estimateLaunchPoints = GameState.getTrajectoryPlanner().estimateLaunchPoint(GameState.getSlingshot(), targetPoint);
-
 
         // do a high shot when entering a level to find an accurate velocity
         if (estimateLaunchPoints.size() == 1) {
