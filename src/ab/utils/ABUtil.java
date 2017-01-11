@@ -1,12 +1,14 @@
 package ab.utils;
 
 import ab.demo.other.GameState;
+import ab.demo.other.ScreenshotUtil;
 import ab.demo.other.Shot;
 import ab.vision.ABObject;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,6 +95,10 @@ public class ABUtil {
                     if (((possibleObject.contains(trajectoryPoint) && !possibleObject.contains(targetPoint)) || Math.abs(vision.getMBRVision()._scene[trajectoryPoint.y][trajectoryPoint.x] - 72) < 10)
                             && trajectoryPoint.x < targetPoint.x) {
                         objectsOnTrajectory.add(possibleObject);
+
+                        BufferedImage canvas = GameState.getScreenshot();
+                        GameState.getTrajectoryPlanner().plotTrajectory(canvas, GameState.getSlingshot(), releasePoint);
+                        ScreenshotUtil.saveScreenshot(canvas, "trajectory");
                     }
                 }
             }
@@ -112,7 +118,7 @@ public class ABUtil {
         // do a high shot when entering a level to find an accurate velocity
         if (estimateLaunchPoints.size() == 1) {
             if (trajectoryType != ABObject.TrajectoryType.LOW) {
-                logger.error("Somehow there was only one launch point found and therefore we can only do a LOW shot, eventhoug a HIGH shot was being requested.");
+                logger.error("Somehow there was only one launch point found and therefore we can only do a LOW shot, eventhough a HIGH shot was being requested.");
             }
             releasePoint = estimateLaunchPoints.get(0);
         } else if (estimateLaunchPoints.size() == 2) {

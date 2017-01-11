@@ -5,7 +5,6 @@ import ab.demo.DAO.MovesDAO;
 import ab.demo.DAO.ProblemStatesDAO;
 import ab.demo.other.Action;
 import ab.demo.other.*;
-import ab.server.Proxy;
 import ab.utils.ABUtil;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
@@ -13,12 +12,9 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -103,23 +99,6 @@ public abstract class StandaloneAgent implements Runnable {
         frame.setVisible(true);
     }
 
-    public void saveCurrentScreenshot(String title) {
-        File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + GameState.getGameId() + "/" + currentLevel + "_" + GameState.getMoveCounter() + "_" + title + "_" + System.currentTimeMillis() + ".gif");
-        try {
-            outputFile.getParentFile().mkdirs();
-            ImageIO.write(GameState.getScreenshot(), "gif", outputFile);
-        } catch (IOException e) {
-            logger.error("Unable to save screenshot " + e);
-            e.printStackTrace();
-        }
-        logger.info("Saved screenshot " + outputFile.getAbsolutePath());
-    }
-
-    public void saveCurrentScreenshot() {
-        saveCurrentScreenshot(nextAction.getName());
-    }
-
-
     protected void playLevel() {
         ProblemState previousProblemState;
 
@@ -127,6 +106,8 @@ public abstract class StandaloneAgent implements Runnable {
 
         GameState.initNewGameState(currentLevel, gamesDAO, explorationRate, learningRate, discountFactor);
         GameState.setGameStateEnum(actionRobot.getState());
+        GameState.updateCurrentVision();
+        GameState.setCurrentLevel(currentLevel);
 
         int birdCounter = countBirds();
         while (birdCounter > 0) {
@@ -277,7 +258,7 @@ public abstract class StandaloneAgent implements Runnable {
         GameState.updateCurrentVision();
 
         Set<Object> blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(true);
-        saveCurrentScreenshot();
+        ScreenshotUtil.saveCurrentScreenshot();
         logger.info("bef:" + blocksAndPigsBefore);
         logger.info("aft:" + blocksAndPigsAfter);
 
@@ -293,7 +274,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                 blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(true);
 
-                saveCurrentScreenshot();
+                ScreenshotUtil.saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
                 logger.info("aftd:" + blocksAndPigsAfter);
                 loopCounter++;
@@ -322,7 +303,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                 blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(false);
 
-                saveCurrentScreenshot();
+                ScreenshotUtil.saveCurrentScreenshot();
                 logger.info("bef:" + blocksAndPigsBefore);
                 logger.info("aft:" + blocksAndPigsAfter);
 
@@ -386,7 +367,7 @@ public abstract class StandaloneAgent implements Runnable {
                         rewardBefore = rewardAfter;
                         rewardAfter = getCurrentReward();
                         GameState.updateCurrentVision();
-                        saveCurrentScreenshot("scoreScreenshot");
+                        ScreenshotUtil.saveCurrentScreenshot("scoreScreenshot");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -394,7 +375,7 @@ public abstract class StandaloneAgent implements Runnable {
             }
             logger.info("done waiting");
             GameState.updateCurrentVision();
-            saveCurrentScreenshot();
+            ScreenshotUtil.saveCurrentScreenshot();
         }
     }
 
