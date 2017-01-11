@@ -4,6 +4,7 @@ import ab.demo.DAO.GamesDAO;
 import ab.planner.TrajectoryPlanner;
 import ab.server.Proxy;
 import ab.vision.GameStateExtractor;
+import ab.vision.Vision;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -22,6 +23,15 @@ public class GameState {
     private static double reward;
     private static Action nextAction;
     private static TrajectoryPlanner trajectoryPlanner = new TrajectoryPlanner();
+    private static Vision vision;
+
+    public static Vision getVision() {
+        return vision;
+    }
+
+    public static void setVision(Vision vision) {
+        GameState.vision = vision;
+    }
 
     public static TrajectoryPlanner getTrajectoryPlanner() {
         return trajectoryPlanner;
@@ -94,5 +104,11 @@ public class GameState {
 
     public static void refreshTrajectoryPlanner() {
         trajectoryPlanner = new TrajectoryPlanner();
+    }
+
+    public static void updateCurrentVision() {
+        BufferedImage screenshot = ActionRobot.doScreenShot();
+        setScreenshot(screenshot);
+        vision = new Vision(screenshot);
     }
 }

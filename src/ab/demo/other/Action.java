@@ -44,10 +44,6 @@ public class Action {
         targetPoint = targetObject.getCenter();
     }
 
-    public ProblemState getProblemState() {
-        return problemState;
-    }
-
     public void setProblemState(ProblemState problemState) {
         this.problemState = problemState;
     }

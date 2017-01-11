@@ -17,13 +17,13 @@ import java.util.List;
 public class ProblemState {
     public ArrayList<ABObject> shootableObjects;
     public ArrayList<ABObject> targetObjects;
-    private Vision vision;
     private List<ABObject> allObjects;
     private int id;
-    public ProblemState(Vision vision, ActionRobot actionRobot, int id) {
+
+    public ProblemState(ActionRobot actionRobot, int id) {
         GameStateExtractor.GameStateEnum state = actionRobot.getState();
         allObjects = new ArrayList<>();
-        this.vision = vision;
+        Vision vision = GameState.getVision();
         this.id = id;
 
         if (state == GameStateExtractor.GameStateEnum.PLAYING) {
@@ -41,7 +41,7 @@ public class ProblemState {
 
 
     private ABObject getCurrentBird() {
-        ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
+        ArrayList<ABObject> birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
         int maxY = 0;
         ABObject currentBird = null;
         for (ABObject bird : birds) {
@@ -54,6 +54,7 @@ public class ProblemState {
     }
 
     private ABObject calculateBestMultiplePigShot() {
+        Vision vision = GameState.getVision();
         // idea: try to find shot which maximize pigs on the trajectory
         // -> : just search around every pig for shot and check this trajectorys
         TrajectoryPlanner tp = new TrajectoryPlanner();
@@ -195,6 +196,7 @@ public class ProblemState {
     }
 
     private ArrayList<ABObject> calculateTargetObjects() {
+        Vision vision = GameState.getVision();
         // 1. TNTs
         ArrayList<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
         // 2. big round objects
@@ -263,15 +265,10 @@ public class ProblemState {
             distanceToPigs = Math.sqrt(Math.pow((Math.abs(obj.getCenterX() - pigX)), 2) + Math.pow((Math.abs(obj.getCenterY() - pigY)), 2));
 
             obj.setObjectsAboveSet(aboveObjects);
-            Point targetPoint = new Point(obj.x, obj.y);
 
-            Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, ABObject.TrajectoryType.HIGH, GameState.getTrajectoryPlanner(), GameState.getSlingshot());
 
-            //@todo include actual tap time
-            Shot shot = ABUtil.generateShot(GameState.getSlingshot(), GameState.getTrajectoryPlanner(), 0, releasePoint);
-
-            objectsLeftCount = ABUtil.getObjectsOnTrajectory(vision, targetPoint, shot).size();
-
+            List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(new Point(obj.x, obj.y), ABObject.TrajectoryType.HIGH);
+            objectsLeftCount = objectsOnTrajectory.size();
 
             obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
             targetObjects.add(obj);
@@ -309,6 +306,7 @@ public class ProblemState {
      * @return list of approximation of shootableObjects objects
      */
     private ArrayList<ABObject> calculateShootableObjects() {
+        Vision vision = GameState.getVision();
         List<ABObject> lowShootableObjects = new ArrayList<>(vision.findBlocksRealShape());
         lowShootableObjects.addAll(vision.findHills());
         lowShootableObjects.addAll(vision.findPigsRealShape());
