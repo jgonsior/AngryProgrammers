@@ -34,6 +34,8 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public double totalScore = -1;
     public int safePigsOnTrajectory = 0;
     public int possiblePigsOnTrajectory = 0;
+    public int movedX = -1;
+    public int movedY = -1;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
     private Set<ABObject> objectsAboveSet;
 
@@ -135,8 +137,8 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public void setCoordinates(int x, int y) {
-        this.x = x;
-        this.y = y;
+        this.movedX = x;
+        this.movedY = y;
     }
 
     @Override
