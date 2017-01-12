@@ -6,6 +6,7 @@ import ab.demo.DAO.ProblemStatesDAO;
 import ab.demo.other.Action;
 import ab.demo.other.*;
 import ab.utils.ABUtil;
+import ab.utils.ScreenshotUtil;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;

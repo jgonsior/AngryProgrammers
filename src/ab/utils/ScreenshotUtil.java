@@ -1,5 +1,6 @@
-package ab.demo.other;
+package ab.utils;
 
+import ab.demo.other.GameState;
 import ab.server.Proxy;
 import org.apache.log4j.Logger;
 

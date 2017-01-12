@@ -1,7 +1,6 @@
 package ab.utils;
 
 import ab.demo.other.GameState;
-import ab.demo.other.ScreenshotUtil;
 import ab.demo.other.Shot;
 import ab.vision.ABObject;
 import ab.vision.Vision;
