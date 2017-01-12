@@ -88,6 +88,12 @@ public class ABUtil {
         List<ABObject> objectsOnTrajectory = new ArrayList<>();
 
         List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getSlingshot(), releasePoint);
+
+        GameState.updateCurrentVision();
+        BufferedImage canvas = GameState.getScreenshot();
+        GameState.getTrajectoryPlanner().plotTrajectory(canvas, GameState.getSlingshot(), releasePoint);
+        ScreenshotUtil.saveScreenshot(canvas, "trajectory");
+
         for (Point trajectoryPoint : trajectoryPoints) {
             if (trajectoryPoint.x < 840 && trajectoryPoint.y < 480 && trajectoryPoint.y > 100 && trajectoryPoint.x > 400) {
                 for (ABObject possibleObject : vision.findBlocksMBR()) {
@@ -95,9 +101,6 @@ public class ABUtil {
                             && trajectoryPoint.x < targetPoint.x) {
                         objectsOnTrajectory.add(possibleObject);
 
-                        BufferedImage canvas = GameState.getScreenshot();
-                        GameState.getTrajectoryPlanner().plotTrajectory(canvas, GameState.getSlingshot(), releasePoint);
-                        ScreenshotUtil.saveScreenshot(canvas, "trajectory");
                     }
                 }
             }
