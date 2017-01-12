@@ -4,6 +4,7 @@ import ab.planner.TrajectoryPlanner;
 import ab.utils.ABUtil;
 import ab.vision.*;
 import ab.vision.real.shape.Circle;
+import ab.vision.real.shape.Poly;
 
 import java.awt.*;
 import java.util.*;
@@ -107,17 +108,18 @@ public class ProblemState {
                         continue;
                     }
 
-                    // TODO: in level 2 he hits mysterious Point near (300,300) which ist object Hill but not visible in image
                     for (Point p : predictedTrajectory) {
-                        currentBird.setCoordinates(p.x, p.y);
-                        if (intersects(currentBird, obj, 3)) {
-                            if (isPig) {
-                                pigsOnTraj.add(p);
-                            } else {
-                                objsOnTraj.add(p);
+                        if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
+                            currentBird.setCoordinates(p.x, p.y);
+                            if (intersects(currentBird, obj, 3)) {
+                                if (isPig) {
+                                    pigsOnTraj.add(p);
+                                } else {
+                                    objsOnTraj.add(p);
+                                }
+                                // object intersects so dont need to check rest of points
+                                break;
                             }
-                            // object intersects so dont need to check rest of points
-                            break;
                         }
                     }
                 }
@@ -170,7 +172,19 @@ public class ProblemState {
                 return false;
             }
 
+        } else if (target.shape == ABShape.Poly){
+            // pseudo check for some points from bird
+            Polygon polygon = ((Poly) target).polygon;
+            if (polygon.contains(new Point((int)(circle.x+circle.r), (int)circle.y))){
+                return true;
+            } else if (polygon.contains(new Point((int)circle.x, (int)(circle.y+circle.r)))){
+                return true;
+            } else {
+                return false;
+            }
+
         } else {
+            //Rect
             ABObject rect = target;
             if (circleDistance_x + minPixelOverlap > (rect.width / 2 + circle.r)) {
                 return false;
@@ -194,6 +208,7 @@ public class ProblemState {
         }
 
     }
+
 
     private ArrayList<ABObject> calculateTargetObjects() {
         Vision vision = GameState.getVision();
