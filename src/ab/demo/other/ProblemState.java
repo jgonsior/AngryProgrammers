@@ -84,6 +84,7 @@ public class ProblemState {
             //get predicted trajectory and check for every object if it gets hit
             ArrayList<Point> estimatedLaunchPoints = tp.estimateLaunchPoint(sling, ptp);
             ABObject.TrajectoryType currentTrajectoryType = null;
+            VisionMBR mbrVision = vision.getMBRVision();
             for (int i = 0; i < estimatedLaunchPoints.size(); i++) {
                 Point estimatedLaunchPoint = estimatedLaunchPoints.get(i);
                 if (i == 0) {
@@ -95,8 +96,10 @@ public class ProblemState {
                 ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoint));
 
                 ArrayList<Point> pigsOnTraj, objsOnTraj, correctedPigs;
+                ArrayList<ABObject> robjsOnTraj;
                 pigsOnTraj = new ArrayList<>();
                 objsOnTraj = new ArrayList<>();
+                robjsOnTraj = new ArrayList<>();
                 correctedPigs = new ArrayList<>();
 
                 for (ABObject obj : allObjects) {
@@ -111,11 +114,12 @@ public class ProblemState {
                     for (Point p : predictedTrajectory) {
                         if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
                             currentBird.setCoordinates(p.x, p.y);
-                            if (intersects(currentBird, obj, 3)) {
+                            if (intersects(currentBird, obj, 3) || (((obj.contains(p) && !obj.contains(ptp)) || Math.abs(mbrVision._scene[p.y][p.x] - 72) < 10) && p.x < ptp.x)) {
                                 if (isPig) {
                                     pigsOnTraj.add(p);
                                 } else {
                                     objsOnTraj.add(p);
+                                    robjsOnTraj.add(obj);
                                 }
                                 // object intersects so dont need to check rest of points
                                 break;
@@ -137,7 +141,7 @@ public class ProblemState {
                     }
 
                     for (Point pig : pigsOnTraj) {
-                        if (pig.x <= minX) {
+                        if (pig.x <= minX){
                             correctedPigs.add(pig);
                         }
                     }
@@ -149,11 +153,14 @@ public class ProblemState {
                     maxAmountOfPigsOnTraj = pigsOnTraj.size();
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
+                    System.out.println(bestShot + " - " + pigsOnTraj +  " - " + objsOnTraj + " - " + robjsOnTraj + " : "+ correctedPigs);
+
                 }
             }
         }
         ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.BestMultiplePigShot);
         pseudoObject.setTrajectoryType(bestTrajType);
+        pseudoObject.setPigsOnTraj(safeAmountOfPigsOnTraj, maxAmountOfPigsOnTraj);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
         return pseudoObject;
@@ -282,8 +289,8 @@ public class ProblemState {
             obj.setObjectsAboveSet(aboveObjects);
 
 
-            List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(new Point(obj.x, obj.y), ABObject.TrajectoryType.HIGH);
-            objectsLeftCount = objectsOnTrajectory.size();
+            //List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(new Point(obj.x, obj.y), ABObject.TrajectoryType.HIGH);
+            //objectsLeftCount = objectsOnTrajectory.size();
 
             obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
             targetObjects.add(obj);
