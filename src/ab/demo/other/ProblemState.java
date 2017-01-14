@@ -18,11 +18,13 @@ public class ProblemState {
     private ArrayList<ABObject> targetObjects;
     private List<ABObject> allObjects;
     private int id;
-
+    private Vision vision;
     public ProblemState(ActionRobot actionRobot, int id) {
+        Vision vision = GameState.getVision();
         GameStateExtractor.GameStateEnum state = actionRobot.getState();
         allObjects = new ArrayList<>();
-        Vision vision = GameState.getVision();
+        vision = GameState.getVision();
+
         this.id = id;
 
         if (state == GameStateExtractor.GameStateEnum.PLAYING) {
@@ -41,7 +43,7 @@ public class ProblemState {
         return targetObjects;
     }
 
-    private ABObject getCurrentBird() {
+    private ABObject getBirdOnSlingshot() {
         ArrayList<ABObject> birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
         int maxY = 0;
         ABObject currentBird = null;
@@ -54,20 +56,19 @@ public class ProblemState {
         return currentBird;
     }
 
-    private List<ABObject> getObjectsOnTrajectory(List<Point> predictedTrajectory, Circle currentBird, VisionMBR mbrVision, Point target, int minPixelOverlap, List<ABObject> birds) {
-        ArrayList<ABObject> objsOnTraj = new ArrayList<>();
-        TrajectoryPlanner tp = new TrajectoryPlanner();
+    private List<ABObject> getObjectsOnTrajectory(List<Point> predictedTrajectory, Circle currentBird, int minPixelOverlap, List<ABObject> birds) {
+        ArrayList<ABObject> objectsOnTrajectory = new ArrayList<>();
 
-        for (ABObject obj : allObjects) {
+        for (ABObject object : allObjects) {
             for (Point p : predictedTrajectory) {
                 if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
-                    if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), obj, minPixelOverlap, target, mbrVision)) {
+                    if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), object, minPixelOverlap)) {
 
                         // set coordinates so we can see the point where we hit the object, ignore birds
-                        if (!birds.contains(obj)) {
-                            ABObject modifiedCoord = obj;
-                            modifiedCoord.setCoordinates(p.x, p.y);
-                            objsOnTraj.add(modifiedCoord);
+                        if (!birds.contains(object)) {
+                            ABObject objectWithModifiedCoordinates = object;
+                            objectWithModifiedCoordinates.setCoordinates(p.x, p.y);
+                            objectsOnTrajectory.add(objectWithModifiedCoordinates);
                         }
                         // object intersects so dont need to check rest of points
                         break;
@@ -75,7 +76,7 @@ public class ProblemState {
                 }
             }
         }
-        return objsOnTraj;
+        return objectsOnTrajectory;
     }
 
     private List<Point> generatePointsAroundTargets(List<ABObject> targets, int birdRadius, int minPixelOverlap) {
@@ -95,12 +96,12 @@ public class ProblemState {
     private ABObject calculateBestMultiplePigShot(int minPixelOverlap) {
         Vision vision = GameState.getVision();
         // idea: try to find shot which maximize pigs on the trajectory
-        // -> : just search around every pig for shot and check this trajectorys
+        // -> : just search around every pig for shot and check his trajectories
         TrajectoryPlanner tp = new TrajectoryPlanner();
         ArrayList<ABObject> pigs = new ArrayList<>(vision.findPigsRealShape());
         ArrayList<ABObject> birds = new ArrayList<>(vision.findBirdsRealShape());
 
-        ABObject currentBird = getCurrentBird();
+        ABObject currentBird = getBirdOnSlingshot();
         int birdRadius = (int) ((Circle) currentBird).r;
 
         ArrayList<Point> possibleTargetPoints = new ArrayList<>(generatePointsAroundTargets(pigs, birdRadius, minPixelOverlap));
@@ -129,7 +130,7 @@ public class ProblemState {
 
                 ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs, allObjsOnTraj;
 
-                allObjsOnTraj = new ArrayList<>(this.getObjectsOnTrajectory(predictedTrajectory, (Circle) currentBird, mbrVision, ptp, minPixelOverlap, birds));
+                allObjsOnTraj = new ArrayList<>(this.getObjectsOnTrajectory(predictedTrajectory, (Circle) currentBird, minPixelOverlap, birds));
                 objsOnTraj = new ArrayList<>();
                 pigsOnTraj = new ArrayList<>();
                 correctedPigs = new ArrayList<>();
@@ -177,21 +178,22 @@ public class ProblemState {
         return pseudoObject;
     }
 
-    private boolean intersects(Circle circle, ABObject target, int minPixelOverlap, Point ptp, VisionMBR mbrVision) {
+    private boolean intersects(Circle circle, ABObject target, int minPixelOverlap) {
         int circleDistance_x = Math.abs(circle.x - target.x);
         int circleDistance_y = Math.abs(circle.y - target.y);
 
         if (target.shape == ABShape.Circle) {
             Circle circle2 = (Circle) target;
+
             if ((circleDistance_x - circle.r - circle2.r - minPixelOverlap <= 0) && (circleDistance_y - circle.r - circle2.r - minPixelOverlap <= 0)) {
                 return true;
             } else {
                 return false;
             }
-
         } else if (target.shape == ABShape.Poly) {
             // pseudo check for some points from bird
             Polygon polygon = ((Poly) target).polygon;
+
             if (polygon.contains(new Point((int) (circle.x + circle.r), (int) circle.y))) {
                 return true;
             } else if (polygon.contains(new Point((int) circle.x, (int) (circle.y + circle.r)))) {
@@ -199,7 +201,6 @@ public class ProblemState {
             } else {
                 return false;
             }
-
         } else {
             //ABUtil black magic, works not in every lvl, but in some lvls it finds real intersections which this function not finds
             /*Point p = new Point(circle.x, circle.y);
@@ -226,12 +227,10 @@ public class ProblemState {
                     (circleDistance_y - rect.height / 2) ^ 2;
 
             return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r, 2)));
-
         }
-
     }
 
-    private ArrayList<ABObject> getBigRoundObjects(Vision vision) {
+    private ArrayList<ABObject> getBigRoundObjects() {
         ArrayList<ABObject> result = new ArrayList<>();
         for (ABObject obj : vision.findBlocksRealShape()) {
             if (obj.shape == ABShape.Circle) {
@@ -246,80 +245,92 @@ public class ProblemState {
         return result;
     }
 
-    private ArrayList<ABObject> getScoredStructuralObjects(Vision vision) {
+    private double calculateDistanceToPig(ABObject object) {
+        // calculates distance to averagePig
+        double pigX = 0, pigY = 0, distanceToPigs;
+
+        double pigCount = (double) vision.findPigsMBR().size();
+        for (ABObject pig : vision.findPigsMBR()) {
+            pigX += pig.getCenterX();
+            pigY += pig.getCenterY();
+        }
+        pigX = pigX / pigCount;
+        pigY = pigY / pigCount;
+
+        return Math.sqrt(Math.pow((Math.abs(object.getCenterX() - pigX)), 2) + Math.pow((Math.abs(object.getCenterY() - pigY)), 2));
+
+    }
+
+    private ArrayList<ABObject> getScoredStructuralObjects() {
         ArrayList<ABObject> result = new ArrayList<>();
 
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
+
+        //sorted descending after Y coordinates, so first object to iterate over is the highest one
         Collections.sort(blocksRealShapeSorted);
 
-        for (ABObject obj : blocksRealShapeSorted) {
-            int objectsLeftCount = 0, objectsRightCount = 0;
-            Set<ABObject> aboveObjects = new HashSet<>();
+        double minObjectX, maxObjectX, minObjectY, maxObjectY;
+        int objectsLeftCount, objectsRightCount;
+        Set<ABObject> objectsAbove = new HashSet<>();
 
-            double oxmin, oxmax, oymin, oymax;
+        for (ABObject object : blocksRealShapeSorted) {
+            objectsLeftCount = 0;
+            objectsRightCount = 0;
 
-            oxmin = obj.x;
-            oxmax = obj.x + obj.width;
-            oymin = obj.y;
-            oymax = obj.y + obj.height;
+            minObjectX = object.x;
+            maxObjectX = object.x + object.width;
+            minObjectY = object.y;
+            maxObjectY = object.y + object.height;
+
+            double minNeighborX, maxNeighborX, minNeighborY, maxNeighborY;
+            boolean nearX, nearY;
             for (ABObject neighbor : vision.findBlocksMBR()) {
-                double nxmin, nxmax, nymin, nymax;
-                nxmin = neighbor.x;
-                nxmax = neighbor.x + neighbor.width;
-                nymin = neighbor.y;
-                nymax = neighbor.y + neighbor.height;
+                minNeighborX = neighbor.x;
+                maxNeighborX = neighbor.x + neighbor.width;
+                minNeighborY = neighbor.y;
+                maxNeighborY = neighbor.y + neighbor.height;
 
-                boolean nearX = false, nearY = false;
+                nearX = false;
+                nearY = false;
 
-                if ((oxmin >= nxmin - 10 && oxmin <= nxmax + 10) || (nxmin >= oxmin - 10 && nxmin <= oxmax + 10)) {
+                if ((minObjectX >= minNeighborX - 10 && minObjectX <= maxNeighborX + 10)
+                        || (minNeighborX >= minObjectX - 10 && minNeighborX <= maxObjectX + 10)) {
                     nearX = true;
                 }
 
-                if ((oymin >= nymin - 10 && oymin <= nymax + 10) || (nymin >= oymin - 10 && nymin <= oymax + 10)) {
+                if ((minObjectY >= minNeighborY - 10 && minObjectY <= maxNeighborY + 10)
+                        || (minNeighborY >= minObjectY - 10 && minNeighborY <= maxObjectY + 10)) {
                     nearY = true;
                 }
 
-                if (nearX && nymax <= oymin) {
-                    aboveObjects.addAll(neighbor.getObjectsAboveSet());
-                } else if (nearY && nxmax <= oxmin && oxmin - nxmax < 20) {
+                if (nearX && maxNeighborY <= minObjectY) {
+                    objectsAbove.addAll(neighbor.getObjectsAboveSet());
+                } else if (nearY && maxNeighborX <= minObjectX && minObjectX - maxNeighborX < 20) {
                     objectsLeftCount++;
-                } else if (nearY && nxmin >= oxmax && nxmin - oxmax < 20) {
+                } else if (nearY && minNeighborX >= maxObjectX && minNeighborX - maxObjectX < 20) {
                     objectsRightCount++;
                 }
             }
 
-            // calculates distance to averagePig
-            double pigX = 0, pigY = 0, distanceToPigs;
 
-            double pigCount = (double) vision.findPigsMBR().size();
-            for (ABObject pig : vision.findPigsMBR()) {
-                pigX += pig.getCenterX();
-                pigY += pig.getCenterY();
-            }
-            pigX = pigX / pigCount;
-            pigY = pigY / pigCount;
-
-            distanceToPigs = Math.sqrt(Math.pow((Math.abs(obj.getCenterX() - pigX)), 2) + Math.pow((Math.abs(obj.getCenterY() - pigY)), 2));
-
-            obj.setObjectsAboveSet(aboveObjects);
+            object.setObjectsAboveSet(objectsAbove);
 
 
             //List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(new Point(obj.x, obj.y), ABObject.TrajectoryType.HIGH);
             //objectsLeftCount = objectsOnTrajectory.size();
 
-            obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
-            result.add(obj);
+            object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, calculateDistanceToPig(object));
+            result.add(object);
         }
         return result;
     }
 
     private ArrayList<ABObject> calculateTargetObjects() {
-        Vision vision = GameState.getVision();
         ArrayList<ABObject> targetObjects = new ArrayList<>();
 
         targetObjects.addAll(vision.findTNTs());
-        targetObjects.addAll(getBigRoundObjects(vision));
-        targetObjects.addAll(getScoredStructuralObjects(vision));
+        targetObjects.addAll(getBigRoundObjects());
+        targetObjects.addAll(getScoredStructuralObjects());
         targetObjects.addAll(vision.findPigsRealShape());
         targetObjects.add(calculateBestMultiplePigShot(3));
 

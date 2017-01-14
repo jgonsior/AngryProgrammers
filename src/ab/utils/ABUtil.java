@@ -3,15 +3,10 @@ package ab.utils;
 import ab.demo.other.GameState;
 import ab.demo.other.Shot;
 import ab.vision.ABObject;
-import ab.vision.ABShape;
 import ab.vision.Vision;
-import ab.vision.VisionMBR;
-import ab.vision.real.shape.Circle;
-import ab.vision.real.shape.Poly;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,105 +71,6 @@ public class ABUtil {
         }
         return result;
     }
-
-    public static List<ABObject> getObjectsOnTrajectory(ABObject targetObject, ABObject.TrajectoryType trajectoryType) {
-        List<ABObject> objectsOnTrajectory = new ArrayList<>();
-
-        Point targetPoint = new Point(targetObject.x, targetObject.y);
-        Vision vision = GameState.getVision();
-        Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, trajectoryType);
-        //@todo include actual tap time
-
-        int traY = GameState.getTrajectoryPlanner().getYCoordinate(vision.findSlingshotMBR(), releasePoint, targetPoint.x);
-        if (Math.abs(traY - targetPoint.y) > 100) {
-            logger.info("Trajectory too low to hit anything.");
-            //System.out.println(Math.abs(traY - target.y));
-            return null;
-        }
-
-
-        List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getSlingshot(), releasePoint);
-
-        GameState.updateCurrentVision();
-
-        for (Point trajectoryPoint : trajectoryPoints) {
-            if (trajectoryPoint.x < 840 && trajectoryPoint.y < 480 && trajectoryPoint.y > 100 && trajectoryPoint.x > 400) {
-                for (ABObject possibleObject : vision.findBlocksMBR()) {
-                    VisionMBR visionMBR = vision.getMBRVision();
-
-                    //check if point is reachable
-                    if (intersects(possibleObject, targetObject, 3)
-                            || (((targetObject.contains(trajectoryPoint) && !targetObject.contains(trajectoryPoint))
-                            || Math.abs(vision.getMBRVision()._scene[trajectoryPoint.y][trajectoryPoint.x] - 72) < 10) && trajectoryPoint.x < trajectoryPoint.x))
-                    //possibleObject.contains(trajectoryPoint)
-                    //       && !possibleObject.contains(targetPoint))
-                    //|| Math.abs(vision.getMBRVision()._scene[trajectoryPoint.y][trajectoryPoint.x] - 72) < 10)
-                    // )&& trajectoryPoint.x < targetPoint.x)
-                    {
-                        objectsOnTrajectory.add(possibleObject);
-                    }
-                }
-            }
-        }
-
-        BufferedImage canvas = GameState.getScreenshot();
-        GameState.getTrajectoryPlanner().plotTrajectory(canvas, GameState.getSlingshot(), releasePoint);
-        ScreenshotUtil.saveScreenshot(canvas, targetObject + "trajectory" + objectsOnTrajectory);
-
-        return objectsOnTrajectory;
-    }
-
-
-    private static boolean intersects(ABObject birdAB, ABObject target, int minPixelOverlap) {
-        Circle circle = (Circle) birdAB;
-        int circleDistance_x = Math.abs(circle.x - target.x);
-        int circleDistance_y = Math.abs(circle.y - target.y);
-
-        if (target.shape == ABShape.Circle) {
-            Circle circle2 = (Circle) target;
-            if ((circleDistance_x - circle.r - circle2.r - minPixelOverlap <= 0) && (circleDistance_y - circle.r - circle2.r - minPixelOverlap <= 0)) {
-                return true;
-            } else {
-                return false;
-            }
-
-        } else if (target.shape == ABShape.Poly) {
-            // pseudo check for some points from bird
-            Polygon polygon = ((Poly) target).polygon;
-            if (polygon.contains(new Point((int) (circle.x + circle.r), (int) circle.y))) {
-                return true;
-            } else if (polygon.contains(new Point((int) circle.x, (int) (circle.y + circle.r)))) {
-                return true;
-            } else {
-                return false;
-            }
-
-        } else {
-            //Rect
-            ABObject rect = target;
-            if (circleDistance_x + minPixelOverlap > (rect.width / 2 + circle.r)) {
-                return false;
-            }
-            if (circleDistance_y + minPixelOverlap > (rect.height / 2 + circle.r)) {
-                return false;
-            }
-
-            if (circleDistance_x + minPixelOverlap <= (rect.width / 2)) {
-                return true;
-            }
-            if (circleDistance_y + minPixelOverlap <= (rect.height / 2)) {
-                return true;
-            }
-
-            int cornerDistance_sq = (circleDistance_x - rect.width / 2) ^ 2 +
-                    (circleDistance_y - rect.height / 2) ^ 2;
-
-            return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r, 2)));
-
-        }
-    }
-
-
 
     public static Point calculateReleasePoint(Point targetPoint, ABObject.TrajectoryType trajectoryType) {
         Point releasePoint = null;
