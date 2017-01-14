@@ -33,7 +33,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
         int counter = 0;
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
             //@todo get target Objects!
-            for (ABObject object : problemState.getShootableObjects()) {
+            for (ABObject object : problemState.getTargetObjects()) {
                 qValuesDAO.insertNewAction(0, problemState.getId(), counter, object.getTrajectoryType().name(), object.toString());
                 counter += 1;
             }

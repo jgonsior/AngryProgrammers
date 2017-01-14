@@ -15,8 +15,7 @@ import java.util.List;
  * @author jgonsior
  */
 public class ProblemState {
-    public ArrayList<ABObject> shootableObjects;
-    public ArrayList<ABObject> targetObjects;
+    private ArrayList<ABObject> targetObjects;
     private List<ABObject> allObjects;
     private int id;
 
@@ -34,11 +33,13 @@ public class ProblemState {
             allObjects.addAll(vision.findHills());
             allObjects.addAll(vision.findTNTs());
 
-            shootableObjects = calculateShootableObjects();
             targetObjects = calculateTargetObjects();
         }
     }
 
+    public ArrayList<ABObject> getTargetObjects() {
+        return targetObjects;
+    }
 
     private ABObject getCurrentBird() {
         ArrayList<ABObject> birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
@@ -188,10 +189,10 @@ public class ProblemState {
                 return false;
             }
 
-        } else if (target.shape == ABShape.Poly){
+        } else if (target.shape == ABShape.Poly) {
             // pseudo check for some points from bird
             Polygon polygon = ((Poly) target).polygon;
-            if (polygon.contains(new Point((int)(circle.x+circle.r), (int)circle.y))){
+            if (polygon.contains(new Point((int) (circle.x + circle.r), (int) circle.y))) {
                 return true;
             } else if (polygon.contains(new Point((int) circle.x, (int) (circle.y + circle.r)))) {
                 return true;
@@ -230,27 +231,27 @@ public class ProblemState {
 
     }
 
-
-    private ArrayList<ABObject> calculateTargetObjects() {
-        Vision vision = GameState.getVision();
-        // 1. TNTs
-        ArrayList<ABObject> targetObjects = new ArrayList<>(vision.findTNTs());
-        // 2. big round objects
+    private ArrayList<ABObject> getBigRoundObjects(Vision vision) {
+        ArrayList<ABObject> result = new ArrayList<>();
         for (ABObject obj : vision.findBlocksRealShape()) {
             if (obj.shape == ABShape.Circle) {
                 Circle objC = (Circle) obj;
                 // have to see if 9000 is too big
                 if (objC.r > 9000) {
                     System.out.println("-" + obj.toString());
-                    targetObjects.add(obj);
+                    result.add(obj);
                 }
             }
         }
+        return result;
+    }
+
+    private ArrayList<ABObject> getScoredStructuralObjects(Vision vision) {
+        ArrayList<ABObject> result = new ArrayList<>();
 
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
         Collections.sort(blocksRealShapeSorted);
 
-        // 3. structural objects with their "scores"
         for (ABObject obj : blocksRealShapeSorted) {
             int objectsLeftCount = 0, objectsRightCount = 0;
             Set<ABObject> aboveObjects = new HashSet<>();
@@ -307,13 +308,19 @@ public class ProblemState {
             //objectsLeftCount = objectsOnTrajectory.size();
 
             obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
-            targetObjects.add(obj);
+            result.add(obj);
         }
+        return result;
+    }
 
-        // 4. pigs
+    private ArrayList<ABObject> calculateTargetObjects() {
+        Vision vision = GameState.getVision();
+        ArrayList<ABObject> targetObjects = new ArrayList<>();
+
+        targetObjects.addAll(vision.findTNTs());
+        targetObjects.addAll(getBigRoundObjects(vision));
+        targetObjects.addAll(getScoredStructuralObjects(vision));
         targetObjects.addAll(vision.findPigsRealShape());
-
-        //5. best pigShot
         targetObjects.add(calculateBestMultiplePigShot(3));
 
         return targetObjects;
@@ -336,47 +343,6 @@ public class ProblemState {
         return string;
     }
 
-    /**
-     * returns an approximation of shootableObjects objects
-     *
-     * @return list of approximation of shootableObjects objects
-     */
-    private ArrayList<ABObject> calculateShootableObjects() {
-        Vision vision = GameState.getVision();
-        List<ABObject> lowShootableObjects = new ArrayList<>(vision.findBlocksRealShape());
-        lowShootableObjects.addAll(vision.findHills());
-        lowShootableObjects.addAll(vision.findPigsRealShape());
-        lowShootableObjects.addAll(vision.findTNTs());
-
-        // check for every object if is blocked by a neighbour
-        for (ABObject object : allObjects) {
-            double x_object = object.getCenterX();
-            double y_object = object.getCenterY();
-            innerloop:
-            for (ABObject neighbor : allObjects) {
-                if (!object.equals(neighbor)) {
-                    double x_neighbor = neighbor.getCenterX();
-                    double y_neighbor = neighbor.getCenterY();
-                    if ((x_neighbor < x_object) && (y_neighbor < y_object)) {
-                        if (((x_object - x_neighbor) < 20) && ((y_object - y_neighbor) < 20)) {
-                            lowShootableObjects.remove(object);
-                            break innerloop;
-                        }
-                    }
-                }
-            }
-        }
-
-        ArrayList<ABObject> shootableObjects = new ArrayList<>(lowShootableObjects);
-        for (ABObject lowShootableObject : lowShootableObjects) {
-            ABObject highShootableObject = (ABObject) lowShootableObject.clone();
-            highShootableObject.setTrajectoryType(ABObject.TrajectoryType.HIGH);
-            shootableObjects.add(highShootableObject);
-        }
-
-        return shootableObjects;
-    }
-
     public ArrayList<Action> getActions() {
         ArrayList<Action> actions = new ArrayList<>();
         int i = 0;
@@ -387,10 +353,6 @@ public class ProblemState {
             i++;
         }
         return actions;
-    }
-
-    public ArrayList<ABObject> getShootableObjects() {
-        return shootableObjects;
     }
 
     public List<ABObject> getAllObjects() {
