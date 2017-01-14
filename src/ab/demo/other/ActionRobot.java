@@ -125,7 +125,7 @@ public class ActionRobot {
 
         logger.info("Wait 2000 after fully zooming out");
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -138,7 +138,7 @@ public class ActionRobot {
 
         logger.info("Wait 2000 after fully zooming in");
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
