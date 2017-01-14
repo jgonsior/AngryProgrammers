@@ -9,6 +9,7 @@
 package ab.vision;
 
 import java.awt.*;
+import ab.vision.ABShape;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public int objectsLeftCount = -1;
     public int objectsRightCount = -1;
     public double distanceToPigs = -1;
+    public double totalScore = -1;
+    public int safePigsOnTrajectory = 0;
+    public int possiblePigsOnTrajectory = 0;
+    public int movedX = -1;
+    public int movedY = -1;
     private TrajectoryType trajectoryType = TrajectoryType.LOW;
     private Set<ABObject> objectsAboveSet;
 
@@ -81,6 +87,29 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.objectsLeftCount = objectsLeftCount;
         this.objectsRightCount = objectsRightCount;
         this.distanceToPigs = distanceToPigs;
+        //todo: maybe rethink this values
+        int orientationOffset = 3;
+        if (this.shape == ABShape.Rect && this.width != this.height){
+            // get orientation if its not quadratic
+            if (this.angle > 45 && this.angle < 135){
+                // vertical
+                if (trajectoryType != TrajectoryType.LOW){
+                    orientationOffset = -3;
+                }
+            } else {
+                // horizontal
+                if (trajectoryType == TrajectoryType.LOW){
+                    orientationOffset = -3;
+                }
+            }
+        }
+        this.totalScore = objectsAboveCount - objectsLeftCount + objectsRightCount/2 + (100 - distanceToPigs)/10 + orientationOffset;
+    }
+
+    public void setPigsOnTraj(int safePigsOnTrajectory, int possiblePigsOnTrajectory){
+        // if its a virtual target for multiple pig shot we set this parameters
+        this.safePigsOnTrajectory = safePigsOnTrajectory;
+        this.possiblePigsOnTrajectory = possiblePigsOnTrajectory;
     }
 
     public String toString() {
@@ -88,7 +117,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs) + " | " + this.toString() + " " + this.getTrajectoryType().name();
+        return String.format("%03d %03d %03d %06f %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs, totalScore) + " | " + this.toString() + " " + this.getTrajectoryType().name();
     }
 
     public TrajectoryType getTrajectoryType() {
@@ -108,8 +137,8 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public void setCoordinates(int x, int y) {
-        this.x = x;
-        this.y = y;
+        this.movedX = x;
+        this.movedY = y;
     }
 
     @Override
