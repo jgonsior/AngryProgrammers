@@ -9,7 +9,6 @@
 package ab.vision;
 
 import java.awt.*;
-import ab.vision.ABShape;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -89,24 +88,24 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.distanceToPigs = distanceToPigs;
         //todo: maybe rethink this values
         int orientationOffset = 3;
-        if (this.shape == ABShape.Rect && this.width != this.height){
+        if (this.shape == ABShape.Rect && this.width != this.height) {
             // get orientation if its not quadratic
-            if (this.angle > 45 && this.angle < 135){
+            if (this.angle > 45 && this.angle < 135) {
                 // vertical
-                if (trajectoryType != TrajectoryType.LOW){
+                if (trajectoryType != TrajectoryType.LOW) {
                     orientationOffset = -3;
                 }
             } else {
                 // horizontal
-                if (trajectoryType == TrajectoryType.LOW){
+                if (trajectoryType == TrajectoryType.LOW) {
                     orientationOffset = -3;
                 }
             }
         }
-        this.totalScore = objectsAboveCount - objectsLeftCount + objectsRightCount/2 + (100 - distanceToPigs)/10 + orientationOffset;
+        this.totalScore = objectsAboveCount - objectsLeftCount + objectsRightCount / 2 + (100 - distanceToPigs) / 10 + orientationOffset;
     }
 
-    public void setPigsOnTraj(int safePigsOnTrajectory, int possiblePigsOnTrajectory){
+    public void setPigsOnTraj(int safePigsOnTrajectory, int possiblePigsOnTrajectory) {
         // if its a virtual target for multiple pig shot we set this parameters
         this.safePigsOnTrajectory = safePigsOnTrajectory;
         this.possiblePigsOnTrajectory = possiblePigsOnTrajectory;

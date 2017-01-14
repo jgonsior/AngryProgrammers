@@ -1,7 +1,6 @@
 package ab.demo.other;
 
 import ab.planner.TrajectoryPlanner;
-import ab.utils.ABUtil;
 import ab.vision.*;
 import ab.vision.real.shape.Circle;
 import ab.vision.real.shape.Poly;
@@ -54,7 +53,7 @@ public class ProblemState {
         return currentBird;
     }
 
-    private List<ABObject> getObjectsOnTrajectory(List<Point> predictedTrajectory, Circle currentBird, VisionMBR mbrVision, Point target, int minPixelOverlap, List<ABObject> birds ){
+    private List<ABObject> getObjectsOnTrajectory(List<Point> predictedTrajectory, Circle currentBird, VisionMBR mbrVision, Point target, int minPixelOverlap, List<ABObject> birds) {
         ArrayList<ABObject> objsOnTraj = new ArrayList<>();
         TrajectoryPlanner tp = new TrajectoryPlanner();
 
@@ -64,7 +63,7 @@ public class ProblemState {
                     if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), obj, minPixelOverlap, target, mbrVision)) {
 
                         // set coordinates so we can see the point where we hit the object, ignore birds
-                        if (!birds.contains(obj)){
+                        if (!birds.contains(obj)) {
                             ABObject modifiedCoord = obj;
                             modifiedCoord.setCoordinates(p.x, p.y);
                             objsOnTraj.add(modifiedCoord);
@@ -78,7 +77,7 @@ public class ProblemState {
         return objsOnTraj;
     }
 
-    private List<Point> generatePointsAroundTargets(List<ABObject> targets, int birdRadius, int minPixelOverlap){
+    private List<Point> generatePointsAroundTargets(List<ABObject> targets, int birdRadius, int minPixelOverlap) {
         ArrayList<Point> possibleTargetPoints = new ArrayList<>();
         for (ABObject target : targets) {
             int targetRadius = (int) ((Circle) target).r;
@@ -139,19 +138,19 @@ public class ProblemState {
                 // now check which pigs would be hitten behind 1st object
                 // get MinX Value and remove all pigs behind this x
 
-                for (ABObject obj : allObjsOnTraj){
-                    if (obj.getType() == ABType.Pig){
+                for (ABObject obj : allObjsOnTraj) {
+                    if (obj.getType() == ABType.Pig) {
                         pigsOnTraj.add(obj);
                     } else {
                         objsOnTraj.add(obj);
-                        if (obj.movedX < minX){
+                        if (obj.movedX < minX) {
                             minX = obj.movedX;
                         }
                     }
                 }
 
                 for (ABObject pig : pigsOnTraj) {
-                    if (pig.x <= minX){
+                    if (pig.x <= minX) {
                         correctedPigs.add(pig);
                     }
                 }
@@ -162,8 +161,8 @@ public class ProblemState {
                     maxAmountOfPigsOnTraj = pigsOnTraj.size();
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
-                    System.out.println(bestShot + " : "+ minX+" - " +  allObjsOnTraj);
-                    System.out.println(pigsOnTraj +  " : " + objsOnTraj + " : " + correctedPigs);
+                    System.out.println(bestShot + " : " + minX + " - " + allObjsOnTraj);
+                    System.out.println(pigsOnTraj + " : " + objsOnTraj + " : " + correctedPigs);
 
                 }
             }
@@ -194,7 +193,7 @@ public class ProblemState {
             Polygon polygon = ((Poly) target).polygon;
             if (polygon.contains(new Point((int)(circle.x+circle.r), (int)circle.y))){
                 return true;
-            } else if (polygon.contains(new Point((int)circle.x, (int)(circle.y+circle.r)))){
+            } else if (polygon.contains(new Point((int) circle.x, (int) (circle.y + circle.r)))) {
                 return true;
             } else {
                 return false;
