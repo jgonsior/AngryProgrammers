@@ -177,7 +177,7 @@ public class ProblemState {
             Polygon polygon = ((Poly) target).polygon;
             if (polygon.contains(new Point((int)(circle.x+circle.r), (int)circle.y))){
                 return true;
-            } else if (polygon.contains(new Point((int)circle.x, (int)(circle.y+circle.r)))){
+            } else if (polygon.contains(new Point(circle.x, (int) (circle.y + circle.r)))) {
                 return true;
             } else {
                 return false;
@@ -282,7 +282,7 @@ public class ProblemState {
             obj.setObjectsAboveSet(aboveObjects);
 
 
-            List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(new Point(obj.x, obj.y), ABObject.TrajectoryType.HIGH);
+            List<ABObject> objectsOnTrajectory = ABUtil.getObjectsOnTrajectory(obj, ABObject.TrajectoryType.HIGH);
             objectsLeftCount = objectsOnTrajectory.size();
 
             obj.setObjectsAround(obj.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, distanceToPigs);
