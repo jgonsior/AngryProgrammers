@@ -62,13 +62,15 @@ public class ProblemState {
         for (ABObject object : allObjects) {
             for (Point p : predictedTrajectory) {
                 if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
+                    //create new circle object with the size of the currentBird we're going to shoot with and
+                    //compute if that new circle object intersects with the object
                     if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), object, minPixelOverlap)) {
-
-                        // set coordinates so we can see the point where we hit the object, ignore birds
+                        //set coordinates of object on trajectory to the coordinates of the trajectory point, but only
+                        //if it isn't a bird object
+                        //why?!
                         if (!birds.contains(object)) {
-                            ABObject objectWithModifiedCoordinates = object;
-                            objectWithModifiedCoordinates.setCoordinates(p.x, p.y);
-                            objectsOnTrajectory.add(objectWithModifiedCoordinates);
+                            object.setCoordinates(p.x, p.y);
+                            objectsOnTrajectory.add(object);
                         }
                         // object intersects so dont need to check rest of points
                         break;
@@ -137,7 +139,7 @@ public class ProblemState {
                 int minX = 10000;
 
                 // now we know which objects intersect with the trajectory,
-                // now check which pigs would be hitten behind 1st object
+                // now check which pigs would be hit behind 1st object
                 // get MinX Value and remove all pigs behind this x
 
                 for (ABObject obj : allObjsOnTraj) {
@@ -178,6 +180,14 @@ public class ProblemState {
         return pseudoObject;
     }
 
+    /**
+     * Checks if Circle object intersects with min PixelOverlap the target object
+     *
+     * @param circle
+     * @param target
+     * @param minPixelOverlap
+     * @return
+     */
     private boolean intersects(Circle circle, ABObject target, int minPixelOverlap) {
         int circleDistance_x = Math.abs(circle.x - target.x);
         int circleDistance_y = Math.abs(circle.y - target.y);
@@ -194,9 +204,9 @@ public class ProblemState {
             // pseudo check for some points from bird
             Polygon polygon = ((Poly) target).polygon;
 
-            if (polygon.contains(new Point((int) (circle.x + circle.r), (int) circle.y))) {
+            if (polygon.contains(new Point((int) (circle.x + circle.r), circle.y))) {
                 return true;
-            } else if (polygon.contains(new Point((int) circle.x, (int) (circle.y + circle.r)))) {
+            } else if (polygon.contains(new Point(circle.x, (int) (circle.y + circle.r)))) {
                 return true;
             } else {
                 return false;
@@ -226,7 +236,11 @@ public class ProblemState {
             int cornerDistance_sq = (circleDistance_x - rect.width / 2) ^ 2 +
                     (circleDistance_y - rect.height / 2) ^ 2;
 
-            return (cornerDistance_sq + minPixelOverlap <= (Math.pow(circle.r, 2)));
+            if (((cornerDistance_sq + minPixelOverlap) <= (Math.pow(circle.r, 2)))) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 
