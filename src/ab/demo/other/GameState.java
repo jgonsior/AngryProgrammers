@@ -7,7 +7,6 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
@@ -18,6 +17,15 @@ public class GameState {
     protected static final Logger logger = Logger.getLogger(GameState.class);
 
     private static int currentLevel;
+    private static BufferedImage screenshot;
+    private static ProblemState problemState;
+    private static GameStateExtractor.GameStateEnum gameStateEnum;
+    private static int moveCounter;
+    private static int gameId;
+    private static double reward;
+    private static Action nextAction;
+    private static TrajectoryPlanner trajectoryPlanner = new TrajectoryPlanner();
+    private static Vision vision;
 
     public static int getCurrentLevel() {
         return currentLevel;
@@ -27,16 +35,6 @@ public class GameState {
         GameState.currentLevel = currentLevel;
     }
 
-    private static BufferedImage screenshot;
-    private static ProblemState problemState;
-    private static GameStateExtractor.GameStateEnum gameStateEnum;
-    private static int moveCounter;
-    private static int gameId;
-    private static Rectangle slingshot;
-    private static double reward;
-    private static Action nextAction;
-    private static TrajectoryPlanner trajectoryPlanner = new TrajectoryPlanner();
-    private static Vision vision;
     public static Vision getVision() {
         return vision;
     }
@@ -52,14 +50,6 @@ public class GameState {
     public static void initNewGameState(int currentLevel, GamesDAO gamesDAO, double explorationRate, double learningRate, double discountFactor) {
         gameId = gamesDAO.save(currentLevel, Proxy.getProxyPort(), explorationRate, learningRate, discountFactor);
         moveCounter = 0;
-    }
-
-    public static Rectangle getSlingshot() {
-        return slingshot;
-    }
-
-    public static void setSlingshot(Rectangle slingshot) {
-        GameState.slingshot = slingshot;
     }
 
     public static BufferedImage getScreenshot() {

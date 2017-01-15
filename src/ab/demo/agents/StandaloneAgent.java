@@ -60,7 +60,7 @@ public abstract class StandaloneAgent implements Runnable {
      * @return
      */
     protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
-        double releaseAngle = GameState.getTrajectoryPlanner().getReleaseAngle(GameState.getSlingshot(),
+        double releaseAngle = GameState.getTrajectoryPlanner().getReleaseAngle(GameState.getProblemState().getSlingshot(),
                 releasePoint);
         logger.info("Release Point: " + releasePoint);
         logger.info("Release Angle: "
@@ -87,7 +87,7 @@ public abstract class StandaloneAgent implements Runnable {
                 tappingInterval = 60;
         }
 
-        return GameState.getTrajectoryPlanner().getTapTime(GameState.getSlingshot(), releasePoint, targetPoint, tappingInterval);
+        return GameState.getTrajectoryPlanner().getTapTime(GameState.getProblemState().getSlingshot(), releasePoint, targetPoint, tappingInterval);
     }
 
 
@@ -115,11 +115,10 @@ public abstract class StandaloneAgent implements Runnable {
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
                 GameState.updateCurrentVision();
-                GameState.setSlingshot(this.findSlingshot());
 
                 int problemStateId = problemStatesDAO.insertId();
 
-                GameState.setProblemState(new ProblemState(actionRobot, problemStateId));
+                GameState.setProblemState(new ProblemState(problemStateId));
 
                 previousProblemState = GameState.getProblemState();
 
@@ -159,7 +158,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                     //save the information about the current zooming for the next shot
                     List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
-                    GameState.getTrajectoryPlanner().adjustTrajectory(trajectoryPoints, GameState.getSlingshot(), releasePoint);
+                    GameState.getTrajectoryPlanner().adjustTrajectory(trajectoryPoints, GameState.getProblemState().getSlingshot(), releasePoint);
 
                     checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
 
@@ -421,20 +420,6 @@ public abstract class StandaloneAgent implements Runnable {
 
     }
 
-    protected Rectangle findSlingshot() {
-        Vision vision = GameState.getVision();
-        Rectangle _slingshot = vision.findSlingshotMBR();
-
-        // confirm the slingshot
-        while (_slingshot == null && actionRobot.getState() == GameStateExtractor.GameStateEnum.PLAYING) {
-            logger.warn("No slingshot detected. Please remove pop up or zoom out");
-            ActionRobot.fullyZoomOut();
-            GameState.updateCurrentVision();
-            _slingshot = vision.findSlingshotMBR();
-            ActionRobot.skipPopUp();
-        }
-        return _slingshot;
-    }
 
     /**
      * returns reward as highscore difference
@@ -455,12 +440,12 @@ public abstract class StandaloneAgent implements Runnable {
      */
     protected Point shootOneBird(Action action) {
         Point targetPoint = action.getTargetPoint();
-        Rectangle slingshot = GameState.getSlingshot();
+        Rectangle slingshot = GameState.getProblemState().getSlingshot();
 
         //ABObject pig = vision.findPigsMBR().get(0);
         //targetPoint = pig.getCenter();
 
-        Point releasePoint = ABUtil.calculateReleasePoint(targetPoint, action.getTrajectoryType());
+        Point releasePoint = GameState.getProblemState().calculateReleasePoint(targetPoint, action.getTrajectoryType());
         Shot shot = ABUtil.generateShot(this.calculateTappingTime(releasePoint, targetPoint), releasePoint);
 
         // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.

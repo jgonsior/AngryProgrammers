@@ -7,7 +7,6 @@ import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,7 +57,7 @@ public class ABUtil {
             return false;
         }
         boolean result = true;
-        List<Point> points = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getSlingshot(), releasePoint);
+        List<Point> points = GameState.getTrajectoryPlanner().predictTrajectory(GameState.getProblemState().getSlingshot(), releasePoint);
         for (Point point : points) {
             if (point.x < 840 && point.y < 480 && point.y > 100 && point.x > 400) {
                 for (ABObject ab : vision.findBlocksMBR()) {
@@ -72,37 +71,14 @@ public class ABUtil {
         return result;
     }
 
-    public static Point calculateReleasePoint(Point targetPoint, ABObject.TrajectoryType trajectoryType) {
-        Point releasePoint = null;
-        // estimate the trajectory
-        ArrayList<Point> estimateLaunchPoints = GameState.getTrajectoryPlanner().estimateLaunchPoint(GameState.getSlingshot(), targetPoint);
 
-        // do a high shot when entering a level to find an accurate velocity
-        if (estimateLaunchPoints.size() == 1) {
-            if (trajectoryType != ABObject.TrajectoryType.LOW) {
-                logger.error("Somehow there was only one launch point found and therefore we can only do a LOW shot, eventhough a HIGH shot was being requested.");
-            }
-            releasePoint = estimateLaunchPoints.get(0);
-        } else if (estimateLaunchPoints.size() == 2) {
-            if (trajectoryType == ABObject.TrajectoryType.HIGH) {
-                releasePoint = estimateLaunchPoints.get(1);
-            } else if (trajectoryType == ABObject.TrajectoryType.LOW) {
-                releasePoint = estimateLaunchPoints.get(0);
-            }
-        } else if (estimateLaunchPoints.isEmpty()) {
-            logger.info("No release point found for the target");
-            logger.info("Try a shot with 45 degree");
-            releasePoint = GameState.getTrajectoryPlanner().findReleasePoint(GameState.getSlingshot(), Math.PI / 4);
-        }
-        return releasePoint;
-    }
 
     public static Shot generateShot(int tappingTime, Point releasePoint) {
         if (releasePoint == null) {
             logger.error("No release point found -,-");
         }
 
-        Point referencePoint = GameState.getTrajectoryPlanner().getReferencePoint(GameState.getSlingshot());
+        Point referencePoint = GameState.getTrajectoryPlanner().getReferencePoint(GameState.getProblemState().getSlingshot());
 
         int dx = (int) releasePoint.getX() - referencePoint.x;
         int dy = (int) releasePoint.getY() - referencePoint.y;
