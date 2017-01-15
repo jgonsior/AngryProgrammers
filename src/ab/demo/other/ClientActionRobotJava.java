@@ -11,7 +11,8 @@ package ab.demo.other;
 
 import ab.vision.ABObject;
 import ab.vision.ABType;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor;
+import ab.vision.GameStateExtractor.GameStateEnum;
 import ab.vision.Vision;
 import external.ClientMessageEncoder;
 
@@ -29,9 +30,9 @@ public class ClientActionRobotJava extends ClientActionRobot {
     }
 
     //return game state as enum format
-    public GameState checkState() {
+    public GameStateEnum checkState() {
         byte result = super.getState();
-        GameState state = GameState.values()[result];
+        GameStateEnum state = GameStateExtractor.GameStateEnum.values()[result];
         return state;
 
     }

@@ -80,8 +80,8 @@ public class ShowSeg implements Runnable {
     public static BufferedImage drawRealshape(BufferedImage screenshot) {
         // get game state
         GameStateExtractor game = new GameStateExtractor();
-        GameStateExtractor.GameState state = game.getGameState(screenshot);
-        if (state != GameStateExtractor.GameState.PLAYING) {
+        GameStateExtractor.GameStateEnum state = game.getGameState(screenshot);
+        if (state != GameStateExtractor.GameStateEnum.PLAYING) {
             screenshot = VisionUtils.convert2grey(screenshot);
             return screenshot;
         }
@@ -107,8 +107,8 @@ public class ShowSeg implements Runnable {
 
         // get game state
         GameStateExtractor game = new GameStateExtractor();
-        GameStateExtractor.GameState state = game.getGameState(screenshot);
-        if (state != GameStateExtractor.GameState.PLAYING) {
+        GameStateExtractor.GameStateEnum state = game.getGameState(screenshot);
+        if (state != GameStateExtractor.GameStateEnum.PLAYING) {
             screenshot = VisionUtils.convert2grey(screenshot);
             return screenshot;
         }
@@ -261,7 +261,7 @@ public class ShowSeg implements Runnable {
 
         frame.close();
     }
-    //add for LoadLevel Agent
+    //add for LoadLevel StandaloneAgent
 
     @Override
     public void run() {

@@ -12,7 +12,8 @@ import ab.server.Proxy;
 import ab.server.proxy.message.ProxyClickMessage;
 import ab.server.proxy.message.ProxyMouseWheelMessage;
 import ab.utils.StateUtil;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor;
+import ab.vision.GameStateExtractor.GameStateEnum;
 import org.apache.log4j.Logger;
 
 /**
@@ -41,9 +42,9 @@ public class LoadLevelSchema {
         //System.out.println(StateUtil.checkCurrentState(proxy));
         loadLevel(StateUtil.getGameState(proxy), i);
 
-        GameState state = StateUtil.getGameState(proxy);
+        GameStateExtractor.GameStateEnum state = StateUtil.getGameState(proxy);
 
-        while (state != GameState.PLAYING) {
+        while (state != GameStateExtractor.GameStateEnum.PLAYING) {
             logger.info(" In state:   " + state + " Try reloading...");
             loadLevel(state, i);
             logger.info("Wait for 12000 for loading any level");
@@ -60,16 +61,16 @@ public class LoadLevelSchema {
         return true;
     }
 
-    private boolean loadLevel(GameState state, int i) {
+    private boolean loadLevel(GameStateExtractor.GameStateEnum state, int i) {
         // if still at main menu or episode menu, skip it.
         ActionRobot.GoFromMainMenuToLevelSelection();
 
 
-        if (state == GameState.WON || state == GameState.LOST) {
+        if (state == GameStateExtractor.GameStateEnum.WON || state == GameStateExtractor.GameStateEnum.LOST) {
 
-		/*if(state == GameState.WON && i >= current + 1)
+		/*if(state == GameStateEnum.WON && i >= current + 1)
               proxy.send(new ProxyClickMessage(500,375)); // go to the next level
-*/	/*if(state == GameState.WON)*/
+*/	/*if(state == GameStateEnum.WON)*/
             {
 
                 proxy.send(new ProxyClickMessage(342, 382));//Click the left most button at the end page
@@ -104,7 +105,7 @@ public class LoadLevelSchema {
             if (i == 1)
                 //skip the animation, the animation does not appear in the SD mode.
                 proxy.send(new ProxyClickMessage(1176, 704));
-        } else if (state == GameState.PLAYING) {
+        } else if (state == GameStateEnum.PLAYING) {
             proxy.send(new ProxyClickMessage(48, 44));//Click the left most button, pause
 
             logger.info("Wait for 1000 for loading level " + i + "after clicking the left most button");
@@ -160,9 +161,9 @@ public class LoadLevelSchema {
         }
 
         //Wait 9000 seconds for loading the level
-        GameState _state = StateUtil.getGameState(proxy);
+        GameStateExtractor.GameStateEnum _state = StateUtil.getGameState(proxy);
         int count = 0; // at most wait 10 seconds
-        while (_state != GameState.PLAYING && count < 3) {
+        while (_state != GameStateExtractor.GameStateEnum.PLAYING && count < 3) {
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e1) {
@@ -174,7 +175,7 @@ public class LoadLevelSchema {
 
         }
 
-        if (_state == GameState.PLAYING) {
+        if (_state == GameStateExtractor.GameStateEnum.PLAYING) {
 
 
             for (int k = 0; k < 15; k++) {

@@ -10,7 +10,9 @@ package ab.vision;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Vision {
     private BufferedImage image;
@@ -27,6 +29,21 @@ public class Vision {
         }
         return visionMBR.findBirds();
 
+    }
+
+    /**
+     * returns List of current birds and blocks
+     *
+     * @return List of current birds and blocks
+     */
+    public Set<Object> getBlocksAndPigs(boolean trajectoryPoints) {
+        Set<Object> allObjs = new HashSet<>();
+        allObjs.addAll(this.findPigsMBR());
+        allObjs.addAll(this.findBlocksMBR());
+        if (trajectoryPoints) {
+            allObjs.addAll(this.findTrajPoints());
+        }
+        return allObjs;
     }
 
     /**

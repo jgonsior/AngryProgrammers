@@ -542,10 +542,10 @@ public class VisionUtils {
 
         // get game state
         GameStateExtractor game = new GameStateExtractor();
-        GameStateExtractor.GameState state = game.getGameState(screenshot);
+        GameStateExtractor.GameStateEnum state = game.getGameState(screenshot);
         //	System.out.println(state.toString());
 
-        if (state != GameStateExtractor.GameState.PLAYING) {
+        if (state != GameStateExtractor.GameStateEnum.PLAYING) {
             //System.out.println("End game score : " + game.getScoreEndGame(screenshot));
             screenshot = VisionUtils.convert2grey(screenshot);
             return screenshot;

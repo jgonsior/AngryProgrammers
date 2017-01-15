@@ -9,8 +9,10 @@
 package ab.vision;
 
 import java.awt.*;
+import java.util.HashSet;
+import java.util.Set;
 
-public class ABObject extends Rectangle {
+public class ABObject extends Rectangle implements Comparable<ABObject> {
 
     private static final long serialVersionUID = 1L;
     private static int counter = 0;
@@ -24,57 +26,84 @@ public class ABObject extends Rectangle {
     public double angle = 0;
     //is Hollow or not
     public boolean hollow = false;
-    private TrajectoryType trajectoryType = TrajectoryType.LOW;
-    public int objectsAbove;
-    public int objectsLeft;
-    public int objectsRight;
-    public double pigDistance;
+    public int objectsAboveCount = 0;
+    public int objectsLeftCount = -1;
+    public int objectsRightCount = -1;
+
+    public double distanceToPigs = -1;
+
+    public int safePigsOnTrajectory = 0;
+
+    public int possiblePigsOnTrajectory = 0;
+
+    public int movedX = -1;
+    public int movedY = -1;
+
+
+    private Set<ABObject> objectsAboveSet;
 
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = type;
         this.id = counter++;
     }
 
     public ABObject(Rectangle mbr, ABType type, int id) {
         super(mbr);
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = type;
         this.id = id;
     }
 
     public ABObject(ABObject ab) {
         super(ab.getBounds());
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.type = ab.type;
         this.id = ab.id;
     }
 
-
     public ABObject() {
+        objectsAboveSet = new HashSet<>();
+        objectsAboveSet.add(this);
         this.id = counter++;
         this.type = ABType.Unknown;
-    }
-
-    public void setObjectsAround(int above, int left, int right, double pigDistance){
-        this.objectsAbove = above; 
-        this.objectsLeft = left; 
-        this.objectsRight = right;
-        this.pigDistance = pigDistance;
-    }
-
-    public String toString() {
-        return this.id + this.type.toString() + this.shape.toString();
     }
 
     public static void resetCounter() {
         counter = 0;
     }
 
-    public TrajectoryType getTrajectoryType() {
-        return trajectoryType;
+    public Set<ABObject> getObjectsAboveSet() {
+        return objectsAboveSet;
     }
 
-    public void setTrajectoryType(TrajectoryType trajectoryType) {
-        this.trajectoryType = trajectoryType;
+    public void setObjectsAboveSet(Set<ABObject> objectsAboveSet) {
+        this.objectsAboveSet = objectsAboveSet;
+    }
+
+    public void setObjectsAround(int objectsAboveCount, int objectsLeftCount, int objectsRightCount, double distanceToPigs) {
+        this.objectsAboveCount = objectsAboveCount;
+        this.objectsLeftCount = objectsLeftCount;
+        this.objectsRightCount = objectsRightCount;
+        this.distanceToPigs = distanceToPigs;
+    }
+
+    public void setPigsOnTraj(int safePigsOnTrajectory, int possiblePigsOnTrajectory) {
+        // if its a virtual target for multiple pig shot we set this parameters
+        this.safePigsOnTrajectory = safePigsOnTrajectory;
+        this.possiblePigsOnTrajectory = possiblePigsOnTrajectory;
+    }
+
+    public String toString() {
+        return this.id + this.type.toString() + this.shape.toString();
+    }
+
+    public String myToString() {
+        return String.format("%03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs) + " | " + this.toString();
     }
 
     public ABType getType() {
@@ -83,6 +112,16 @@ public class ABObject extends Rectangle {
 
     public Point getCenter() {
         return new Point((int) getCenterX(), (int) getCenterY());
+    }
+
+    public void setCoordinates(int x, int y) {
+        this.movedX = x;
+        this.movedY = y;
+    }
+
+    @Override
+    public int compareTo(ABObject abObject) {
+        return this.y - abObject.y;
     }
 
     public enum TrajectoryType {HIGH, LOW}

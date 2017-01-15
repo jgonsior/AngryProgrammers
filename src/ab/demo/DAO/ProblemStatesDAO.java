@@ -6,13 +6,13 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 /**
  * @author: Julius Gonsior
  */
-public interface StateIdDAO {
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS stateIds (ID SERIAL PRIMARY KEY)")
-    void createStateIdsTable();
+public interface ProblemStatesDAO {
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS states (ID SERIAL PRIMARY KEY)")
+    void createTable();
 
-    @SqlUpdate("INSERT INTO stateIds (ID) VALUES (DEFAULT)")
+    @SqlUpdate("INSERT INTO states (ID) VALUES (DEFAULT)")
     @GetGeneratedKeys
-    int insertStateId();
+    int insertId();
 
     /**
      * closes the connection

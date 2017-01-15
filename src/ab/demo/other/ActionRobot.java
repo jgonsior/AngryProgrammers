@@ -16,7 +16,7 @@ import ab.server.proxy.message.ProxyScreenshotMessage;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.ABType;
-import ab.vision.GameStateExtractor.GameState;
+import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import org.apache.log4j.Logger;
 
@@ -84,8 +84,8 @@ public class ActionRobot {
 
     public static void GoFromMainMenuToLevelSelection() {
         // --- go from the main menu to the episode menu
-        GameState state = StateUtil.getGameState(proxy);
-        while (state == GameState.MAIN_MENU) {
+        GameStateExtractor.GameStateEnum state = StateUtil.getGameState(proxy);
+        while (state == GameStateExtractor.GameStateEnum.MAIN_MENU) {
 
             logger.info("Go to the Episode Menu");
             proxy.send(new ProxyClickMessage(305, 277));
@@ -99,7 +99,7 @@ public class ActionRobot {
             state = StateUtil.getGameState(proxy);
         }
         // --- go from the episode menu to the level selection menu
-        while (state == GameState.EPISODE_MENU) {
+        while (state == GameStateExtractor.GameStateEnum.EPISODE_MENU) {
             logger.info("Select the Poached Eggs Episode");
             proxy.send(new ProxyClickMessage(150, 300));
             state = StateUtil.getGameState(proxy);
@@ -125,7 +125,7 @@ public class ActionRobot {
 
         logger.info("Wait 2000 after fully zooming out");
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -138,7 +138,7 @@ public class ActionRobot {
 
         logger.info("Wait 2000 after fully zooming in");
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -183,17 +183,17 @@ public class ActionRobot {
         rls.restartLevel();
     }
 
-    public GameState shootWithStateInfoReturned(List<Shot> csc) {
+    public GameStateExtractor.GameStateEnum shootWithStateInfoReturned(List<Shot> csc) {
         ShootingSchema ss = new ShootingSchema();
         ss.shoot(proxy, csc);
         logger.info("Shooting Completed");
-        GameState state = StateUtil.getGameState(proxy);
+        GameStateExtractor.GameStateEnum state = StateUtil.getGameState(proxy);
         return state;
 
     }
 
-    public synchronized GameState getState() {
-        GameState state = StateUtil.getGameState(proxy);
+    public synchronized GameStateExtractor.GameStateEnum getState() {
+        GameStateExtractor.GameStateEnum state = StateUtil.getGameState(proxy);
         return state;
     }
 

@@ -72,8 +72,8 @@ public class abTrajectory {
             System.out.println("captured image of size " + nWidth + "-by-" + nHeight);
 
             // extract game state
-            GameStateExtractor.GameState state = gameStateExtractor.getGameState(screenshot);
-            if (state != GameStateExtractor.GameState.PLAYING) {
+            GameStateExtractor.GameStateEnum state = gameStateExtractor.getGameState(screenshot);
+            if (state != GameStateExtractor.GameStateEnum.PLAYING) {
                 continue;
             }
 
