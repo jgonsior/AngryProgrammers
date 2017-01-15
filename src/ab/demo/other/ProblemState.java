@@ -25,7 +25,7 @@ public class ProblemState {
     private static final Logger logger = Logger.getLogger(ProblemState.class);
 
     private final int MIN_PIXEL_OVERLAP = 3;
-    private ArrayList<ABObject> targetObjects;
+    private ArrayList<Action> possibleActions;
     private List<ABObject> allObjects;
     private int id;
     private Vision vision;
@@ -38,11 +38,12 @@ public class ProblemState {
         vision = GameState.getVision();
 
         findSlingshot();
+
+        birds = new ArrayList<>(vision.findBirdsRealShape());
         findBirdOnSlingshot();
 
         allObjects = new ArrayList<>();
         pigs = new ArrayList<>(vision.findPigsRealShape());
-        birds = new ArrayList<>(vision.findBirdsRealShape());
 
         this.id = id;
 
@@ -52,7 +53,7 @@ public class ProblemState {
         allObjects.addAll(vision.findHills());
         allObjects.addAll(vision.findTNTs());
 
-        targetObjects = calculateTargetObjects();
+        possibleActions = calculatePossibleActions();
 
 
     }
@@ -66,7 +67,6 @@ public class ProblemState {
     }
 
     private void findBirdOnSlingshot() {
-        ArrayList<ABObject> birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
         int maxY = 0;
         ABObject currentBird = null;
         for (ABObject bird : birds) {
@@ -91,8 +91,8 @@ public class ProblemState {
         }
     }
 
-    public ArrayList<ABObject> getTargetObjects() {
-        return targetObjects;
+    public ArrayList<Action> getPossibleActions() {
+        return possibleActions;
     }
 
     private List<ABObject> getObjectsOnTrajectory(List<Point> predictedTrajectory) {
@@ -158,7 +158,7 @@ public class ProblemState {
         return possibleTargetPoints;
     }
 
-    private ABObject calculateBestMultiplePigShot() {
+    private Action calculateBestMultiplePigShot() {
         // idea: try to find shot which maximize pigs on the trajectory
         // -> : just search around every pig for shot and check his trajectories
         TrajectoryPlanner tp = GameState.getTrajectoryPlanner();
@@ -231,11 +231,10 @@ public class ProblemState {
         }
 
         ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.BestMultiplePigShot);
-        pseudoObject.setTrajectoryType(bestTrajType);
         pseudoObject.setPigsOnTraj(safeAmountOfPigsOnTraj, maxAmountOfPigsOnTraj);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
-        return pseudoObject;
+        return new Action(pseudoObject, bestTrajType);
     }
 
 
@@ -314,6 +313,7 @@ public class ProblemState {
         }
     }
 
+    //@todo: low/high trajectory? -> calculate left objects for score?
     private ArrayList<ABObject> getBigRoundObjects() {
         ArrayList<ABObject> result = new ArrayList<>();
         for (ABObject obj : vision.findBlocksRealShape()) {
@@ -321,7 +321,7 @@ public class ProblemState {
                 Circle objC = (Circle) obj;
                 // have to see if 9000 is too big
                 if (objC.r > 9000) {
-                    System.out.println("-" + obj.toString());
+                    logger.info("-" + obj.toString());
                     result.add(obj);
                 }
             }
@@ -344,8 +344,10 @@ public class ProblemState {
 
     }
 
-    private ArrayList<ABObject> getScoredStructuralObjects() {
-        ArrayList<ABObject> result = new ArrayList<>();
+    private ArrayList<Action> getScoredStructuralObjects() {
+
+
+        ArrayList<Action> result = new ArrayList<>();
 
         //finds all objects in the scene beside slingshot, birds, pigs. and hills.
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
@@ -357,76 +359,115 @@ public class ProblemState {
         int objectsLeftCount, objectsRightCount;
         Set<ABObject> objectsAbove = new HashSet<>();
 
+        Action action;
         for (ABObject object : blocksRealShapeSorted) {
-            objectsLeftCount = 0;
-            objectsRightCount = 0;
+            for (int i = 0; i < 2; i++) {
+                if (i == 0) {
+                    action = new Action(object, ABObject.TrajectoryType.HIGH);
 
-            minObjectX = object.x;
-            maxObjectX = object.x + object.width;
-            minObjectY = object.y;
-            maxObjectY = object.y + object.height;
-
-            double minNeighborX, maxNeighborX, minNeighborY, maxNeighborY;
-            boolean nearX, nearY;
-            for (ABObject neighbor : vision.findBlocksMBR()) {
-                minNeighborX = neighbor.x;
-                maxNeighborX = neighbor.x + neighbor.width;
-                minNeighborY = neighbor.y;
-                maxNeighborY = neighbor.y + neighbor.height;
-
-                nearX = false;
-                nearY = false;
-
-                if ((minObjectX >= minNeighborX - 10 && minObjectX <= maxNeighborX + 10)
-                        || (minNeighborX >= minObjectX - 10 && minNeighborX <= maxObjectX + 10)) {
-                    nearX = true;
+                } else {
+                    action = new Action(object, ABObject.TrajectoryType.LOW);
                 }
 
-                if ((minObjectY >= minNeighborY - 10 && minObjectY <= maxNeighborY + 10)
-                        || (minNeighborY >= minObjectY - 10 && minNeighborY <= maxObjectY + 10)) {
-                    nearY = true;
+
+                objectsLeftCount = 0;
+                objectsRightCount = 0;
+
+                minObjectX = object.x;
+                maxObjectX = object.x + object.width;
+                minObjectY = object.y;
+                maxObjectY = object.y + object.height;
+
+                double minNeighborX, maxNeighborX, minNeighborY, maxNeighborY;
+                boolean nearX, nearY;
+                for (ABObject neighbor : vision.findBlocksMBR()) {
+                    minNeighborX = neighbor.x;
+                    maxNeighborX = neighbor.x + neighbor.width;
+                    minNeighborY = neighbor.y;
+                    maxNeighborY = neighbor.y + neighbor.height;
+
+                    nearX = false;
+                    nearY = false;
+
+                    if ((minObjectX >= minNeighborX - 10 && minObjectX <= maxNeighborX + 10)
+                            || (minNeighborX >= minObjectX - 10 && minNeighborX <= maxObjectX + 10)) {
+                        nearX = true;
+                    }
+
+                    if ((minObjectY >= minNeighborY - 10 && minObjectY <= maxNeighborY + 10)
+                            || (minNeighborY >= minObjectY - 10 && minNeighborY <= maxObjectY + 10)) {
+                        nearY = true;
+                    }
+
+                    if (nearX && maxNeighborY <= minObjectY) {
+                        objectsAbove.addAll(neighbor.getObjectsAboveSet());
+                    } else if (nearY && maxNeighborX <= minObjectX && minObjectX - maxNeighborX < 20) {
+                        objectsLeftCount++;
+                    } else if (nearY && minNeighborX >= maxObjectX && minNeighborX - maxObjectX < 20) {
+                        objectsRightCount++;
+                    }
                 }
 
-                if (nearX && maxNeighborY <= minObjectY) {
-                    objectsAbove.addAll(neighbor.getObjectsAboveSet());
-                } else if (nearY && maxNeighborX <= minObjectX && minObjectX - maxNeighborX < 20) {
-                    objectsLeftCount++;
-                } else if (nearY && minNeighborX >= maxObjectX && minNeighborX - maxObjectX < 20) {
-                    objectsRightCount++;
-                }
+
+                object.setObjectsAboveSet(objectsAbove);
+
+                Point targetPoint = object.getCenter();
+                Point releasePoint = calculateReleasePoint(targetPoint, action.getTrajectoryType());
+                List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(slingshot, releasePoint);
+
+                trajectoryPoints.removeIf(point -> point.x >= object.getMinX());
+
+                List<ABObject> objectsOnTrajectory = getObjectsOnTrajectoryUntilTargetPoint(trajectoryPoints, object);
+
+                ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
+
+                objectsLeftCount = objectsOnTrajectory.size();
+
+                object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, calculateDistanceToPig(object));
+                action.setScore(calculateScore(object, action));
+                result.add(action);
             }
-
-
-            object.setObjectsAboveSet(objectsAbove);
-
-            Point targetPoint = object.getCenter();
-            Point releasePoint = calculateReleasePoint(targetPoint, ABObject.TrajectoryType.LOW);
-            List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(slingshot, releasePoint);
-
-            trajectoryPoints.removeIf(point -> point.x >= object.getMinX());
-
-            List<ABObject> objectsOnTrajectory = getObjectsOnTrajectoryUntilTargetPoint(trajectoryPoints, object);
-
-            ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
-
-            objectsLeftCount = objectsOnTrajectory.size();
-
-            object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, calculateDistanceToPig(object));
-            result.add(object);
         }
         return result;
     }
 
-    private ArrayList<ABObject> calculateTargetObjects() {
-        ArrayList<ABObject> targetObjects = new ArrayList<>();
+    private double calculateScore(ABObject targetObject, Action action) {
+        double score;
 
+        //todo: maybe rethink this values
+        int orientationOffset = 3;
+        if (targetObject.shape == ABShape.Rect && targetObject.width != targetObject.height) {
+            // get orientation if its not quadratic
+            if (targetObject.angle > 45 && targetObject.angle < 135) {
+                // vertical
+                if (action.getTrajectoryType() != ABObject.TrajectoryType.LOW) {
+                    orientationOffset = -3;
+                }
+            } else {
+                // horizontal
+                if (action.getTrajectoryType() == ABObject.TrajectoryType.LOW) {
+                    orientationOffset = -3;
+                }
+            }
+        }
+        score = targetObject.objectsAboveCount - targetObject.objectsLeftCount + targetObject.objectsRightCount / 2 + (100 - targetObject.distanceToPigs) / 10 + orientationOffset;
+
+        return score;
+    }
+
+    private ArrayList<Action> calculatePossibleActions() {
+        //transfer it into list of actions! -> don't copy abobject, copy it into a new action instead
+        ArrayList<Action> possibleActions = new ArrayList<>();
+
+        ArrayList<ABObject> targetObjects = new ArrayList<>();
         targetObjects.addAll(vision.findTNTs());
         targetObjects.addAll(getBigRoundObjects());
-        targetObjects.addAll(getScoredStructuralObjects());
         targetObjects.addAll(vision.findPigsRealShape());
-        targetObjects.add(calculateBestMultiplePigShot());
 
-        return targetObjects;
+        possibleActions.addAll(getScoredStructuralObjects());
+        possibleActions.add(calculateBestMultiplePigShot());
+
+        return possibleActions;
     }
 
     /**
@@ -444,22 +485,6 @@ public class ProblemState {
                     + " " + String.valueOf(object.shape);
         }
         return string;
-    }
-
-    public ArrayList<Action> getActions() {
-        ArrayList<Action> actions = new ArrayList<>();
-        int i = 0;
-        for (ABObject targetObject : targetObjects) {
-            Action action = new Action(i, targetObject.getTrajectoryType(), this);
-            action.setName(targetObject.myToString());
-            actions.add(action);
-            i++;
-        }
-        return actions;
-    }
-
-    public List<ABObject> getAllObjects() {
-        return allObjects;
     }
 
     public int getId() {

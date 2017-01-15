@@ -3,7 +3,6 @@ package ab.demo.other;
 import ab.vision.ABObject;
 
 import java.awt.*;
-import java.util.ArrayList;
 
 /**
  * @author: Julius Gonsior
@@ -13,14 +12,31 @@ public class Action {
     private int id;
     private ABObject.TrajectoryType trajectoryType;
     private boolean rand;
-    private ProblemState problemState;
     private ABObject targetObject;
     private Point targetPoint;
+    private double score;
 
-    public Action(int actionId, ABObject.TrajectoryType trajectoryType, ProblemState problemState) {
+    public Action(int actionId, ABObject.TrajectoryType trajectoryType) {
         this.id = actionId;
         this.trajectoryType = trajectoryType;
-        this.problemState = problemState;
+
+        //@todo calculate targetObject!
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
+    }
+
+    public Action(ABObject targetObject, ABObject.TrajectoryType trajectoryType) {
+        //this.id = actionId;
+        this.targetObject = targetObject;
+        this.targetPoint = targetObject.getCenter();
+        this.trajectoryType = trajectoryType;
+        setName(targetObject.myToString() + " " + trajectoryType.name());
     }
 
     public String getName() {
@@ -31,22 +47,22 @@ public class Action {
         this.name = name;
     }
 
+    /**
+     * @todo: set targetObject?!
+     *
     private void calculateTargetObject() {
-        //calculate targetPoint
-        ArrayList<ABObject> shootableObjects = problemState.getTargetObjects();
+    //calculate targetPoint
+    /*ArrayList<ABObject> shootableObjects = GameState.getProblemState().getPossibleActions();
 
-        //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
-        // seems to be error in vision module where it found invisible objects on initialisation
-        /*if (shootableObjects.size() - 1 < this.getId()) {
-            this.setId(shootableObjects.size() - 1);
-        }*/
-        targetObject = shootableObjects.get(this.getId());
-        targetPoint = targetObject.getCenter();
-    }
+    //@todo should be removed and it needs to be investigated why nextAction returns sometimes wrong actions!
+    // seems to be error in vision module where it found invisible objects on initialisation
+    /*if (shootableObjects.size() - 1 < this.getId()) {
+    this.setId(shootableObjects.size() - 1);
+    }*
+    targetObject = shootableObjects.get(this.getId());*
 
-    public void setProblemState(ProblemState problemState) {
-        this.problemState = problemState;
-    }
+    targetPoint = targetObject.getCenter();
+    }*/
 
     public boolean isRand() {
         return rand;
@@ -61,9 +77,6 @@ public class Action {
     }
 
     public String getTargetObjectString() {
-        if (this.targetObject == null) {
-            this.calculateTargetObject();
-        }
         return targetObject.toString();
     }
 
@@ -76,9 +89,6 @@ public class Action {
     }
 
     public Point getTargetPoint() {
-        if (this.targetObject == null) {
-            this.calculateTargetObject();
-        }
         return targetPoint;
     }
 }

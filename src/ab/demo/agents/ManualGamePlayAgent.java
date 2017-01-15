@@ -34,7 +34,7 @@ public class ManualGamePlayAgent extends StandaloneAgent {
      * @return
      */
     public Action getNextAction() {
-        ArrayList<Action> possibleActions = GameState.getProblemState().getActions();
+        ArrayList<Action> possibleActions = GameState.getProblemState().getPossibleActions();
         int actionId = Integer.MAX_VALUE;
 
         while (actionId > possibleActions.size()) {

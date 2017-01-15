@@ -29,13 +29,17 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public int objectsAboveCount = 0;
     public int objectsLeftCount = -1;
     public int objectsRightCount = -1;
+
     public double distanceToPigs = -1;
-    public double totalScore = -1;
+
     public int safePigsOnTrajectory = 0;
+
     public int possiblePigsOnTrajectory = 0;
+
     public int movedX = -1;
     public int movedY = -1;
-    private TrajectoryType trajectoryType = TrajectoryType.LOW;
+
+
     private Set<ABObject> objectsAboveSet;
 
     public ABObject(Rectangle mbr, ABType type) {
@@ -86,25 +90,6 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.objectsLeftCount = objectsLeftCount;
         this.objectsRightCount = objectsRightCount;
         this.distanceToPigs = distanceToPigs;
-
-        //todo: maybe rethink this values
-        //@todo: this belongs into the action class, together with the trajectoryType stuff etc.
-        int orientationOffset = 3;
-        if (this.shape == ABShape.Rect && this.width != this.height) {
-            // get orientation if its not quadratic
-            if (this.angle > 45 && this.angle < 135) {
-                // vertical
-                if (trajectoryType != TrajectoryType.LOW) {
-                    orientationOffset = -3;
-                }
-            } else {
-                // horizontal
-                if (trajectoryType == TrajectoryType.LOW) {
-                    orientationOffset = -3;
-                }
-            }
-        }
-        this.totalScore = objectsAboveCount - objectsLeftCount + objectsRightCount / 2 + (100 - distanceToPigs) / 10 + orientationOffset;
     }
 
     public void setPigsOnTraj(int safePigsOnTrajectory, int possiblePigsOnTrajectory) {
@@ -118,15 +103,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %06f %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs, totalScore) + " | " + this.toString() + " " + this.getTrajectoryType().name();
-    }
-
-    public TrajectoryType getTrajectoryType() {
-        return trajectoryType;
-    }
-
-    public void setTrajectoryType(TrajectoryType trajectoryType) {
-        this.trajectoryType = trajectoryType;
+        return String.format("%03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs) + " | " + this.toString();
     }
 
     public ABType getType() {

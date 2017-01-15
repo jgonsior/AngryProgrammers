@@ -7,7 +7,6 @@ import ab.demo.DAO.QValuesDAO;
 import ab.demo.other.Action;
 import ab.demo.other.GameState;
 import ab.demo.other.ProblemState;
-import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
@@ -32,9 +31,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
     private void insertsPossibleActionsForProblemStateIntoDatabase(ProblemState problemState) {
         int counter = 0;
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
-            //@todo get target Objects!
-            for (ABObject object : problemState.getTargetObjects()) {
-                qValuesDAO.insertNewAction(0, problemState.getId(), counter, object.getTrajectoryType().name(), object.toString());
+            for (Action action : problemState.getPossibleActions()) {
+                qValuesDAO.insertNewAction(0, problemState.getId(), counter, action.getTrajectoryType().name(), action.toString());
                 counter += 1;
             }
         }
@@ -88,12 +86,12 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
         if (randomValue < explorationRate * 100) {
             //get random action should return more than one id!
             action = qValuesDAO.getRandomAction(GameState.getProblemState().getId());
-            action.setProblemState(GameState.getProblemState());
+            //action.setProblemState(GameState.getProblemState());
             action.setRand(true);
             action.setName("random_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
         } else {
             action = qValuesDAO.getBestAction(GameState.getProblemState().getId());
-            action.setProblemState(GameState.getProblemState());
+            //action.setProblemState(GameState.getProblemState());
             action.setRand(false);
             action.setName("best_" + action.getTrajectoryType().name() + "_" + action.getTargetObjectString());
         }
