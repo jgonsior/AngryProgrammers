@@ -129,26 +129,12 @@ public class ProblemState {
             //prevent the object from being added to the output list itself
             if (object.x != targetObject.x && object.y != targetObject.y) {
                 for (Point p : predictedTrajectory) {
+                    //check only objects in the area we can shoot with objects at
                     if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
-                        //create new circle object with the size of the currentBird we're going to shoot with and
-                        //compute if that new circle object intersects with the object
-
                         if (intersectsJ(new Circle(p.x, p.y, currentBird.r * 1.5, currentBird.getType()), object)) {
                             objectsOnTrajectory.add(object);
                             break;
                         }
-
-                        /*if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), object)) {
-                            //set coordinates of object on trajectory to the coordinates of the trajectory point, but only
-                            //if it isn't a bird object
-                            //why?!
-                            if (!birds.contains(object)) {
-                                object.setCoordinates(p.x, p.y);
-                                objectsOnTrajectory.add(object);
-                            }
-                            // object intersects so dont need to check rest of points
-                            break;
-                        }*/
                     }
                 }
             }
@@ -420,7 +406,6 @@ public class ProblemState {
             trajectoryPoints.removeIf(point -> point.x >= object.getMinX());
 
             List<ABObject> objectsOnTrajectory = getObjectsOnTrajectoryUntilTargetPoint(trajectoryPoints, object);
-
 
             ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
 

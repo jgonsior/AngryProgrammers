@@ -10,6 +10,7 @@ import ab.demo.agents.ReinforcementLearningAgent;
 import ab.demo.agents.StandaloneAgent;
 import ab.demo.logging.LoggingHandler;
 import ab.server.Proxy;
+import ab.vision.ShowSeg;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
 import org.skife.jdbi.v2.DBI;
@@ -47,6 +48,7 @@ public class MainEntry {
         options.addOption("u", "updateDatabaseTables", false, "executes CREATE TABLE IF NOT EXIST commands");
         options.addOption("l", "level", true, "if set the agent is playing only in this one level");
         options.addOption("m", "manual", false, "runs the empirical threshold determination agent in standalone mode");
+        options.addOption("r", "real", false, "shows the recognized shapes in a new frame");
 
 
         CommandLineParser parser = new DefaultParser();
@@ -133,6 +135,12 @@ public class MainEntry {
                 agent.setFixedLevel(Integer.parseInt(cmd.getOptionValue("level")));
             }
 
+            if (cmd.hasOption("real")) {
+                ShowSeg.useRealshape = true;
+                Thread thread = new Thread(new ShowSeg());
+                thread.start();
+            }
+
         } catch (UnrecognizedOptionException e) {
             System.out.println("Unrecognized commandline option: " + e.getOption());
             HelpFormatter formatter = new HelpFormatter();
@@ -144,10 +152,6 @@ public class MainEntry {
             formatter.printHelp("help", options);
             return;
         }
-
-        //ShowSeg.useRealshape = true;
-        //Thread thre = new Thread(new ShowSeg());
-        //thre.start();
 
         agent.run();
     }

@@ -72,7 +72,6 @@ public class ABUtil {
     }
 
 
-
     public static Shot generateShot(int tappingTime, Point releasePoint) {
         if (releasePoint == null) {
             logger.error("No release point found -,-");
