@@ -460,6 +460,9 @@ public class ProblemState {
         ArrayList<Action> possibleActions = new ArrayList<>();
 
         ArrayList<ABObject> targetObjects = new ArrayList<>();
+
+        //@todo: create actions for tnt, objects and pigs?
+        //@todo calculate score for tnt and objects as well?
         targetObjects.addAll(vision.findTNTs());
         targetObjects.addAll(getBigRoundObjects());
         targetObjects.addAll(vision.findPigsRealShape());
