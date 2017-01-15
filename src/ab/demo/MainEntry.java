@@ -145,6 +145,10 @@ public class MainEntry {
             return;
         }
 
+        //ShowSeg.useRealshape = true;
+        //Thread thre = new Thread(new ShowSeg());
+        //thre.start();
+
         agent.run();
     }
 }

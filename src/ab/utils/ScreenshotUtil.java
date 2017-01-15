@@ -2,12 +2,15 @@ package ab.utils;
 
 import ab.demo.other.GameState;
 import ab.server.Proxy;
+import ab.vision.ABObject;
 import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author: Julius Gonsior
@@ -35,4 +38,17 @@ public class ScreenshotUtil {
         }
         logger.info("Saved screenshot " + outputFile.getAbsolutePath());
     }
+
+    public static void saveTrajectoryScreenshot(Rectangle slingshot, Point releasePoint, ABObject targetObject, List<ABObject> objectsOnTrajectory) {
+        GameState.updateCurrentVision();
+        //screenshot with trajectory
+        BufferedImage screenshotWithTrajectory = GameState.getTrajectoryPlanner().plotTrajectory(GameState.getScreenshot(), slingshot, releasePoint);
+        String title = targetObject.type + Integer.toString(targetObject.x) + "," + targetObject.y + "|";
+        for (ABObject abObject : objectsOnTrajectory) {
+            title += abObject.type + Integer.toString(abObject.x) + "," + abObject.y + "-";
+        }
+
+        saveScreenshot(screenshotWithTrajectory, title);
+    }
+
 }

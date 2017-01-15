@@ -1,6 +1,7 @@
 package ab.demo.other;
 
 import ab.planner.TrajectoryPlanner;
+import ab.utils.ScreenshotUtil;
 import ab.vision.ABObject;
 import ab.vision.ABShape;
 import ab.vision.ABType;
@@ -10,6 +11,7 @@ import ab.vision.real.shape.Poly;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
+import java.awt.geom.Area;
 import java.util.*;
 import java.util.List;
 
@@ -20,7 +22,8 @@ import java.util.List;
  */
 public class ProblemState {
 
-    protected static final Logger logger = Logger.getLogger(ProblemState.class);
+    private static final Logger logger = Logger.getLogger(ProblemState.class);
+
     private final int MIN_PIXEL_OVERLAP = 3;
     private ArrayList<ABObject> targetObjects;
     private List<ABObject> allObjects;
@@ -50,7 +53,6 @@ public class ProblemState {
         allObjects.addAll(vision.findTNTs());
 
         targetObjects = calculateTargetObjects();
-
 
 
     }
@@ -119,6 +121,43 @@ public class ProblemState {
         return objectsOnTrajectory;
     }
 
+    private List<ABObject> getObjectsOnTrajectoryUntilTargetPoint(List<Point> predictedTrajectory, ABObject targetObject) {
+        ArrayList<ABObject> objectsOnTrajectory = new ArrayList<>();
+        Circle currentBird = (Circle) getBirdOnSlingshot();
+
+        for (ABObject object : allObjects) {
+            //prevent the object from being added to the output list itself
+            if (object.x != targetObject.x && object.y != targetObject.y) {
+                for (Point p : predictedTrajectory) {
+                    if (p.x < 840 && p.y < 480 && p.y > 100 && p.x > 400) {
+                        //create new circle object with the size of the currentBird we're going to shoot with and
+                        //compute if that new circle object intersects with the object
+
+                        if (intersectsJ(new Circle(p.x, p.y, currentBird.r * 1.5, currentBird.getType()), object)) {
+                            objectsOnTrajectory.add(object);
+                            break;
+                        }
+
+                        /*if (intersects(new Circle(p.x, p.y, currentBird.r, currentBird.getType()), object)) {
+                            //set coordinates of object on trajectory to the coordinates of the trajectory point, but only
+                            //if it isn't a bird object
+                            //why?!
+                            if (!birds.contains(object)) {
+                                object.setCoordinates(p.x, p.y);
+                                objectsOnTrajectory.add(object);
+                            }
+                            // object intersects so dont need to check rest of points
+                            break;
+                        }*/
+                    }
+                }
+            }
+        }
+
+        return objectsOnTrajectory;
+    }
+
+
     private List<Point> generatePointsAroundTargets(List<ABObject> targets, int birdRadius) {
         ArrayList<Point> possibleTargetPoints = new ArrayList<>();
         for (ABObject target : targets) {
@@ -161,7 +200,7 @@ public class ProblemState {
                     currentTrajectoryType = ABObject.TrajectoryType.HIGH;
                 }
 
-                ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(vision.findSlingshotMBR(), estimatedLaunchPoint));
+                ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(slingshot, estimatedLaunchPoint));
 
                 ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs, allObjsOnTraj;
 
@@ -212,6 +251,19 @@ public class ProblemState {
 
         return pseudoObject;
     }
+
+
+    private boolean intersectsJ(Circle circle, ABObject target) {
+        Area area;
+        if (target.shape == ABShape.Poly) {
+            area = new Area(((Poly) target).polygon);
+        } else {
+            area = new Area(target);
+        }
+        area.intersect(new Area(circle));
+        return !area.isEmpty();
+    }
+
 
     /**
      * Checks if Circle object intersects with min PixelOverlap the target object
@@ -309,6 +361,7 @@ public class ProblemState {
     private ArrayList<ABObject> getScoredStructuralObjects() {
         ArrayList<ABObject> result = new ArrayList<>();
 
+        //finds all objects in the scene beside slingshot, birds, pigs. and hills.
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
 
         //sorted descending after Y coordinates, so first object to iterate over is the highest one
@@ -360,10 +413,17 @@ public class ProblemState {
 
             object.setObjectsAboveSet(objectsAbove);
 
-            Point releasePoint = calculateReleasePoint(new Point(object.x, object.y), ABObject.TrajectoryType.LOW);
+            Point targetPoint = object.getCenter();
+            Point releasePoint = calculateReleasePoint(targetPoint, ABObject.TrajectoryType.LOW);
             List<Point> trajectoryPoints = GameState.getTrajectoryPlanner().predictTrajectory(slingshot, releasePoint);
 
-            List<ABObject> objectsOnTrajectory = getObjectsOnTrajectory(trajectoryPoints);
+            trajectoryPoints.removeIf(point -> point.x >= object.getMinX());
+
+            List<ABObject> objectsOnTrajectory = getObjectsOnTrajectoryUntilTargetPoint(trajectoryPoints, object);
+
+
+            ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
+
             objectsLeftCount = objectsOnTrajectory.size();
 
             object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, calculateDistanceToPig(object));

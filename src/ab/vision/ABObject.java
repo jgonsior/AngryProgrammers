@@ -86,7 +86,9 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.objectsLeftCount = objectsLeftCount;
         this.objectsRightCount = objectsRightCount;
         this.distanceToPigs = distanceToPigs;
+
         //todo: maybe rethink this values
+        //@todo: this belongs into the action class, together with the trajectoryType stuff etc.
         int orientationOffset = 3;
         if (this.shape == ABShape.Rect && this.width != this.height) {
             // get orientation if its not quadratic
