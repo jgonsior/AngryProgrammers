@@ -103,8 +103,6 @@ public abstract class StandaloneAgent implements Runnable {
     protected void playLevel() {
         ProblemState previousProblemState;
 
-        actionRobot.loadLevel(currentLevel);
-
         GameState.initNewGameState(currentLevel, gamesDAO, explorationRate, learningRate, discountFactor);
         GameState.setGameStateEnum(actionRobot.getState());
         GameState.updateCurrentVision();
@@ -149,7 +147,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                     logger.info("done shooting");
 
-                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot);
+                    waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot, releasePoint, nextAction.getTargetPoint());
 
                     logger.info("done waiting for blocks to fall down");
 
@@ -196,6 +194,8 @@ public abstract class StandaloneAgent implements Runnable {
         int score;
 
         //one cycle means one shot was being executed
+
+        actionRobot.loadLevel(currentLevel);
         while (true) {
             logger.info("Next iteration of the all mighty while loop");
 
@@ -254,42 +254,22 @@ public abstract class StandaloneAgent implements Runnable {
      * make screenshots as long as 2 following screenshots are equal
      * @param blocksAndPigsBefore
      */
-    protected void waitUntilBlocksHaveBeenFallenDown(Set<Object> blocksAndPigsBefore) {
-        GameState.updateCurrentVision();
+    protected void waitUntilBlocksHaveBeenFallenDown(Set<Object> blocksAndPigsBefore, Point releasePoint, Point targetPoint) {
 
-        Set<Object> blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(true);
-        ScreenshotUtil.saveCurrentScreenshot();
-        logger.info("bef:" + blocksAndPigsBefore);
-        logger.info("aft:" + blocksAndPigsAfter);
-
-        int loopCounter = 0;
-
-        //wait until shot is being fired
-        while (blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
-            try {
-                logger.info("Wait for 500 (for shot)");
-                Thread.sleep(500);
-
-                GameState.updateCurrentVision();
-
-                blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(true);
-
-                ScreenshotUtil.saveCurrentScreenshot();
-                logger.info("bef:" + blocksAndPigsBefore);
-                logger.info("aftd:" + blocksAndPigsAfter);
-                loopCounter++;
-                if (loopCounter > 30) {
-                    logger.warn("Broke out of shoot-loop");
-                    //possibly we are here without any reasonable reason so dont stay here forever
-                    break;
-                }
-            } catch (InterruptedException e) {
-                logger.error(e);
-            }
+        Rectangle slingshot = GameState.getProblemState().getSlingshot();
+        int waitTime = GameState.getTrajectoryPlanner().getTimeByDistance(slingshot, releasePoint, targetPoint) + 500;
+        try {
+            logger.info("Sleep " + waitTime + " until bird reached target");
+            Thread.sleep(waitTime);
+        } catch (InterruptedException e) {
+            logger.error(e);
         }
 
-        logger.info("two different screenshots found");
-        loopCounter = 0;
+        GameState.updateCurrentVision();
+
+        int loopCounter = 0;
+        Set<Object> blocksAndPigsAfter = GameState.getVision().getBlocksAndPigs(false);
+        ScreenshotUtil.saveCurrentScreenshot();
 
         while (actionRobot.getState() == GameStateExtractor.GameStateEnum.PLAYING && !blocksAndPigsBefore.equals(blocksAndPigsAfter)) {
             try {

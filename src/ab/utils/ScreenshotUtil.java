@@ -31,7 +31,7 @@ public class ScreenshotUtil {
         File outputFile = new File("imgs/" + Proxy.getProxyPort() + "/" + GameState.getGameId() + "/" + GameState.getCurrentLevel() + "_" + GameState.getMoveCounter() + "_" + title + "_" + System.currentTimeMillis() + ".gif");
         try {
             outputFile.getParentFile().mkdirs();
-            ImageIO.write(GameState.getScreenshot(), "gif", outputFile);
+            ImageIO.write(screenshot, "gif", outputFile);
         } catch (IOException e) {
             logger.error("Unable to save screenshot " + e);
             e.printStackTrace();
@@ -40,7 +40,7 @@ public class ScreenshotUtil {
     }
 
     public static void saveTrajectoryScreenshot(Rectangle slingshot, Point releasePoint, ABObject targetObject, List<ABObject> objectsOnTrajectory) {
-        GameState.updateCurrentVision();
+        GameState.updateCurrentScreenshot();
         //screenshot with trajectory
         BufferedImage screenshotWithTrajectory = GameState.getTrajectoryPlanner().plotTrajectory(GameState.getScreenshot(), slingshot, releasePoint);
         String title = targetObject.type + Integer.toString(targetObject.x) + "," + targetObject.y + "|";

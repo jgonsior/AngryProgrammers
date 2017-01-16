@@ -223,7 +223,7 @@ public class TrajectoryPlanner {
      *          tapPoint - point the tap should be made
      * @return  tap time (relative to the release time) in milli-seconds
      */
-    protected int getTimeByDistance(Rectangle sling, Point release, Point tapPoint) {
+    public int getTimeByDistance(Rectangle sling, Point release, Point tapPoint) {
         // update trajectory parameters
         setTrajectory(sling, release);
 

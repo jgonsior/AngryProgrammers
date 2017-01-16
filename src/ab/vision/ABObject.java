@@ -29,6 +29,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public int objectsAboveCount = 0;
     public int objectsLeftCount = -1;
     public int objectsRightCount = -1;
+    public int objectsBelowCount = -1;
 
     public double distanceToPigs = -1;
 
@@ -85,10 +86,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         this.objectsAboveSet = objectsAboveSet;
     }
 
-    public void setObjectsAround(int objectsAboveCount, int objectsLeftCount, int objectsRightCount, double distanceToPigs) {
+    public void setObjectsAround(int objectsAboveCount, int objectsLeftCount, int objectsRightCount, int objectsBelowCount, double distanceToPigs) {
         this.objectsAboveCount = objectsAboveCount;
         this.objectsLeftCount = objectsLeftCount;
         this.objectsRightCount = objectsRightCount;
+        this.objectsBelowCount = objectsBelowCount;
         this.distanceToPigs = distanceToPigs;
     }
 
@@ -99,11 +101,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public String toString() {
-        return this.id + this.type.toString() + this.shape.toString();
+        return this.id + " " + this.x + " " + this.y + " " + this.type.toString() + this.shape.toString();
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, distanceToPigs) + " | " + this.toString();
+        return String.format("%03d %03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, objectsBelowCount, distanceToPigs) + " | " + this.toString();
     }
 
     public ABType getType() {
@@ -122,6 +124,19 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     @Override
     public int compareTo(ABObject abObject) {
         return this.y - abObject.y;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        ABObject abObject = (ABObject) object;
+        if (this.getType() != abObject.getType()){
+            return false;
+        } else if (Math.abs(this.x - abObject.x) > 3){
+            return false;
+        } else if (Math.abs(this.y - abObject.y) > 3){
+            return false;
+        }
+        return true;
     }
 
     public enum TrajectoryType {HIGH, LOW}

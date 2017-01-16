@@ -37,6 +37,7 @@ public class Action {
 
     public void setScore(double score) {
         this.score = score;
+        setName(score + " " + getName());
     }
 
     public String getName() {
