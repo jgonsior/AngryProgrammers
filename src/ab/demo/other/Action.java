@@ -82,6 +82,10 @@ public class Action {
         return targetObject.toString();
     }
 
+    public ABObject getTargetObject() {
+        return targetObject;
+    }
+
     public int getId() {
         return id;
     }

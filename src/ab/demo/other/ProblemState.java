@@ -360,7 +360,7 @@ public class ProblemState {
                 //ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
 
                 objectsLeftCount = objectsOnTrajectory.size();
-
+                object.setObjectsLeftSet(new HashSet<>(objectsOnTrajectory));
                 object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, objectsBelowCount, calculateDistanceToPig(object));
                 Action action = new Action(object, trajType); 
                 action.setScore(calculateScore(object, action));

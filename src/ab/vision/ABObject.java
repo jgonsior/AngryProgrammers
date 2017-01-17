@@ -34,7 +34,6 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public double distanceToPigs = -1;
 
     public int safePigsOnTrajectory = 0;
-
     public int possiblePigsOnTrajectory = 0;
 
     public int movedX = -1;
@@ -42,6 +41,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
 
 
     private Set<ABObject> objectsAboveSet;
+    private Set<ABObject> objectsLeftSet;
 
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
@@ -82,8 +82,16 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         return objectsAboveSet;
     }
 
+    public Set<ABObject> getObjectsLeftSet() {
+        return objectsLeftSet;
+    }
+
     public void setObjectsAboveSet(Set<ABObject> objectsAboveSet) {
         this.objectsAboveSet = objectsAboveSet;
+    }
+
+    public void setObjectsLeftSet(Set<ABObject> objectsLeftSet) {
+        this.objectsLeftSet = objectsLeftSet;
     }
 
     public void setObjectsAround(int objectsAboveCount, int objectsLeftCount, int objectsRightCount, int objectsBelowCount, double distanceToPigs) {

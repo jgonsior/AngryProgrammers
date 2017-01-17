@@ -59,30 +59,47 @@ public abstract class StandaloneAgent implements Runnable {
      * @param targetPoint
      * @return
      */
-    protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
+    protected int calculateTappingTime(Point releasePoint, Point targetPoint, Action action) {
         double releaseAngle = GameState.getTrajectoryPlanner().getReleaseAngle(GameState.getProblemState().getSlingshot(),
                 releasePoint);
         logger.info("Release Point: " + releasePoint);
-        logger.info("Release Angle: "
-                + Math.toDegrees(releaseAngle));
+        logger.info("Release Angle: " + Math.toDegrees(releaseAngle));
         int tappingInterval = 0;
+
+        
+        Set<ABObject> leftSet = new HashSet<>(action.getTargetObject().getObjectsLeftSet());
+        if (leftSet.size() > 0){
+            ABObject mostLeftObjectOnTrajectory = null;
+            int minX = 1000;
+            for (ABObject obj : leftSet){
+                if (obj.x < minX){
+                    minX = obj.x;
+                    mostLeftObjectOnTrajectory = obj;
+                }
+            } 
+            targetPoint = mostLeftObjectOnTrajectory.getCenter();
+        }
+
+        //TODO: White Bird calculation
+
+
         switch (actionRobot.getBirdTypeOnSling()) {
 
             case RedBird:
                 tappingInterval = 0;
                 break;               // start of trajectory
             case YellowBird:
-                tappingInterval = 65 + randomGenerator.nextInt(25);
-                break; // 65-90% of the way
+                tappingInterval = 80;
+                break; 
             case WhiteBird:
-                tappingInterval = 70 + randomGenerator.nextInt(20);
-                break; // 70-90% of the way
+                tappingInterval = 70;
+                break; 
             case BlackBird:
-                tappingInterval = 70 + randomGenerator.nextInt(20);
-                break; // 70-90% of the way
+                tappingInterval = 90;
+                break; 
             case BlueBird:
-                tappingInterval = 65 + randomGenerator.nextInt(20);
-                break; // 65-85% of the way
+                tappingInterval = 80;
+                break; 
             default:
                 tappingInterval = 60;
         }
@@ -426,7 +443,7 @@ public abstract class StandaloneAgent implements Runnable {
         //targetPoint = pig.getCenter();
 
         Point releasePoint = GameState.getProblemState().calculateReleasePoint(targetPoint, action.getTrajectoryType());
-        Shot shot = ABUtil.generateShot(this.calculateTappingTime(releasePoint, targetPoint), releasePoint);
+        Shot shot = ABUtil.generateShot(this.calculateTappingTime(releasePoint, targetPoint, action), releasePoint);
 
         // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 

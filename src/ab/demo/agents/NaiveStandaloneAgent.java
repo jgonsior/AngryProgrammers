@@ -258,7 +258,7 @@ public class NaiveStandaloneAgent extends StandaloneAgent {
     }
 
     @Override
-    protected int calculateTappingTime(Point releasePoint, Point targetPoint) {
+    protected int calculateTappingTime(Point releasePoint, Point targetPoint, Action action) {
         return 0;
     }
 
