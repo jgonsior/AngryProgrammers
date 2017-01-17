@@ -8,7 +8,7 @@ import ab.demo.other.GameState;
 import ab.demo.other.ProblemState;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -34,7 +34,7 @@ public class ManualGamePlayAgent extends StandaloneAgent {
      * @return
      */
     public Action getNextAction() {
-        ArrayList<Action> possibleActions = GameState.getProblemState().getPossibleActions();
+        List<Action> possibleActions = GameState.getProblemState().getPossibleActions();
         int actionId = Integer.MAX_VALUE;
 
         while (actionId > possibleActions.size()) {

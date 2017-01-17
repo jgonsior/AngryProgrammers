@@ -1,7 +1,6 @@
 package ab.demo.other;
 
 import ab.planner.TrajectoryPlanner;
-import ab.utils.ScreenshotUtil;
 import ab.vision.ABObject;
 import ab.vision.ABShape;
 import ab.vision.ABType;
@@ -25,7 +24,7 @@ public class ProblemState {
     private static final Logger logger = Logger.getLogger(ProblemState.class);
 
     private final int MIN_PIXEL_OVERLAP = 1;
-    private ArrayList<Action> possibleActions;
+    private List<Action> possibleActions;
     private List<ABObject> allObjects;
     private int id;
     private Vision vision;
@@ -91,7 +90,7 @@ public class ProblemState {
         }
     }
 
-    public ArrayList<Action> getPossibleActions() {
+    public List<Action> getPossibleActions() {
         return possibleActions;
     }
 
@@ -249,22 +248,6 @@ public class ProblemState {
         return !area.isEmpty();
     }
 
-    //@todo: low/high trajectory? -> calculate left objects for score?
-    private ArrayList<ABObject> getBigRoundObjects() {
-        ArrayList<ABObject> result = new ArrayList<>();
-        for (ABObject obj : vision.findBlocksRealShape()) {
-            if (obj.shape == ABShape.Circle) {
-                Circle objC = (Circle) obj;
-                // have to see if 9000 is too big
-                if (objC.r > 9000) {
-                    logger.info("-" + obj.toString());
-                    result.add(obj);
-                }
-            }
-        }
-        return result;
-    }
-
     private double calculateDistanceToPig(ABObject object) {
         double pigX = 0, pigY = 0, distanceToPigs;
 
@@ -285,6 +268,17 @@ public class ProblemState {
 
         //finds all objects in the scene beside slingshot, birds, pigs. and hills.
         List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
+
+        blocksRealShapeSorted.addAll(vision.findTNTs());
+
+        for (ABObject obj : vision.findBlocksRealShape()) {
+            if (obj.shape == ABShape.Circle) {
+                // have to see if 9000 is too big
+                if (((Circle) obj).r > 9000) {
+                    blocksRealShapeSorted.add(obj);
+                }
+            }
+        }
 
         //sorted descending after Y coordinates, so first object to iterate over is the highest one
         Collections.sort(blocksRealShapeSorted);
@@ -435,18 +429,11 @@ public class ProblemState {
         return score;
     }
 
-    private ArrayList<Action> calculatePossibleActions() {
+    private List<Action> calculatePossibleActions() {
         //transfer it into list of actions! -> don't copy abobject, copy it into a new action instead
         ArrayList<Action> possibleActions = new ArrayList<>();
 
-        ArrayList<ABObject> targetObjects = new ArrayList<>();
-
-        //@todo: create actions for tnt, objects and pigs?
-        //@todo calculate score for tnt and objects as well?
-        targetObjects.addAll(vision.findTNTs());
-        targetObjects.addAll(getBigRoundObjects());
-        targetObjects.addAll(vision.findPigsRealShape());
-
+        //tnt and big round object is already included
         possibleActions.addAll(getScoredStructuralObjects());
         possibleActions.add(calculateBestMultiplePigShot());
 
