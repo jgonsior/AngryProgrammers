@@ -82,12 +82,12 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
         return objectsAboveSet;
     }
 
-    public Set<ABObject> getObjectsLeftSet() {
-        return objectsLeftSet;
-    }
-
     public void setObjectsAboveSet(Set<ABObject> objectsAboveSet) {
         this.objectsAboveSet = objectsAboveSet;
+    }
+
+    public Set<ABObject> getObjectsLeftSet() {
+        return objectsLeftSet;
     }
 
     public void setObjectsLeftSet(Set<ABObject> objectsLeftSet) {
@@ -113,7 +113,7 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %03d %06f", objectsAboveCount, objectsLeftCount, objectsRightCount, objectsBelowCount, distanceToPigs) + " | " + this.toString();
+        return String.format("%03d %03d %03d %03d %02f", objectsAboveCount, objectsLeftCount, objectsRightCount, objectsBelowCount, distanceToPigs) + " | " + this.toString();
     }
 
     public ABType getType() {
@@ -137,11 +137,11 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     @Override
     public boolean equals(Object object) {
         ABObject abObject = (ABObject) object;
-        if (this.getType() != abObject.getType()){
+        if (this.getType() != abObject.getType()) {
             return false;
-        } else if (Math.abs(this.x - abObject.x) > 3){
+        } else if (Math.abs(this.x - abObject.x) > 3) {
             return false;
-        } else if (Math.abs(this.y - abObject.y) > 3){
+        } else if (Math.abs(this.y - abObject.y) > 3) {
             return false;
         }
         return true;

@@ -286,7 +286,7 @@ public class ProblemState {
         double minObjectX, maxObjectX, minObjectY, maxObjectY;
         int objectsLeftCount, objectsRightCount, objectsBelowCount;
         Set<ABObject> objectsAbove = new HashSet<>();
-        
+
         for (ABObject object : blocksRealShapeSorted) {
             objectsLeftCount = 0;
             objectsRightCount = 0;
@@ -324,7 +324,7 @@ public class ProblemState {
                     objectsLeftCount++;
                 } else if (nearY && minNeighborX >= maxObjectX && minNeighborX - maxObjectX < 20) {
                     objectsRightCount++;
-                } else if (nearX && maxNeighborY > minObjectY){
+                } else if (nearX && maxNeighborY > minObjectY) {
                     objectsBelowCount++;
                 }
             }
@@ -356,7 +356,7 @@ public class ProblemState {
                 objectsLeftCount = objectsOnTrajectory.size();
                 object.setObjectsLeftSet(new HashSet<>(objectsOnTrajectory));
                 object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, objectsBelowCount, calculateDistanceToPig(object));
-                Action action = new Action(object, trajType); 
+                Action action = new Action(object, trajType);
                 action.setScore(calculateScore(object, action));
                 result.add(action);
             }
@@ -364,18 +364,18 @@ public class ProblemState {
         return normalizeActions(result);
     }
 
-    private ArrayList<Action> normalizeActions(ArrayList<Action> actions){
+    private ArrayList<Action> normalizeActions(ArrayList<Action> actions) {
         //List<Action> normalizedActions = new ArrayList<>();
         double maxScore = -1000;
         // find highest score
-        for (Action action : actions){
-            if (maxScore < action.getScore()){
+        for (Action action : actions) {
+            if (maxScore < action.getScore()) {
                 maxScore = action.getScore();
             }
         }
         // normalization
-        for (Action action : actions){
-            action.setScore(100*action.getScore()/maxScore);
+        for (Action action : actions) {
+            action.setScore(100 * action.getScore() / maxScore);
             //normalizedActions
         }
         return actions;
@@ -404,19 +404,19 @@ public class ProblemState {
                     orientationOffset = 2;
                 }
             }
-        } else if (action.getTrajectoryType() == ABObject.TrajectoryType.LOW){
+        } else if (action.getTrajectoryType() == ABObject.TrajectoryType.LOW) {
             orientationOffset = 2;
         }
 
-        if (targetObject.getType() == ABType.Stone && birdOnSlingshot.getType() == ABType.BlackBird){
+        if (targetObject.getType() == ABType.Stone && birdOnSlingshot.getType() == ABType.BlackBird) {
             typeOffset = 5;
-        } else if (targetObject.getType() == ABType.Wood && birdOnSlingshot.getType() == ABType.YellowBird){
+        } else if (targetObject.getType() == ABType.Wood && birdOnSlingshot.getType() == ABType.YellowBird) {
             typeOffset = 3;
-        } else if (targetObject.getType() == ABType.Ice && birdOnSlingshot.getType() == ABType.BlueBird){
+        } else if (targetObject.getType() == ABType.Ice && birdOnSlingshot.getType() == ABType.BlueBird) {
             typeOffset = 3;
         }
         double pigDependentFactor;
-        if (pigs.size() > 1){
+        if (pigs.size() > 1) {
             pigDependentFactor = 30;
         } else {
             pigDependentFactor = 10;

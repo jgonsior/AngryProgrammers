@@ -66,17 +66,17 @@ public abstract class StandaloneAgent implements Runnable {
         logger.info("Release Angle: " + Math.toDegrees(releaseAngle));
         int tappingInterval = 0;
 
-        
+
         Set<ABObject> leftSet = new HashSet<>(action.getTargetObject().getObjectsLeftSet());
-        if (leftSet.size() > 0){
+        if (leftSet.size() > 0) {
             ABObject mostLeftObjectOnTrajectory = null;
             int minX = 1000;
-            for (ABObject obj : leftSet){
-                if (obj.x < minX){
+            for (ABObject obj : leftSet) {
+                if (obj.x < minX) {
                     minX = obj.x;
                     mostLeftObjectOnTrajectory = obj;
                 }
-            } 
+            }
             targetPoint = mostLeftObjectOnTrajectory.getCenter();
         }
 
@@ -90,16 +90,16 @@ public abstract class StandaloneAgent implements Runnable {
                 break;               // start of trajectory
             case YellowBird:
                 tappingInterval = 80;
-                break; 
+                break;
             case WhiteBird:
                 tappingInterval = 70;
-                break; 
+                break;
             case BlackBird:
                 tappingInterval = 90;
-                break; 
+                break;
             case BlueBird:
                 tappingInterval = 80;
-                break; 
+                break;
             default:
                 tappingInterval = 60;
         }

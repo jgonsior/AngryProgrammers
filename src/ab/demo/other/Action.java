@@ -37,7 +37,7 @@ public class Action {
 
     public void setScore(double score) {
         this.score = score;
-        setName(score + " " + getName());
+        setName(String.format("%.2f", score) + " " + getName());
     }
 
     public String getName() {
