@@ -12,7 +12,7 @@ import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ABObject extends Rectangle implements Comparable<ABObject> {
+public class ABObject extends Rectangle {
 
     private static final long serialVersionUID = 1L;
     private static int counter = 0;
@@ -127,11 +127,6 @@ public class ABObject extends Rectangle implements Comparable<ABObject> {
     public void setCoordinates(int x, int y) {
         this.movedX = x;
         this.movedY = y;
-    }
-
-    @Override
-    public int compareTo(ABObject abObject) {
-        return this.y - abObject.y;
     }
 
     @Override

@@ -246,7 +246,7 @@ public abstract class StandaloneAgent implements Runnable {
                 GameState.refreshTrajectoryPlanner();
 
             } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
-                logger.info("Restart level");
+                logger.info("Restart level " + currentLevel);
                 actionRobot.restartLevel();
             } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LEVEL_SELECTION) {
                 logger.warn("Unexpected level selection page, go to the last current level : "

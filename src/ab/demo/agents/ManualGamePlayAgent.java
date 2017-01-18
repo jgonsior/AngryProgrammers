@@ -9,6 +9,7 @@ import ab.demo.other.ProblemState;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * @author: Julius Gonsior
@@ -34,6 +35,8 @@ public class ManualGamePlayAgent extends StandaloneAgent {
      */
     public Action getNextAction() {
         List<Action> possibleActions = GameState.getProblemState().getPossibleActions();
+
+
         int actionId = Integer.MAX_VALUE;
         int maxActionId = 0;
         double maxScore = 0;
@@ -47,11 +50,11 @@ public class ManualGamePlayAgent extends StandaloneAgent {
                 }
                 System.out.println("(" + i + ")\t" + possibleAction.getName());
             }
-            //System.out.println("Enter the actionId you want to shoot at: ");
-            //Scanner input = new Scanner(System.in);
-            //actionId = input.nextInt();
-            actionId = maxActionId;
-            //input.nextLine();
+            System.out.println("Enter the actionId you want to shoot at: ");
+            Scanner input = new Scanner(System.in);
+            actionId = input.nextInt();
+            //actionId = maxActionId;
+            input.nextLine();
         }
 
         Action action = possibleActions.get(actionId);

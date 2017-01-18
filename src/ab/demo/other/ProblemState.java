@@ -11,8 +11,11 @@ import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.awt.geom.Area;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Represents the current state of the game using the coordinates of the birds, the pigs and all found objects and their type
@@ -271,17 +274,8 @@ public class ProblemState {
 
         blocksRealShapeSorted.addAll(vision.findTNTs());
 
-        for (ABObject obj : vision.findBlocksRealShape()) {
-            if (obj.shape == ABShape.Circle) {
-                // have to see if 9000 is too big
-                if (((Circle) obj).r > 9000) {
-                    blocksRealShapeSorted.add(obj);
-                }
-            }
-        }
-
         //sorted descending after Y coordinates, so first object to iterate over is the highest one
-        Collections.sort(blocksRealShapeSorted);
+        blocksRealShapeSorted.sort((o1, o2) -> o1.y - o2.y);
 
         double minObjectX, maxObjectX, minObjectY, maxObjectY;
         int objectsLeftCount, objectsRightCount, objectsBelowCount;
@@ -430,11 +424,38 @@ public class ProblemState {
     }
 
     private List<Action> calculatePossibleActions() {
-        //transfer it into list of actions! -> don't copy abobject, copy it into a new action instead
-        ArrayList<Action> possibleActions = new ArrayList<>();
+        List<Action> allPossibleActions = new ArrayList<>();
+        List<Action> possibleActions = new ArrayList<>();
 
         //tnt and big round object is already included
-        possibleActions.addAll(getScoredStructuralObjects());
+        allPossibleActions.addAll(getScoredStructuralObjects());
+
+        //extract tnt
+        possibleActions.addAll(allPossibleActions.stream().filter(
+                a -> a.getTargetObject().type == ABType.TNT
+        ).collect(Collectors.toList()));
+
+        for (ABObject obj : vision.findBlocksRealShape()) {
+            if (obj.shape == ABShape.Circle) {
+                // have to see if 9000 is too big
+                if (((Circle) obj).r > 9) {
+                    logger.debug("found big round object with radius " + ((Circle) obj).r);
+                    logger.debug(obj);
+                }
+            }
+        }
+
+
+        //extract round objects
+        possibleActions.addAll(allPossibleActions.stream().filter(
+                a -> a.getTargetObject().shape == ABShape.Circle && ((Circle) a.getTargetObject()).r > 9
+        ).collect(Collectors.toList()));
+
+        // pre select the five best possibleActions
+        allPossibleActions.sort((o1, o2) -> Double.compare(o1.getScore(), o2.getScore()));
+
+        possibleActions.addAll(allPossibleActions.subList(allPossibleActions.size() - 5, allPossibleActions.size()));
+
         possibleActions.add(calculateBestMultiplePigShot());
 
         return possibleActions;
