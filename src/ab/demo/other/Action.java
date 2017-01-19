@@ -9,19 +9,11 @@ import java.awt.*;
  */
 public class Action {
     private String name;
-    private int id;
     private ABObject.TrajectoryType trajectoryType;
     private boolean rand;
     private ABObject targetObject;
     private Point targetPoint;
     private double score;
-
-    public Action(int actionId, ABObject.TrajectoryType trajectoryType) {
-        this.id = actionId;
-        this.trajectoryType = trajectoryType;
-
-        //@todo calculate targetObject!
-    }
 
     public Action(ABObject targetObject, ABObject.TrajectoryType trajectoryType) {
         //this.id = actionId;
@@ -84,14 +76,6 @@ public class Action {
 
     public ABObject getTargetObject() {
         return targetObject;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public Point getTargetPoint() {

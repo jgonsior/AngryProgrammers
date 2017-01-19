@@ -38,7 +38,7 @@ public class MainEntry {
 
         LoggingHandler.initConsoleLog();
 
-        args = new String[]{"-mu", "-l", "8"};
+        args = new String[]{"-su", "-l", "1"};
         Options options = new Options();
         options.addOption("s", "standalone", false, "runs the reinforcement learning agent in standalone mode");
         options.addOption("p", "proxyPort", true, "the port which is to be used by the proxy");

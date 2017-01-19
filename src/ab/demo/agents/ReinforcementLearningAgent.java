@@ -26,14 +26,22 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
      * checks if highest q_value is 0.0 which means that we have never been in this state,
      * so we need to initialize all possible actions to 0.0
      *
-     * @param problemState
      */
-    private void insertsPossibleActionsForProblemStateIntoDatabase(ProblemState problemState) {
-        int counter = 0;
+    protected void insertPossibleActionsForProblemStateIntoDatabase() {
+        ProblemState problemState = GameState.getProblemState();
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
             for (Action action : problemState.getPossibleActions()) {
-                qValuesDAO.insertNewAction(0, problemState.getId(), counter, action.getTrajectoryType().name(), action.toString());
-                counter += 1;
+                qValuesDAO.insertNewAction(
+                        0,
+                        problemState.getId(),
+                        action.getTargetObject().getType().toString(),
+                        action.getTargetObject().objectsAboveCount,
+                        action.getTargetObject().objectsLeftCount,
+                        action.getTargetObject().objectsRightCount,
+                        action.getTargetObject().objectsBelowCount,
+                        action.getTargetObject().distanceToPigs,
+                        action.getTrajectoryType().name(),
+                        action.toString());
             }
         }
     }
@@ -42,14 +50,19 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
      * updates q-value in database when new information comes in
      *
      * @param from
-     * @param nextAction
      * @param to
      * @param reward
      * @param end        true if the current level was finished (could be either won or lost)
      */
-    private void updateQValue(ProblemState from, ProblemState to, Action nextAction, double reward, boolean end, int gameId, int moveCounter) {
-        int actionId = nextAction.getId();
-        double oldValue = qValuesDAO.getQValue(from.getId(), actionId);
+    private void updateQValue(ProblemState from, ProblemState to, Action action, double reward, boolean end) {
+        double oldValue = qValuesDAO.getQValue(from.getId(),
+                action.getTargetObject().getType().toString(),
+                action.getTargetObject().objectsAboveCount,
+                action.getTargetObject().objectsLeftCount,
+                action.getTargetObject().objectsRightCount,
+                action.getTargetObject().objectsBelowCount,
+                action.getTargetObject().distanceToPigs,
+                action.getTrajectoryType().name());
         double newValue;
 
         if (end) {
@@ -59,20 +72,26 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
             newValue = oldValue + learningRate * (reward + discountFactor * qValuesDAO.getHighestQValue(to.getId()) - oldValue);
         }
 
-        qValuesDAO.updateQValue(newValue, from.getId(), actionId);
+        qValuesDAO.updateQValue(newValue, from.getId(),
+                action.getTargetObject().getType().toString(),
+                action.getTargetObject().objectsAboveCount,
+                action.getTargetObject().objectsLeftCount,
+                action.getTargetObject().objectsRightCount,
+                action.getTargetObject().objectsBelowCount,
+                action.getTargetObject().distanceToPigs,
+                action.getTrajectoryType().name());
 
     }
 
     public void afterShotHook(ProblemState previousProblemState) {
         if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
             updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
-                    GameState.getReward(), false, GameState.getGameId(), GameState.getMoveCounter());
+                    GameState.getReward(), false);
         } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
             updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
-                    GameState.getReward(), true, GameState.getGameId(), GameState.getMoveCounter());
+                    GameState.getReward(), true);
         }
     }
-
 
     /**
      * Returns next action, with explorationrate as probability of taking a random action

@@ -134,6 +134,8 @@ public abstract class StandaloneAgent implements Runnable {
                 int problemStateId = problemStatesDAO.insertId();
 
                 GameState.setProblemState(new ProblemState(problemStateId));
+                this.insertPossibleActionsForProblemStateIntoDatabase();
+
 
                 previousProblemState = GameState.getProblemState();
 
@@ -169,7 +171,21 @@ public abstract class StandaloneAgent implements Runnable {
                     logger.info("done waiting for blocks to fall down");
 
                     GameState.setReward(getCurrentReward());
-                    movesDAO.save(GameState.getGameId(), birdCounter, previousProblemState.getId(), nextAction.getId(), GameState.getProblemState().getId(), GameState.getReward(), nextAction.isRand(), nextAction.getTrajectoryType().name());
+                    movesDAO.save(
+                            GameState.getGameId(),
+                            birdCounter,
+                            previousProblemState.getId(),
+                            nextAction.getTargetObject().getType().toString(),
+                            nextAction.getTargetObject().objectsAboveCount,
+                            nextAction.getTargetObject().objectsLeftCount,
+                            nextAction.getTargetObject().objectsRightCount,
+                            nextAction.getTargetObject().objectsBelowCount,
+                            nextAction.getTargetObject().distanceToPigs,
+                            nextAction.getTrajectoryType().name(),
+                            GameState.getProblemState().getId(),
+                            GameState.getReward(),
+                            nextAction.isRand()
+                    );
 
                     //save the information about the current zooming for the next shot
                     List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
@@ -195,6 +211,10 @@ public abstract class StandaloneAgent implements Runnable {
                 birdCounter = 0;
             }
         }
+    }
+
+    protected void insertPossibleActionsForProblemStateIntoDatabase() {
+        //doing nothing here
     }
 
     protected abstract void afterShotHook(ProblemState previousProblemState);
