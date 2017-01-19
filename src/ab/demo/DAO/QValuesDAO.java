@@ -28,7 +28,7 @@ public interface QValuesDAO {
 
     @SqlUpdate("UPDATE q_values SET q_value=:q_value " +
             "WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCound=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
     void updateQValue(
             @Bind("q_value") double qValue,
             @Bind("stateId") int stateId,
@@ -64,7 +64,7 @@ public interface QValuesDAO {
     );
 
     @SqlQuery("SELECT q_value FROM q_values WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCound=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
     double getQValue(
             @Bind("stateId") int stateId,
             @Bind("x") int x,
