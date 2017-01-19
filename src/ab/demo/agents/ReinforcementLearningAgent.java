@@ -27,6 +27,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
      * so we need to initialize all possible actions to 0.0
      *
      */
+    @Override
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
         ProblemState problemState = GameState.getProblemState();
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
@@ -46,6 +47,20 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                         action.toString());
             }
         }
+    }
+
+    @Override
+    protected int getProblemStateId(ProblemState problemState) {
+        Action action = problemState.getPossibleActions().get(0);
+        return qValuesDAO.getStateId(action.getTargetObject().x,
+                action.getTargetObject().y,
+                action.getTargetObject().getType().toString(),
+                action.getTargetObject().objectsAboveCount,
+                action.getTargetObject().objectsLeftCount,
+                action.getTargetObject().objectsRightCount,
+                action.getTargetObject().objectsBelowCount,
+                action.getTargetObject().distanceToPigs,
+                action.getTrajectoryType().name());
     }
 
     /**

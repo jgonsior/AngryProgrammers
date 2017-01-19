@@ -131,9 +131,19 @@ public abstract class StandaloneAgent implements Runnable {
 
                 GameState.updateCurrentVision();
 
-                int problemStateId = problemStatesDAO.insertId();
+                //check if the problemState exists already
+                ProblemState problemState = new ProblemState();
 
-                GameState.setProblemState(new ProblemState(problemStateId));
+                int problemStateId = getProblemStateId(problemState);
+
+                if (problemStateId == 0) {
+                    problemState.setId(problemStateId);
+                } else {
+                    problemState.setId(problemStatesDAO.insertId());
+                }
+
+
+                GameState.setProblemState(problemState);
                 this.insertPossibleActionsForProblemStateIntoDatabase();
 
 
@@ -215,6 +225,9 @@ public abstract class StandaloneAgent implements Runnable {
         }
     }
 
+    protected int getProblemStateId(ProblemState problemState) {
+        return 0;
+    }
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
         //doing nothing here
     }

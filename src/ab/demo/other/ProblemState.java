@@ -36,7 +36,7 @@ public class ProblemState {
     private List<ABObject> pigs;
     private List<ABObject> birds;
 
-    public ProblemState(int id) {
+    public ProblemState() {
         vision = GameState.getVision();
 
         findSlingshot();
@@ -46,8 +46,6 @@ public class ProblemState {
 
         allObjects = new ArrayList<>();
         pigs = new ArrayList<>(vision.findPigsRealShape());
-
-        this.id = id;
 
         allObjects.addAll(vision.findBirdsRealShape());
         allObjects.addAll(vision.findBlocksRealShape());
