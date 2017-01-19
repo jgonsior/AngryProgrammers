@@ -175,6 +175,8 @@ public abstract class StandaloneAgent implements Runnable {
                             GameState.getGameId(),
                             birdCounter,
                             previousProblemState.getId(),
+                            nextAction.getTargetObject().x,
+                            nextAction.getTargetObject().y,
                             nextAction.getTargetObject().getType().toString(),
                             nextAction.getTargetObject().objectsAboveCount,
                             nextAction.getTargetObject().objectsLeftCount,

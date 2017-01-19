@@ -20,16 +20,18 @@ import java.sql.SQLException;
 public interface QValuesDAO {
 
     @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values " +
-            "(q_value DOUBLE PRECISION, stateId INT, targetObjectType VARCHAR(22), aboveCount INT, leftCount INT, rightCount INT, belowCount INT, distanceToPig DOUBLE PRECISION, trajectoryType VARCHAR(4), targetObject VARCHAR(150)," +
-            " PRIMARY KEY(stateId, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType))")
+            "(q_value DOUBLE PRECISION, stateId INT, x INT, y INT, targetObjectType VARCHAR(22), aboveCount INT, leftCount INT, rightCount INT, belowCount INT, distanceToPig DOUBLE PRECISION, trajectoryType VARCHAR(4), targetObject VARCHAR(150)," +
+            " PRIMARY KEY(stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType))")
     void createTable();
 
     @SqlUpdate("UPDATE q_values SET q_value=:q_value " +
-            "WHERE stateId=:stateId AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
+            "WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
             "AND leftCount=:leftCount AND rightCound=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
     void updateQValue(
             @Bind("q_value") double qValue,
             @Bind("stateId") int stateId,
+            @Bind("x") int x,
+            @Bind("y") int y,
             @Bind("targetObjectType") String targetObjectType,
             @Bind("aboveCount") int aboveCount,
             @Bind("leftCount") int leftCount,
@@ -40,13 +42,15 @@ public interface QValuesDAO {
     );
 
     @SqlUpdate("INSERT INTO q_values(" +
-            "q_value, stateId, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject" +
+            "q_value, stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject" +
             ") VALUES (" +
-            ":q_value, :stateId, :targetObjectType, :aboveCount, :leftCount, :rightCount, :belowCount, :distanceToPig, :trajectoryType, :targetObject" +
+            ":q_value, :stateId, :x, :y, :targetObjectType, :aboveCount, :leftCount, :rightCount, :belowCount, :distanceToPig, :trajectoryType, :targetObject" +
             ");")
     void insertNewAction(
             @Bind("q_value") double qValue,
             @Bind("stateId") int stateId,
+            @Bind("x") int x,
+            @Bind("y") int y,
             @Bind("targetObjectType") String targetObjectType,
             @Bind("aboveCount") int aboveCount,
             @Bind("leftCount") int leftCount,
@@ -57,10 +61,12 @@ public interface QValuesDAO {
             @Bind("targetObject") String targetObject
     );
 
-    @SqlQuery("SELECT q_value FROM q_values WHERE stateId=:stateId AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
+    @SqlQuery("SELECT q_value FROM q_values WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
             "AND leftCount=:leftCount AND rightCound=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
     double getQValue(
             @Bind("stateId") int stateId,
+            @Bind("x") int x,
+            @Bind("y") int y,
             @Bind("targetObjectType") String targetObjectType,
             @Bind("aboveCount") int aboveCount,
             @Bind("leftCount") int leftCount,
@@ -73,13 +79,13 @@ public interface QValuesDAO {
     @SqlQuery("SELECT MAX(q_value) FROM q_values WHERE stateId=:stateId;")
     double getHighestQValue(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT stateId, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY q_value DESC LIMIT 1;")
+    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY q_value DESC LIMIT 1;")
     Action getBestAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT stateId, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY RANDOM() LIMIT 1;")
+    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY RANDOM() LIMIT 1;")
     Action getRandomAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT COUNT(*) FROM q_values WHERE stateId=:stateId GROUP BY targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType;")
+    @SqlQuery("SELECT COUNT(*) FROM q_values WHERE stateId=:stateId GROUP BY x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType;")
     int getActionCount(@Bind("stateId") int stateId);
 
     /**
@@ -92,6 +98,8 @@ public interface QValuesDAO {
             ABObject targetObject = new ABObject();
             targetObject.type = ABType.valueOf(resultSet.getString("targetObjectType"));
             targetObject.setObjectsAround(resultSet.getInt("aboveCount"), resultSet.getInt("leftCount"), resultSet.getInt("rightCount"), resultSet.getInt("belowCount"), resultSet.getDouble("distanceToPig"));
+            targetObject.x = resultSet.getInt("x");
+            targetObject.y = resultSet.getInt("y");
 
             return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")));
         }

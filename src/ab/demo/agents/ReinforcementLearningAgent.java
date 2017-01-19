@@ -34,6 +34,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 qValuesDAO.insertNewAction(
                         0,
                         problemState.getId(),
+                        action.getTargetObject().x,
+                        action.getTargetObject().y,
                         action.getTargetObject().getType().toString(),
                         action.getTargetObject().objectsAboveCount,
                         action.getTargetObject().objectsLeftCount,
@@ -56,6 +58,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
      */
     private void updateQValue(ProblemState from, ProblemState to, Action action, double reward, boolean end) {
         double oldValue = qValuesDAO.getQValue(from.getId(),
+                action.getTargetObject().x,
+                action.getTargetObject().y,
                 action.getTargetObject().getType().toString(),
                 action.getTargetObject().objectsAboveCount,
                 action.getTargetObject().objectsLeftCount,
@@ -73,6 +77,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
         }
 
         qValuesDAO.updateQValue(newValue, from.getId(),
+                action.getTargetObject().x,
+                action.getTargetObject().y,
                 action.getTargetObject().getType().toString(),
                 action.getTargetObject().objectsAboveCount,
                 action.getTargetObject().objectsLeftCount,
