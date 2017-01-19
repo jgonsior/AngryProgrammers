@@ -1,6 +1,7 @@
 package ab.demo.DAO;
 
 import ab.demo.other.Action;
+import ab.demo.other.GameState;
 import ab.vision.ABObject;
 import ab.vision.ABType;
 import org.skife.jdbi.v2.StatementContext;
@@ -12,6 +13,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @author jgonsior
@@ -95,13 +97,26 @@ public interface QValuesDAO {
 
     class ActionMapper implements ResultSetMapper<Action> {
         public Action map(int index, ResultSet resultSet, StatementContext ctx) throws SQLException {
-            ABObject targetObject = new ABObject();
-            targetObject.type = ABType.valueOf(resultSet.getString("targetObjectType"));
-            targetObject.setObjectsAround(resultSet.getInt("aboveCount"), resultSet.getInt("leftCount"), resultSet.getInt("rightCount"), resultSet.getInt("belowCount"), resultSet.getDouble("distanceToPig"));
-            targetObject.x = resultSet.getInt("x");
-            targetObject.y = resultSet.getInt("y");
+            List<Action> possibleActions = GameState.getProblemState().getPossibleActions();
 
-            return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")));
+            //try to find action
+            for (Action possibleAction : possibleActions) {
+                if (
+                        possibleAction.getTargetObject().type == ABType.valueOf(resultSet.getString("targetObjectType")) &&
+                                possibleAction.getTargetObject().objectsAboveCount == resultSet.getInt("aboveCount") &&
+                                possibleAction.getTargetObject().objectsRightCount == resultSet.getInt("rightCount") &&
+                                possibleAction.getTargetObject().objectsLeftCount == resultSet.getInt("leftCount") &&
+                                possibleAction.getTargetObject().objectsBelowCount == resultSet.getInt("belowCount") &&
+                                possibleAction.getTargetObject().distanceToPigs == resultSet.getDouble("distanceToPig") &&
+                                ((possibleAction.getTargetObject().x + 9) / 10) * 10 == ((resultSet.getInt("x") + 9) / 10) * 10 &&
+                                ((possibleAction.getTargetObject().y + 9) / 10) * 10 == ((resultSet.getInt("y") + 9) / 10) * 10 &&
+                                possibleAction.getTrajectoryType() == ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType"))
+                        ) {
+                    return possibleAction;
+                }
+            }
+
+            throw new InstantiationError("Couldn't find the requested target object in the actions for this problemstate");
         }
     }
 }
