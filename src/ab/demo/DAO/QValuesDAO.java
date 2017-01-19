@@ -90,6 +90,18 @@ public interface QValuesDAO {
     @SqlQuery("SELECT COUNT(*) FROM q_values WHERE stateId=:stateId GROUP BY x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType;")
     int getActionCount(@Bind("stateId") int stateId);
 
+    @SqlQuery("SELECT count(stateId) FROM q_values WHERE x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType")
+    int countStateIds(@Bind("x") int x,
+                      @Bind("y") int y,
+                      @Bind("targetObjectType") String targetObjectType,
+                      @Bind("aboveCount") int aboveCount,
+                      @Bind("leftCount") int leftCount,
+                      @Bind("rightCount") int rightCount,
+                      @Bind("belowCount") int belowCount,
+                      @Bind("distanceToPig") double distanceToPig,
+                      @Bind("trajectoryType") String trajectoryType);
+
     @SqlQuery("SELECT stateId FROM q_values WHERE x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
             "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType")
     int getStateId(@Bind("x") int x,

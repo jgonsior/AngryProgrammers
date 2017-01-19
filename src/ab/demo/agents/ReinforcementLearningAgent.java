@@ -63,6 +63,20 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 action.getTrajectoryType().name());
     }
 
+    @Override
+    protected int getNumberOfProblemStateIds(ProblemState problemState) {
+        Action action = problemState.getPossibleActions().get(0);
+        return qValuesDAO.countStateIds(action.getTargetObject().x,
+                action.getTargetObject().y,
+                action.getTargetObject().getType().toString(),
+                action.getTargetObject().objectsAboveCount,
+                action.getTargetObject().objectsLeftCount,
+                action.getTargetObject().objectsRightCount,
+                action.getTargetObject().objectsBelowCount,
+                action.getTargetObject().distanceToPigs,
+                action.getTrajectoryType().name());
+    }
+
     /**
      * updates q-value in database when new information comes in
      *

@@ -134,12 +134,10 @@ public abstract class StandaloneAgent implements Runnable {
                 //check if the problemState exists already
                 ProblemState problemState = new ProblemState();
 
-                int problemStateId = getProblemStateId(problemState);
-
-                if (problemStateId == 0) {
-                    problemState.setId(problemStateId);
-                } else {
+                if (getNumberOfProblemStateIds(problemState) == 0) {
                     problemState.setId(problemStatesDAO.insertId());
+                } else {
+                    problemState.setId(getProblemStateId(problemState));
                 }
 
 
@@ -226,6 +224,10 @@ public abstract class StandaloneAgent implements Runnable {
     }
 
     protected int getProblemStateId(ProblemState problemState) {
+        return 0;
+    }
+
+    protected int getNumberOfProblemStateIds(ProblemState problemState) {
         return 0;
     }
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
