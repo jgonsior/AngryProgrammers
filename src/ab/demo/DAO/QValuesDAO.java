@@ -47,7 +47,7 @@ public interface QValuesDAO {
             "q_value, stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject" +
             ") VALUES (" +
             ":q_value, :stateId, :x, :y, :targetObjectType, :aboveCount, :leftCount, :rightCount, :belowCount, :distanceToPig, :trajectoryType, :targetObject" +
-            ");")
+            ") ON CONFLICT q_values_pkey DO NOTHING;")
     void insertNewAction(
             @Bind("q_value") double qValue,
             @Bind("stateId") int stateId,
