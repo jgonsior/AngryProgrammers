@@ -13,7 +13,7 @@ public class Action {
     private boolean rand;
     private ABObject targetObject;
     private Point targetPoint;
-    private double score;
+    private double score = 0;
 
     public Action(ABObject targetObject, ABObject.TrajectoryType trajectoryType) {
         //this.id = actionId;

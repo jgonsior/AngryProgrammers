@@ -171,6 +171,7 @@ public class ProblemState {
         ABObject.TrajectoryType bestTrajType = null;
         int maxAmountOfPigsOnTraj = -1;
         int safeAmountOfPigsOnTraj = -1;
+        ABObject leftMostObject = null;
         // TODO: maybe also use better slingshot finding function
 
         for (Point ptp : possibleTargetPoints) {
@@ -189,6 +190,7 @@ public class ProblemState {
                 ArrayList<Point> predictedTrajectory = new ArrayList<>(tp.predictTrajectory(slingshot, estimatedLaunchPoint));
 
                 ArrayList<ABObject> pigsOnTraj, objsOnTraj, correctedPigs, allObjsOnTraj;
+                ABObject currentLeftMostObject = null;
 
                 allObjsOnTraj = new ArrayList<>(this.getObjectsOnTrajectory(predictedTrajectory));
                 objsOnTraj = new ArrayList<>();
@@ -207,6 +209,7 @@ public class ProblemState {
                         objsOnTraj.add(obj);
                         if (obj.movedX < minX) {
                             minX = obj.movedX;
+                            currentLeftMostObject = obj;
                         }
                     }
                 }
@@ -214,6 +217,7 @@ public class ProblemState {
                 for (ABObject pig : pigsOnTraj) {
                     if (pig.x <= minX) {
                         correctedPigs.add(pig);
+                        currentLeftMostObject = pig;
                     }
                 }
 
@@ -223,15 +227,16 @@ public class ProblemState {
                     maxAmountOfPigsOnTraj = pigsOnTraj.size();
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
-                    //System.out.println(bestShot + " : " + minX + " - " + allObjsOnTraj);
-                    //System.out.println(pigsOnTraj + " : " + objsOnTraj + " : " + correctedPigs);
-
+                    leftMostObject = currentLeftMostObject;
                 }
             }
         }
 
         ABObject pseudoObject = new ABObject(new Rectangle(bestShot), ABType.BestMultiplePigShot);
         pseudoObject.setPigsOnTraj(safeAmountOfPigsOnTraj, maxAmountOfPigsOnTraj);
+        Set<ABObject> leftMostObjectSet = new HashSet<ABObject>();
+        leftMostObjectSet.add(leftMostObject);
+        pseudoObject.setObjectsLeftSet(leftMostObjectSet);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
         return new Action(pseudoObject, bestTrajType);

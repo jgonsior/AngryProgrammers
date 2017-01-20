@@ -87,7 +87,6 @@ public class MainEntry {
         QValuesDAO qValuesDAO = dbi.open(QValuesDAO.class);
         GamesDAO gamesDAO = dbi.open(GamesDAO.class);
         MovesDAO movesDAO = dbi.open(MovesDAO.class);
-        ProblemStatesDAO stateIdDAO = dbi.open(ProblemStatesDAO.class);
         ProblemStatesDAO problemStatesDAO = dbi.open(ProblemStatesDAO.class);
 
         try {
@@ -127,7 +126,6 @@ public class MainEntry {
                 qValuesDAO.createTable();
                 gamesDAO.createTable();
                 movesDAO.createTable();
-                stateIdDAO.createTable();
                 problemStatesDAO.createTable();
             }
 

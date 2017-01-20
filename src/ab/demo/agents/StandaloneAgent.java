@@ -11,6 +11,7 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
+import ab.vision.ABType;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -38,6 +39,8 @@ public abstract class StandaloneAgent implements Runnable {
     protected int currentLevel;
     protected GamesDAO gamesDAO;
     protected MovesDAO movesDAO;
+    protected int pigsLeft;
+    protected ABType currentBirdType;
 
     protected ProblemStatesDAO problemStatesDAO;
 
@@ -81,13 +84,12 @@ public abstract class StandaloneAgent implements Runnable {
         }
 
         //TODO: White Bird calculation
-
-
-        switch (actionRobot.getBirdTypeOnSling()) {
+        currentBirdType = actionRobot.getBirdTypeOnSling();
+        switch (currentBirdType) {
 
             case RedBird:
                 tappingInterval = 0;
-                break;               // start of trajectory
+                break;
             case YellowBird:
                 tappingInterval = 80;
                 break;
@@ -178,10 +180,13 @@ public abstract class StandaloneAgent implements Runnable {
 
                     logger.info("done waiting for blocks to fall down");
 
-                    GameState.setReward(getCurrentReward());
+                    checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
+
                     movesDAO.save(
                             GameState.getGameId(),
+                            pigsLeft,
                             birdCounter,
+                            currentBirdType.toString(),
                             previousProblemState.getId(),
                             nextAction.getTargetObject().x,
                             nextAction.getTargetObject().y,
@@ -200,8 +205,6 @@ public abstract class StandaloneAgent implements Runnable {
                     //save the information about the current zooming for the next shot
                     List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
                     GameState.getTrajectoryPlanner().adjustTrajectory(trajectoryPoints, GameState.getProblemState().getSlingshot(), releasePoint);
-
-                    checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
 
                     //update currentGameStateEnum
                     GameState.setGameStateEnum(actionRobot.getState());
@@ -366,8 +369,9 @@ public abstract class StandaloneAgent implements Runnable {
                 birdsLeft = true;
         }*/
 
-
-        if (birdCounter < 1 || GameState.getVision().findPigsMBR().size() == 0) {
+        GameState.setReward(-1.0);
+        pigsLeft = GameState.getVision().findPigsMBR().size();
+        if (birdCounter < 1 || pigsLeft == 0) {
             logger.info("Pig amount: " + String.valueOf(GameState.getVision().findPigsMBR().size()));
             logger.info("no pigs or birds (on left side) left, now wait until GameState changes");
             int loopCounter = 0;
@@ -388,7 +392,6 @@ public abstract class StandaloneAgent implements Runnable {
                     e.printStackTrace();
                 }
             }
-
             //if we have won wait until gameScore on following screens is the same
             if (actionRobot.getState() == GameStateExtractor.GameStateEnum.WON) {
                 logger.info("in WON state now wait until stable reward");
@@ -401,11 +404,14 @@ public abstract class StandaloneAgent implements Runnable {
                         rewardBefore = rewardAfter;
                         rewardAfter = getCurrentReward();
                         GameState.updateCurrentVision();
+                        GameState.setReward(rewardAfter);
                         ScreenshotUtil.saveCurrentScreenshot("scoreScreenshot");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
+
+                GameState.setReward(rewardAfter);
             }
             logger.info("done waiting");
             GameState.updateCurrentVision();
