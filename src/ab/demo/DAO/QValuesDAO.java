@@ -14,7 +14,6 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.*;
 
 /**
  * @author jgonsior
@@ -105,15 +104,15 @@ public interface QValuesDAO {
 
     @SqlQuery("SELECT stateId FROM q_values WHERE x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
             "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType")
-    List<Integer> getStateId(@Bind("x") int x,
-                   @Bind("y") int y,
-                   @Bind("targetObjectType") String targetObjectType,
-                   @Bind("aboveCount") int aboveCount,
-                   @Bind("leftCount") int leftCount,
-                   @Bind("rightCount") int rightCount,
-                   @Bind("belowCount") int belowCount,
-                   @Bind("distanceToPig") double distanceToPig,
-                   @Bind("trajectoryType") String trajectoryType);
+    List<Integer> getStateIds(@Bind("x") int x,
+                              @Bind("y") int y,
+                              @Bind("targetObjectType") String targetObjectType,
+                              @Bind("aboveCount") int aboveCount,
+                              @Bind("leftCount") int leftCount,
+                              @Bind("rightCount") int rightCount,
+                              @Bind("belowCount") int belowCount,
+                              @Bind("distanceToPig") double distanceToPig,
+                              @Bind("trajectoryType") String trajectoryType);
 
     /**
      * closes the connection
