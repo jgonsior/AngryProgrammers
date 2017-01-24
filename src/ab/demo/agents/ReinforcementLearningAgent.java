@@ -10,6 +10,7 @@ import ab.demo.other.ProblemState;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
+import java.util.*;
 /**
  * @author: Julius Gonsior
  */
@@ -51,22 +52,21 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
 
     @Override
     protected int getProblemStateId(ProblemState problemState) {
-        Action action = problemState.getPossibleActions().get(0);
-        return qValuesDAO.getStateId(action.getTargetObject().x,
-                action.getTargetObject().y,
-                action.getTargetObject().getType().toString(),
-                action.getTargetObject().objectsAboveCount,
-                action.getTargetObject().objectsLeftCount,
-                action.getTargetObject().objectsRightCount,
-                action.getTargetObject().objectsBelowCount,
-                action.getTargetObject().distanceToPigs,
-                action.getTrajectoryType().name());
+        return new ArrayList<>(getPossibleProblemStates(problemState)).get(0);
     }
 
     @Override
     protected int getNumberOfProblemStateIds(ProblemState problemState) {
-        Action action = problemState.getPossibleActions().get(0);
-        return qValuesDAO.countStateIds(action.getTargetObject().x,
+        return getPossibleProblemStates(problemState).size();
+    }
+
+    private Set<Integer> getPossibleProblemStates(ProblemState problemState){
+        // idea: look for every action in which states it occurs and then intersect all of them
+        Set<Integer> possibleStates = new HashSet<Integer>();
+        boolean first = true; 
+        
+        for (Action action : problemState.getPossibleActions()){
+            List<Integer> occurencesOfThisAction = qValuesDAO.getStateId(action.getTargetObject().x,
                 action.getTargetObject().y,
                 action.getTargetObject().getType().toString(),
                 action.getTargetObject().objectsAboveCount,
@@ -75,6 +75,16 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 action.getTargetObject().objectsBelowCount,
                 action.getTargetObject().distanceToPigs,
                 action.getTrajectoryType().name());
+            if (first){
+                possibleStates.addAll(occurencesOfThisAction);
+                first = false;
+            } else {
+                // perform intersection
+                possibleStates.retainAll(occurencesOfThisAction);
+            }
+        }
+
+        return possibleStates;
     }
 
     /**
