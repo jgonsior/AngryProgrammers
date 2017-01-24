@@ -44,7 +44,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                         action.getTargetObject().objectsBelowCount,
                         action.getTargetObject().distanceToPigs,
                         action.getTrajectoryType().name(),
-                        action.toString());
+                        action.getTargetObject().myToString());
             }
         }
     }
