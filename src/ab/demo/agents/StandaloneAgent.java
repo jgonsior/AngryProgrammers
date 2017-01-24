@@ -152,9 +152,10 @@ public abstract class StandaloneAgent implements Runnable {
                 // check if there are still pigs available
                 List<ABObject> pigs = GameState.getVision().findPigsMBR();
 
+                // DO we really need this ?
                 if (GameState.getMoveCounter() == 0) {
                     // count initally all birds
-                    countBirds();
+                    birdCounter = countBirds();
                 }
                 logger.info("Current Bird count: " + birdCounter);
                 GameState.updateCurrentVision();
@@ -435,27 +436,51 @@ public abstract class StandaloneAgent implements Runnable {
 
 
     protected int countBirds() {
-        Vision vision = GameState.getVision();
         int birdCounter = 0;
+        int tryCounter = 0;
         ActionRobot.fullyZoomIn();
         GameState.updateCurrentVision();
+        while (tryCounter < 5){
+            try {
+                birdCounter = GameState.getVision().findBirdsRealShape().size();
+                logger.info("Birds: " + GameState.getVision().findBirdsRealShape());
+            } catch (NullPointerException e) {
+                logger.error("Unable to find birds, now check after Zooming out " + e);
+                e.printStackTrace();
+            }
 
-        try {
-            birdCounter = vision.findBirdsRealShape().size();
-            logger.info("Birds: " + vision.findBirdsRealShape());
-        } catch (NullPointerException e) {
-            logger.error("Unable to find birds, now check after Zooming out " + e);
-            e.printStackTrace();
+            ActionRobot.skipPopUp();
+
+            if (birdCounter != 0){
+                return birdCounter;
+            } else {
+                tryCounter++;
+            }
+
+            GameState.updateCurrentVision();
         }
+        
 
         ActionRobot.fullyZoomOut();
-
+        tryCounter = 0;
         //failed on some lvls (e.g. 1), maybe zooms to pig/structure
-        if (birdCounter == 0) {
+        while (tryCounter < 5){
             GameState.updateCurrentVision();
-            birdCounter = vision.findBirdsRealShape().size();
-            logger.info("Birds: " + vision.findBirdsRealShape());
+            birdCounter = GameState.getVision().findBirdsRealShape().size();
+            logger.info("Birds: " + GameState.getVision().findBirdsRealShape());
+
+            ActionRobot.skipPopUp();
+
+            if (birdCounter != 0){
+                return birdCounter;
+            } else {
+                tryCounter++;
+            }
+
+            GameState.updateCurrentVision();
+            
         }
+        
         return birdCounter;
 
     }
