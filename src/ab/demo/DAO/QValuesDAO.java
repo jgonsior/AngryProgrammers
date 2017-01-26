@@ -102,8 +102,8 @@ public interface QValuesDAO {
                       @Bind("distanceToPig") double distanceToPig,
                       @Bind("trajectoryType") String trajectoryType);
 
-    @SqlQuery("SELECT stateId FROM q_values WHERE x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType")
+    @SqlQuery("SELECT stateId FROM q_values WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 AND trajectorytype=:trajectoryType")
     List<Integer> getStateIds(@Bind("x") int x,
                               @Bind("y") int y,
                               @Bind("targetObjectType") String targetObjectType,
@@ -132,9 +132,9 @@ public interface QValuesDAO {
                                 possibleAction.getTargetObject().objectsRightCount == resultSet.getInt("rightCount") &&
                                 possibleAction.getTargetObject().objectsLeftCount == resultSet.getInt("leftCount") &&
                                 possibleAction.getTargetObject().objectsBelowCount == resultSet.getInt("belowCount") &&
-                                possibleAction.getTargetObject().distanceToPigs == resultSet.getDouble("distanceToPig") &&
-                                ((possibleAction.getTargetObject().x + 9) / 10) * 10 == ((resultSet.getInt("x") + 9) / 10) * 10 &&
-                                ((possibleAction.getTargetObject().y + 9) / 10) * 10 == ((resultSet.getInt("y") + 9) / 10) * 10 &&
+                                Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 5 &&
+                                Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 5 &&
+                                Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 5 &&
                                 possibleAction.getTrajectoryType() == ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType"))
                         ) {
                     return possibleAction;

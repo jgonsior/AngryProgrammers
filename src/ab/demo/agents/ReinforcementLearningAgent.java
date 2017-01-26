@@ -35,6 +35,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
         ProblemState problemState = GameState.getProblemState();
         if (qValuesDAO.getActionCount(problemState.getId()) == 0) {
+            logger.info("No Actions found for StateID: " + problemState.getId() + " -> Insert Actions");
             for (Action action : problemState.getPossibleActions()) {
                 qValuesDAO.insertNewAction(
                         0,
@@ -55,21 +56,27 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
 
     @Override
     protected int getProblemStateId(ProblemState problemState) {
-        return new ArrayList<>(getPossibleProblemStateIds(problemState)).get(0);
+        int problemStateId = new ArrayList<>(getPossibleProblemStateIds(problemState)).get(0);
+        logger.info("Calculated Problemstate ID: " + problemStateId);
+        return problemStateId;
     }
 
     @Override
     protected int getNumberOfProblemStateIds(ProblemState problemState) {
-        return getPossibleProblemStateIds(problemState).size();
+        Set<Integer> posIds = getPossibleProblemStateIds(problemState);
+        logger.info("Possible ProblemstateIDs: " + posIds);
+        return posIds.size();
     }
 
     private Set<Integer> getPossibleProblemStateIds(ProblemState problemState) {
         // idea: look for every action in which states it occurs and then intersect all of them
         Set<Integer> possibleProblemstateIds = new HashSet<Integer>();
         boolean firstFoundProblemStateIdS = true;
+        int amountOfDifferentActions = 0;
         
         for (Action action : problemState.getPossibleActions()){
-            List<Integer> problemStateIds = qValuesDAO.getStateIds(action.getTargetObject().x,
+            List<Integer> problemStateIds = qValuesDAO.getStateIds(
+                action.getTargetObject().x,
                 action.getTargetObject().y,
                 action.getTargetObject().getType().toString(),
                 action.getTargetObject().objectsAboveCount,
@@ -83,7 +90,17 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 firstFoundProblemStateIdS = false;
             } else {
                 // perform intersection
-                possibleProblemstateIds.retainAll(problemStateIds);
+                // allow 1 wrong action
+                Set<Integer> _temp = new HashSet<Integer>(possibleProblemstateIds);
+                _temp.retainAll(problemStateIds);
+                if (_temp.size() == 0 && amountOfDifferentActions == 0){
+                    amountOfDifferentActions++;
+                } else if (possibleProblemstateIds.size() == 0){
+                    //if empty it wont fill up later so return here
+                    return possibleProblemstateIds;
+                } else {
+                    possibleProblemstateIds.retainAll(problemStateIds);
+                }
             }
         }
 

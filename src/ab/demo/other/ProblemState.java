@@ -32,38 +32,17 @@ public class ProblemState {
     private int id;
     private Rectangle slingshot;
     private ABObject birdOnSlingshot;
-    private List<ABObject> pigs  = new ArrayList<>();
-    private List<ABObject> birds = new ArrayList<>();
+    private List<ABObject> pigs;
+    private List<ABObject> birds;
 
     public ProblemState() {
         GameState.updateCurrentVision();
 
         findSlingshot();
-
-        /*while (birds.size() == 0){
-            try {
-                
-            } catch (NullPointerException e) {
-                logger.error("Unable to find birds in ProblemState");
-                e.printStackTrace();
-            }
-            ActionRobot.fullyZoomOut();
-            GameState.updateCurrentVision();
-        }*/
+        
         birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
-
         pigs = new ArrayList<>(GameState.getVision().findPigsRealShape());
         findBirdOnSlingshot();
-
-        /*while (pigs.size() == 0){
-            try {
-            } catch (NullPointerException e) {
-                logger.error("Unable to find pigs in ProblemState");
-                e.printStackTrace();
-            }
-            ActionRobot.fullyZoomOut();
-            GameState.updateCurrentVision();
-        }*/
 
         allObjects = new ArrayList<>();
         allObjects.addAll(GameState.getVision().findBirdsRealShape());
@@ -440,8 +419,8 @@ public class ProblemState {
         } else {
             pigDependentFactor = 10;
         }
-        double objectScore = (targetObject.objectsAboveCount - targetObject.objectsLeftCount + targetObject.objectsRightCount / 2 + targetObject.objectsBelowCount / 4);
-        double distanceMultiplier = (100 - targetObject.distanceToPigs) / pigDependentFactor;
+        double objectScore = (targetObject.objectsAboveCount - (1.5 * targetObject.objectsLeftCount) + targetObject.objectsRightCount / 2 + targetObject.objectsBelowCount / 4);
+        double distanceMultiplier = (1000/pigDependentFactor - targetObject.distanceToPigs);
 
         score = objectScore * distanceMultiplier + orientationOffset + typeOffset;
 
