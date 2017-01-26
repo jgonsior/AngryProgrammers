@@ -112,9 +112,6 @@ public class GameState {
         BufferedImage screenshot = ActionRobot.doScreenShot();
         setScreenshot(screenshot);
         vision = new Vision(screenshot);
-        if (problemState != null){
-            problemState.vision = vision;
-        }
     }
 
     public static void updateCurrentScreenshot() {

@@ -128,6 +128,7 @@ public abstract class StandaloneAgent implements Runnable {
         GameState.setCurrentLevel(currentLevel);
 
         int birdCounter = countBirds();
+        logger.info("Current Bird count: " + birdCounter);
         while (birdCounter > 0) {
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
@@ -142,22 +143,14 @@ public abstract class StandaloneAgent implements Runnable {
                     problemState.setId(getProblemStateId(problemState));
                 }
 
-
                 GameState.setProblemState(problemState);
                 this.insertPossibleActionsForProblemStateIntoDatabase();
-
 
                 previousProblemState = GameState.getProblemState();
 
                 // check if there are still pigs available
                 List<ABObject> pigs = GameState.getVision().findPigsMBR();
-
-                // DO we really need this ?
-                if (GameState.getMoveCounter() == 0) {
-                    // count initally all birds
-                    birdCounter = countBirds();
-                }
-                logger.info("Current Bird count: " + birdCounter);
+                
                 GameState.updateCurrentVision();
 
                 if (!pigs.isEmpty()) {
@@ -452,6 +445,7 @@ public abstract class StandaloneAgent implements Runnable {
             ActionRobot.skipPopUp();
 
             if (birdCounter != 0){
+                ActionRobot.fullyZoomOut();
                 return birdCounter;
             } else {
                 tryCounter++;

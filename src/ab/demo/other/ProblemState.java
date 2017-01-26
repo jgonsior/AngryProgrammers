@@ -30,28 +30,47 @@ public class ProblemState {
     private List<Action> possibleActions;
     private List<ABObject> allObjects;
     private int id;
-    public Vision vision;
     private Rectangle slingshot;
     private ABObject birdOnSlingshot;
-    private List<ABObject> pigs;
-    private List<ABObject> birds;
+    private List<ABObject> pigs  = new ArrayList<>();
+    private List<ABObject> birds = new ArrayList<>();
 
     public ProblemState() {
-        vision = GameState.getVision();
+        GameState.updateCurrentVision();
 
         findSlingshot();
 
-        birds = new ArrayList<>(vision.findBirdsRealShape());
+        /*while (birds.size() == 0){
+            try {
+                
+            } catch (NullPointerException e) {
+                logger.error("Unable to find birds in ProblemState");
+                e.printStackTrace();
+            }
+            ActionRobot.fullyZoomOut();
+            GameState.updateCurrentVision();
+        }*/
+        birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
+
+        pigs = new ArrayList<>(GameState.getVision().findPigsRealShape());
         findBirdOnSlingshot();
 
-        allObjects = new ArrayList<>();
-        pigs = new ArrayList<>(vision.findPigsRealShape());
+        /*while (pigs.size() == 0){
+            try {
+            } catch (NullPointerException e) {
+                logger.error("Unable to find pigs in ProblemState");
+                e.printStackTrace();
+            }
+            ActionRobot.fullyZoomOut();
+            GameState.updateCurrentVision();
+        }*/
 
-        allObjects.addAll(vision.findBirdsRealShape());
-        allObjects.addAll(vision.findBlocksRealShape());
-        allObjects.addAll(vision.findPigsRealShape());
-        allObjects.addAll(vision.findHills());
-        allObjects.addAll(vision.findTNTs());
+        allObjects = new ArrayList<>();
+        allObjects.addAll(GameState.getVision().findBirdsRealShape());
+        allObjects.addAll(GameState.getVision().findBlocksRealShape());
+        allObjects.addAll(GameState.getVision().findPigsRealShape());
+        allObjects.addAll(GameState.getVision().findHills());
+        allObjects.addAll(GameState.getVision().findTNTs());
 
         possibleActions = calculatePossibleActions();
 
@@ -79,14 +98,14 @@ public class ProblemState {
     }
 
     private void findSlingshot() {
-        slingshot = vision.findSlingshotMBR();
+        slingshot = GameState.getVision().findSlingshotMBR();
 
         // confirm the slingshot
         while (slingshot == null) {
             logger.warn("No slingshot detected. Please remove pop up or zoom out");
             ActionRobot.fullyZoomOut();
             GameState.updateCurrentVision();
-            slingshot = vision.findSlingshotMBR();
+            slingshot = GameState.getVision().findSlingshotMBR();
             ActionRobot.skipPopUp();
         }
     }
@@ -167,6 +186,7 @@ public class ProblemState {
 
         ArrayList<Point> possibleTargetPoints = new ArrayList<>(generatePointsAroundTargets(pigs, birdRadius));
 
+        logger.debug(pigs);
         Point bestShot = pigs.get(0).getCenter();
         ABObject.TrajectoryType bestTrajType = ABObject.TrajectoryType.LOW;
         int maxAmountOfPigsOnTraj = -1;
@@ -227,6 +247,9 @@ public class ProblemState {
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
                     leftMostObject = currentLeftMostObject;
+                    if (correctedPigs.size() > safeAmountOfPigsOnTraj){
+                        logger.debug(bestShot + " " + safeAmountOfPigsOnTraj);
+                    };
                 }
             }
         }
@@ -256,8 +279,8 @@ public class ProblemState {
     private double calculateDistanceToPig(ABObject object) {
         double pigX = 0, pigY = 0, distanceToPigs;
 
-        double pigCount = (double) vision.findPigsMBR().size();
-        for (ABObject pig : vision.findPigsMBR()) {
+        double pigCount = (double) GameState.getVision().findPigsMBR().size();
+        for (ABObject pig : GameState.getVision().findPigsMBR()) {
             pigX += pig.getCenterX();
             pigY += pig.getCenterY();
         }
@@ -272,9 +295,9 @@ public class ProblemState {
         ArrayList<Action> result = new ArrayList<>();
 
         //finds all objects in the scene beside slingshot, birds, pigs. and hills.
-        List<ABObject> blocksRealShapeSorted = vision.findBlocksRealShape();
+        List<ABObject> blocksRealShapeSorted = GameState.getVision().findBlocksRealShape();
 
-        blocksRealShapeSorted.addAll(vision.findTNTs());
+        blocksRealShapeSorted.addAll(GameState.getVision().findTNTs());
 
         //sorted descending after Y coordinates, so first object to iterate over is the highest one
         blocksRealShapeSorted.sort((o1, o2) -> o1.y - o2.y);
@@ -295,7 +318,7 @@ public class ProblemState {
 
             double minNeighborX, maxNeighborX, minNeighborY, maxNeighborY;
             boolean nearX, nearY;
-            for (ABObject neighbor : vision.findBlocksMBR()) {
+            for (ABObject neighbor : GameState.getVision().findBlocksMBR()) {
                 minNeighborX = neighbor.x;
                 maxNeighborX = neighbor.x + neighbor.width;
                 minNeighborY = neighbor.y;
@@ -437,7 +460,7 @@ public class ProblemState {
                 a -> a.getTargetObject().type == ABType.TNT
         ).collect(Collectors.toList()));
 
-        for (ABObject obj : vision.findBlocksRealShape()) {
+        for (ABObject obj : GameState.getVision().findBlocksRealShape()) {
             if (obj.shape == ABShape.Circle) {
                 // have to see if 9000 is too big
                 if (((Circle) obj).r > 9) {
