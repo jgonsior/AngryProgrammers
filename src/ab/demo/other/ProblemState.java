@@ -147,8 +147,8 @@ public class ProblemState {
         for (ABObject target : targets) {
             int targetRadius = (int) ((Circle) target).r;
             int fromTo = targetRadius + birdRadius - MIN_PIXEL_OVERLAP;
-            for (int xoff = -fromTo; xoff < fromTo; xoff += 2) {
-                for (int yoff = -fromTo; yoff < fromTo; yoff += 2) {
+            for (int xoff = -fromTo; xoff < fromTo; xoff += 3) {
+                for (int yoff = -fromTo; yoff < fromTo; yoff += 3) {
                     possibleTargetPoints.add(new Point((int) (target.getCenterX() + xoff), (int) (target.getCenterY() + yoff)));
                 }
             }
@@ -238,6 +238,7 @@ public class ProblemState {
         Set<ABObject> leftMostObjectSet = new HashSet<ABObject>();
         leftMostObjectSet.add(leftMostObject);
         pseudoObject.setObjectsLeftSet(leftMostObjectSet);
+        pseudoObject.setObjectsAround(safeAmountOfPigsOnTraj,maxAmountOfPigsOnTraj,0,0,0);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
         return new Action(pseudoObject, bestTrajType);
@@ -429,7 +430,7 @@ public class ProblemState {
 
     private List<Action> calculatePossibleActions() {
         List<Action> allPossibleActions = new ArrayList<>();
-        List<Action> possibleActions = new ArrayList<>();
+        Set<Action> possibleActions = new HashSet<>();
 
         //tnt and big round object is already included
         allPossibleActions.addAll(getScoredStructuralObjects());
@@ -466,7 +467,7 @@ public class ProblemState {
         
         possibleActions.add(calculateBestMultiplePigShot());
 
-        return possibleActions;
+        return new ArrayList<>(possibleActions);
     }
 
     /**

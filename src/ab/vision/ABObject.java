@@ -47,6 +47,8 @@ public class ABObject extends Rectangle {
         super(mbr);
         objectsAboveSet = new HashSet<>();
         objectsAboveSet.add(this);
+        objectsLeftSet = new HashSet<>();
+        objectsLeftSet.add(this);
         this.type = type;
         this.id = counter++;
     }
@@ -55,6 +57,8 @@ public class ABObject extends Rectangle {
         super(mbr);
         objectsAboveSet = new HashSet<>();
         objectsAboveSet.add(this);
+        objectsLeftSet = new HashSet<>();
+        objectsLeftSet.add(this);
         this.type = type;
         this.id = id;
     }
@@ -63,6 +67,8 @@ public class ABObject extends Rectangle {
         super(ab.getBounds());
         objectsAboveSet = new HashSet<>();
         objectsAboveSet.add(this);
+        objectsLeftSet = new HashSet<>();
+        objectsLeftSet.add(this);
         this.type = ab.type;
         this.id = ab.id;
     }
@@ -70,6 +76,8 @@ public class ABObject extends Rectangle {
     public ABObject() {
         objectsAboveSet = new HashSet<>();
         objectsAboveSet.add(this);
+        objectsLeftSet = new HashSet<>();
+        objectsLeftSet.add(this);
         this.id = counter++;
         this.type = ABType.Unknown;
     }
@@ -88,6 +96,7 @@ public class ABObject extends Rectangle {
 
     public Set<ABObject> getObjectsLeftSet() {
         return objectsLeftSet;
+        
     }
 
     public void setObjectsLeftSet(Set<ABObject> objectsLeftSet) {
@@ -113,7 +122,7 @@ public class ABObject extends Rectangle {
     }
 
     public String myToString() {
-        return String.format("%03d %03d %03d %03d %02f", objectsAboveCount, objectsLeftCount, objectsRightCount, objectsBelowCount, distanceToPigs) + " | " + this.toString();
+        return String.format("%03d %03d %03d %03d %02f %03d %03d", objectsAboveCount, objectsLeftCount, objectsRightCount, objectsBelowCount, distanceToPigs, safePigsOnTrajectory, possiblePigsOnTrajectory) + " | " + this.toString();
     }
 
     public ABType getType() {

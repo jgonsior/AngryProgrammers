@@ -14,6 +14,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.awt.*;
 
 /**
  * @author jgonsior
@@ -102,8 +103,8 @@ public interface QValuesDAO {
                       @Bind("distanceToPig") double distanceToPig,
                       @Bind("trajectoryType") String trajectoryType);
 
-    @SqlQuery("SELECT stateId FROM q_values WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 AND trajectorytype=:trajectoryType")
+    @SqlQuery("SELECT stateId FROM q_values WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 AND targetObjectType=:targetObjectType AND :aboveCount BETWEEN aboveCount-1 AND aboveCount+1" +
+            "AND :leftCount BETWEEN leftCount-1 AND leftCount+1 AND :rightCount BETWEEN rightCount-1 AND rightCount+1 AND :belowCount BETWEEN belowCount-1 AND belowCount+1 AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 AND trajectorytype=:trajectoryType")
     List<Integer> getStateIds(@Bind("x") int x,
                               @Bind("y") int y,
                               @Bind("targetObjectType") String targetObjectType,
@@ -128,10 +129,10 @@ public interface QValuesDAO {
             for (Action possibleAction : possibleActions) {
                 if (
                         possibleAction.getTargetObject().type == ABType.valueOf(resultSet.getString("targetObjectType")) &&
-                                possibleAction.getTargetObject().objectsAboveCount == resultSet.getInt("aboveCount") &&
-                                possibleAction.getTargetObject().objectsRightCount == resultSet.getInt("rightCount") &&
-                                possibleAction.getTargetObject().objectsLeftCount == resultSet.getInt("leftCount") &&
-                                possibleAction.getTargetObject().objectsBelowCount == resultSet.getInt("belowCount") &&
+                                Math.abs(possibleAction.getTargetObject().objectsAboveCount - resultSet.getInt("aboveCount")) < 2 &&
+                                Math.abs(possibleAction.getTargetObject().objectsRightCount - resultSet.getInt("rightCount")) < 2 &&
+                                Math.abs(possibleAction.getTargetObject().objectsLeftCount - resultSet.getInt("leftCount")) < 2 &&
+                                Math.abs(possibleAction.getTargetObject().objectsBelowCount - resultSet.getInt("belowCount")) < 2 &&
                                 Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 5 &&
                                 Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 5 &&
                                 Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 5 &&
@@ -140,8 +141,17 @@ public interface QValuesDAO {
                     return possibleAction;
                 }
             }
+            // we allow 1 wrong action so we should instantiate it here ourself
+            ABObject targetObject = new ABObject(
+                                        new Rectangle(new Point(resultSet.getInt("x"),resultSet.getInt("y"))), 
+                                        ABType.valueOf(resultSet.getString("targetObjectType"))
+                                        );
 
-            throw new InstantiationError("Couldn't find the requested target object in the actions for this problemstate");
+            targetObject.setObjectsAround(resultSet.getInt("aboveCount"),resultSet.getInt("leftCount"),resultSet.getInt("rightCount"),resultSet.getInt("belowCount"),resultSet.getDouble("distanceToPig"));
+            return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")));
+            
+            
+            //throw new InstantiationError("Couldn't find the requested target object in the actions for this problemstate");
         }
     }
 }

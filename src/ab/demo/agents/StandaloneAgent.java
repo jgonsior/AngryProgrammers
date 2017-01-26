@@ -86,7 +86,6 @@ public abstract class StandaloneAgent implements Runnable {
         //TODO: White Bird calculation
         currentBirdType = actionRobot.getBirdTypeOnSling();
         switch (currentBirdType) {
-
             case RedBird:
                 tappingInterval = 0;
                 break;
@@ -128,6 +127,7 @@ public abstract class StandaloneAgent implements Runnable {
         GameState.setCurrentLevel(currentLevel);
 
         int birdCounter = countBirds();
+        
         logger.info("Current Bird count: " + birdCounter);
         while (birdCounter > 0) {
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
@@ -167,7 +167,6 @@ public abstract class StandaloneAgent implements Runnable {
                     //and one bird less…
                     birdCounter--;
 
-
                     logger.info("done shooting");
 
                     waitUntilBlocksHaveBeenFallenDown(blocksAndPigsBeforeShot, releasePoint, nextAction.getTargetPoint());
@@ -206,6 +205,7 @@ public abstract class StandaloneAgent implements Runnable {
                     afterShotHook(previousProblemState);
 
                     GameState.incrementMoveCounter();
+                    logger.info("Ended current Turn in playLevel");
                 } else {
                     logger.error("No pig's found anymore!!!!!!!!!");
                 }
@@ -216,6 +216,8 @@ public abstract class StandaloneAgent implements Runnable {
             //if we've won or lost the game already we don't need to shoot any other birds anymore
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
                 birdCounter = 0;
+            } else {
+                birdCounter = countBirds();
             }
         }
     }
@@ -354,19 +356,13 @@ public abstract class StandaloneAgent implements Runnable {
 
     protected void checkIfDonePlayingAndWaitForWinningScreen(int birdCounter) {
         GameState.updateCurrentVision();
-
-        // check if there are some birds on the sling
-        /*
-        boolean birdsLeft = false;
-        for (ABObject bird : vision.findBirdsMBR()){
-            if (bird.getCenterX() < slingshot.x + 50 && bird.getCenterY() > slingshot.y - 30){
-                birdsLeft = true;
-        }*/
-
         GameState.setReward(-1.0);
         pigsLeft = GameState.getVision().findPigsMBR().size();
+
+        logger.info("Current Pig amount: " + String.valueOf(GameState.getVision().findPigsMBR().size()));
+        logger.info("Current Bird amount: " + birdCounter);
+
         if (birdCounter < 1 || pigsLeft == 0) {
-            logger.info("Pig amount: " + String.valueOf(GameState.getVision().findPigsMBR().size()));
             logger.info("no pigs or birds (on left side) left, now wait until GameState changes");
             int loopCounter = 0;
             // if we have no pigs left or birds, wait for winning screen
@@ -379,7 +375,6 @@ public abstract class StandaloneAgent implements Runnable {
                         logger.warn("Broke out of state-change-loop");
                         //possibly we did not reconize some birds due to bad programmed vision module
                         //so after waiting to long break out
-                        countBirds();
                         break;
                     }
                 } catch (InterruptedException e) {
@@ -427,30 +422,28 @@ public abstract class StandaloneAgent implements Runnable {
         logger.info("Total Score: " + totalScore);
     }
 
-
     protected int countBirds() {
-        int birdCounter = 0;
+        List<ABObject> birds = new ArrayList<>();
         int tryCounter = 0;
         ActionRobot.fullyZoomIn();
         GameState.updateCurrentVision();
         while (tryCounter < 5){
             try {
-                birdCounter = GameState.getVision().findBirdsRealShape().size();
-                logger.info("Birds: " + GameState.getVision().findBirdsRealShape());
+                birds = GameState.getVision().findBirdsRealShape();
+                logger.info("Birds: " + birds);
+
+                if (birds.size() > 0){
+                    ActionRobot.fullyZoomOut();
+                    return birds.size();
+                } else {
+                    tryCounter++;
+                }
             } catch (NullPointerException e) {
-                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter) + ") :" + e);
+                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter));
                 e.printStackTrace();
             }
 
             ActionRobot.skipPopUp();
-
-            if (birdCounter != 0){
-                ActionRobot.fullyZoomOut();
-                return birdCounter;
-            } else {
-                tryCounter++;
-            }
-
             GameState.updateCurrentVision();
             ActionRobot.fullyZoomIn();
         }
@@ -461,22 +454,25 @@ public abstract class StandaloneAgent implements Runnable {
         //failed on some lvls (e.g. 1), maybe zooms to pig/structure
         while (tryCounter < 5){
             GameState.updateCurrentVision();
-            birdCounter = GameState.getVision().findBirdsRealShape().size();
-            logger.info("Birds: " + GameState.getVision().findBirdsRealShape());
-
-            ActionRobot.skipPopUp();
-
-            if (birdCounter != 0){
-                return birdCounter;
-            } else {
-                tryCounter++;
+            try {
+                birds = GameState.getVision().findBirdsRealShape();
+                logger.info("Birds: " + birds);
+                if (birds.size() > 0){
+                    return birds.size();
+                } else {
+                    tryCounter++;
+                }
+            } catch (NullPointerException e) {
+                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter));
+                e.printStackTrace();
             }
 
+            ActionRobot.skipPopUp();
             GameState.updateCurrentVision();
             
         }
         
-        return birdCounter;
+        return 0;
 
     }
 
