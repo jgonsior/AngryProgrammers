@@ -79,6 +79,7 @@ public class ProblemState {
     }
 
     private void findSlingshot() {
+        vision = GameState.getVision();
         slingshot = vision.findSlingshotMBR();
 
         // confirm the slingshot
@@ -86,6 +87,7 @@ public class ProblemState {
             logger.warn("No slingshot detected. Please remove pop up or zoom out");
             ActionRobot.fullyZoomOut();
             GameState.updateCurrentVision();
+            vision = GameState.getVision();
             slingshot = vision.findSlingshotMBR();
             ActionRobot.skipPopUp();
         }
@@ -429,6 +431,7 @@ public class ProblemState {
     private List<Action> calculatePossibleActions() {
         List<Action> allPossibleActions = new ArrayList<>();
         List<Action> possibleActions = new ArrayList<>();
+        vision = GameState.getVision();
 
         //tnt and big round object is already included
         allPossibleActions.addAll(getScoredStructuralObjects());

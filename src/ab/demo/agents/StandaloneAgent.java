@@ -445,7 +445,7 @@ public abstract class StandaloneAgent implements Runnable {
                 birdCounter = GameState.getVision().findBirdsRealShape().size();
                 logger.info("Birds: " + GameState.getVision().findBirdsRealShape());
             } catch (NullPointerException e) {
-                logger.error("Unable to find birds, now check after Zooming out " + e);
+                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter) + ") :" + e);
                 e.printStackTrace();
             }
 
@@ -458,6 +458,7 @@ public abstract class StandaloneAgent implements Runnable {
             }
 
             GameState.updateCurrentVision();
+            ActionRobot.fullyZoomIn();
         }
         
 
