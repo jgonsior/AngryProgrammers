@@ -457,8 +457,12 @@ public class ProblemState {
         // pre select the five best possibleActions
         allPossibleActions.sort((o1, o2) -> Double.compare(o1.getScore(), o2.getScore()));
 
-        possibleActions.addAll(allPossibleActions.subList(allPossibleActions.size() - 5, allPossibleActions.size()));
-
+        if (allPossibleActions.size() < 5){
+            possibleActions.addAll(allPossibleActions);
+        } else {
+            possibleActions.addAll(allPossibleActions.subList(allPossibleActions.size() - 5, allPossibleActions.size()));
+        }
+        
         possibleActions.add(calculateBestMultiplePigShot());
 
         return possibleActions;
