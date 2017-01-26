@@ -10,7 +10,10 @@ import ab.demo.other.ProblemState;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 /**
  * @author: Julius Gonsior
  */
@@ -52,21 +55,21 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
 
     @Override
     protected int getProblemStateId(ProblemState problemState) {
-        return new ArrayList<>(getPossibleProblemStates(problemState)).get(0);
+        return new ArrayList<>(getPossibleProblemStateIds(problemState)).get(0);
     }
 
     @Override
     protected int getNumberOfProblemStateIds(ProblemState problemState) {
-        return getPossibleProblemStates(problemState).size();
+        return getPossibleProblemStateIds(problemState).size();
     }
 
-    private Set<Integer> getPossibleProblemStates(ProblemState problemState){
+    private Set<Integer> getPossibleProblemStateIds(ProblemState problemState) {
         // idea: look for every action in which states it occurs and then intersect all of them
-        Set<Integer> possibleStates = new HashSet<Integer>();
-        boolean first = true; 
+        Set<Integer> possibleProblemstateIds = new HashSet<Integer>();
+        boolean firstFoundProblemStateIdS = true;
         
         for (Action action : problemState.getPossibleActions()){
-            List<Integer> occurencesOfThisAction = qValuesDAO.getStateId(action.getTargetObject().x,
+            List<Integer> problemStateIds = qValuesDAO.getStateIds(action.getTargetObject().x,
                 action.getTargetObject().y,
                 action.getTargetObject().getType().toString(),
                 action.getTargetObject().objectsAboveCount,
@@ -75,16 +78,16 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 action.getTargetObject().objectsBelowCount,
                 action.getTargetObject().distanceToPigs,
                 action.getTrajectoryType().name());
-            if (first){
-                possibleStates.addAll(occurencesOfThisAction);
-                first = false;
+            if (firstFoundProblemStateIdS) {
+                possibleProblemstateIds.addAll(problemStateIds);
+                firstFoundProblemStateIdS = false;
             } else {
                 // perform intersection
-                possibleStates.retainAll(occurencesOfThisAction);
+                possibleProblemstateIds.retainAll(problemStateIds);
             }
         }
 
-        return possibleStates;
+        return possibleProblemstateIds;
     }
 
     /**
