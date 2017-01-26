@@ -167,7 +167,7 @@ public class ProblemState {
 
         ArrayList<Point> possibleTargetPoints = new ArrayList<>(generatePointsAroundTargets(pigs, birdRadius));
 
-        Point bestShot = pigs.get(0);
+        Point bestShot = pigs.get(0).getCenter();
         ABObject.TrajectoryType bestTrajType = ABObject.TrajectoryType.LOW;
         int maxAmountOfPigsOnTraj = -1;
         int safeAmountOfPigsOnTraj = -1;
