@@ -167,12 +167,11 @@ public class ProblemState {
 
         ArrayList<Point> possibleTargetPoints = new ArrayList<>(generatePointsAroundTargets(pigs, birdRadius));
 
-        Point bestShot = null;
-        ABObject.TrajectoryType bestTrajType = null;
+        Point bestShot = pigs.get(0);
+        ABObject.TrajectoryType bestTrajType = ABObject.TrajectoryType.LOW;
         int maxAmountOfPigsOnTraj = -1;
         int safeAmountOfPigsOnTraj = -1;
-        ABObject leftMostObject = null;
-        // TODO: maybe also use better slingshot finding function
+        ABObject leftMostObject = pigs.get(0);
 
         for (Point ptp : possibleTargetPoints) {
             //get predicted trajectory and check for every object if it gets hit
