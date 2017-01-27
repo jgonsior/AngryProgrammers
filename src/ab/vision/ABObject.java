@@ -42,6 +42,7 @@ public class ABObject extends Rectangle {
 
     private Set<ABObject> objectsAboveSet;
     private Set<ABObject> objectsLeftSet;
+    private Set<ABObject> objectsRightSet;
 
     public ABObject(Rectangle mbr, ABType type) {
         super(mbr);
@@ -49,6 +50,8 @@ public class ABObject extends Rectangle {
         objectsAboveSet.add(this);
         objectsLeftSet = new HashSet<>();
         objectsLeftSet.add(this);
+        objectsRightSet = new HashSet<>();
+        objectsRightSet.add(this);
         this.type = type;
         this.id = counter++;
     }
@@ -59,6 +62,8 @@ public class ABObject extends Rectangle {
         objectsAboveSet.add(this);
         objectsLeftSet = new HashSet<>();
         objectsLeftSet.add(this);
+        objectsRightSet = new HashSet<>();
+        objectsRightSet.add(this);
         this.type = type;
         this.id = id;
     }
@@ -69,6 +74,8 @@ public class ABObject extends Rectangle {
         objectsAboveSet.add(this);
         objectsLeftSet = new HashSet<>();
         objectsLeftSet.add(this);
+        objectsRightSet = new HashSet<>();
+        objectsRightSet.add(this);
         this.type = ab.type;
         this.id = ab.id;
     }
@@ -78,6 +85,8 @@ public class ABObject extends Rectangle {
         objectsAboveSet.add(this);
         objectsLeftSet = new HashSet<>();
         objectsLeftSet.add(this);
+        objectsRightSet = new HashSet<>();
+        objectsRightSet.add(this);
         this.id = counter++;
         this.type = ABType.Unknown;
     }
@@ -92,6 +101,14 @@ public class ABObject extends Rectangle {
 
     public void setObjectsAboveSet(Set<ABObject> objectsAboveSet) {
         this.objectsAboveSet = objectsAboveSet;
+    }
+
+    public Set<ABObject> getObjectsRightSet() {
+        return objectsRightSet;
+    }
+
+    public void setObjectsRightSet(Set<ABObject> objectsRightSet) {
+        this.objectsRightSet = objectsRightSet;
     }
 
     public Set<ABObject> getObjectsLeftSet() {

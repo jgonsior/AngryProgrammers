@@ -295,10 +295,10 @@ public class ProblemState {
         double minObjectX, maxObjectX, minObjectY, maxObjectY;
         int objectsLeftCount, objectsRightCount, objectsBelowCount;
         Set<ABObject> objectsAbove = new HashSet<>();
+        Set<ABObject> objectsRight = new HashSet<>();
 
         for (ABObject object : blocksRealShapeSorted) {
             objectsLeftCount = 0;
-            objectsRightCount = 0;
             objectsBelowCount = 0;
 
             minObjectX = object.x;
@@ -332,7 +332,7 @@ public class ProblemState {
                 } else if (nearY && maxNeighborX <= minObjectX && minObjectX - maxNeighborX < 20) {
                     objectsLeftCount++;
                 } else if (nearY && minNeighborX >= maxObjectX && minNeighborX - maxObjectX < 20) {
-                    objectsRightCount++;
+                    objectsRight.add(neighbor);
                 } else if (nearX && maxNeighborY > minObjectY) {
                     objectsBelowCount++;
                 }
@@ -340,6 +340,7 @@ public class ProblemState {
 
 
             object.setObjectsAboveSet(objectsAbove);
+            object.setObjectsRightSet(objectsRight);
 
             for (int i = 0; i < 2; i++) {
                 ABObject.TrajectoryType trajType;
@@ -360,11 +361,9 @@ public class ProblemState {
 
                 List<ABObject> objectsOnTrajectory = getObjectsOnTrajectoryUntilTargetPoint(trajectoryPoints, object);
 
-                //ScreenshotUtil.saveTrajectoryScreenshot(slingshot, releasePoint, object, objectsOnTrajectory);
-
                 objectsLeftCount = objectsOnTrajectory.size();
                 object.setObjectsLeftSet(new HashSet<>(objectsOnTrajectory));
-                object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRightCount, objectsBelowCount, calculateDistanceToPig(object));
+                object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRight.size(), objectsBelowCount, calculateDistanceToPig(object));
                 Action action = new Action(object, trajType);
                 action.setScore(calculateScore(object, action));
                 result.add(action);
@@ -442,8 +441,16 @@ public class ProblemState {
             }
         }
 
-        double objectScore = (targetObject.objectsAboveCount - (leftMaterialMultiplier * targetObject.objectsLeftCount) + targetObject.objectsRightCount / 2 + targetObject.objectsBelowCount / 4);
+        
+        Set<ABObject> possibleDominoObjects = new HashSet<>();
+        for (ABObject obj : targetObject.getObjectsRightSet()){
+            possibleDominoObjects.addAll(obj.getObjectsAboveSet());
+        }
+        double rightDominoScore = possibleDominoObjects.size()/2;
+        double reachabilityScore = (leftMaterialMultiplier * targetObject.objectsLeftCount);
+        double aboveBelowScore = (targetObject.objectsAboveCount + targetObject.objectsBelowCount / 4);
         double distanceMultiplier = (1000/pigDependentFactor - targetObject.distanceToPigs);
+        double objectScore = (aboveBelowScore + rightDominoScore - reachabilityScore);
 
         score = objectScore * distanceMultiplier + orientationOffset + typeOffset;
 
