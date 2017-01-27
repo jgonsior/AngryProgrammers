@@ -489,7 +489,7 @@ public class ProblemState {
         
         Action pigShot = calculateBestMultiplePigShot();
         if (pigShot.getTargetObject().safePigsOnTrajectory > 0){
-            possibleActions.add(calculateBestMultiplePigShot());
+            possibleActions.add(pigShot);
         }
 
         return new ArrayList<>(possibleActions);
