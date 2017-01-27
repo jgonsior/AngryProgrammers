@@ -430,7 +430,19 @@ public class ProblemState {
         } else {
             pigDependentFactor = 10;
         }
-        double objectScore = (targetObject.objectsAboveCount - (1.5 * targetObject.objectsLeftCount) + targetObject.objectsRightCount / 2 + targetObject.objectsBelowCount / 4);
+
+        double leftMaterialMultiplier = 1.5;
+        for (ABObject obj : targetObject.getObjectsLeftSet()){
+            if (obj.getType() == ABType.Stone){
+                leftMaterialMultiplier = 5;
+            } else if (obj.getType() == ABType.Wood && leftMaterialMultiplier < 5){
+                leftMaterialMultiplier = 2;
+            } else if (obj.getType() == ABType.Ground || obj.getType() == ABType.Hill){
+                leftMaterialMultiplier = 100;
+            }
+        }
+
+        double objectScore = (targetObject.objectsAboveCount - (leftMaterialMultiplier * targetObject.objectsLeftCount) + targetObject.objectsRightCount / 2 + targetObject.objectsBelowCount / 4);
         double distanceMultiplier = (1000/pigDependentFactor - targetObject.distanceToPigs);
 
         score = objectScore * distanceMultiplier + orientationOffset + typeOffset;
@@ -475,7 +487,10 @@ public class ProblemState {
             possibleActions.addAll(allPossibleActions.subList(allPossibleActions.size() - 5, allPossibleActions.size()));
         }
         
-        possibleActions.add(calculateBestMultiplePigShot());
+        Action pigShot = calculateBestMultiplePigShot();
+        if (pigShot.getTargetObject().safePigsOnTrajectory > 0){
+            possibleActions.add(calculateBestMultiplePigShot());
+        }
 
         return new ArrayList<>(possibleActions);
     }

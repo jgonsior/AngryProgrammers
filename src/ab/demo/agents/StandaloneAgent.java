@@ -37,6 +37,7 @@ public abstract class StandaloneAgent implements Runnable {
     protected Map<Integer, Integer> scores = new LinkedHashMap<Integer, Integer>();
     protected int fixedLevel = -1;
     protected int currentLevel;
+    protected int birdsShot = 0;
     protected GamesDAO gamesDAO;
     protected MovesDAO movesDAO;
     protected int pigsLeft;
@@ -84,7 +85,8 @@ public abstract class StandaloneAgent implements Runnable {
         }
 
         //TODO: White Bird calculation
-        currentBirdType = actionRobot.getBirdTypeOnSling();
+        // currentBirdType is set in countBirds
+        //currentBirdType = actionRobot.getBirdTypeOnSling();
         switch (currentBirdType) {
             case RedBird:
                 tappingInterval = 0;
@@ -178,7 +180,7 @@ public abstract class StandaloneAgent implements Runnable {
                     movesDAO.save(
                             GameState.getGameId(),
                             pigsLeft,
-                            birdCounter,
+                            birdsShot,
                             currentBirdType.toString(),
                             previousProblemState.getId(),
                             nextAction.getTargetObject().x,
@@ -298,6 +300,8 @@ public abstract class StandaloneAgent implements Runnable {
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
+            } else if (GameState.getGameStateEnum() != GameStateExtractor.GameStateEnum.PLAYING){
+                birdsShot = 0;
             }
         }
     }
@@ -422,6 +426,18 @@ public abstract class StandaloneAgent implements Runnable {
         logger.info("Total Score: " + totalScore);
     }
 
+    protected void setCurrentBirdType(List<ABObject> birds){
+        Collections.sort(birds, new Comparator<Rectangle>() {
+
+            @Override
+            public int compare(Rectangle o1, Rectangle o2) {
+
+                return ((Integer) (o1.y)).compareTo((Integer) (o2.y));
+            }
+        });
+        currentBirdType = birds.get(0).getType();
+    }
+
     protected int countBirds() {
         List<ABObject> birds = new ArrayList<>();
         int tryCounter = 0;
@@ -434,6 +450,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                 if (birds.size() > 0){
                     ActionRobot.fullyZoomOut();
+                    setCurrentBirdType(birds);
                     return birds.size();
                 } else {
                     tryCounter++;
@@ -458,6 +475,7 @@ public abstract class StandaloneAgent implements Runnable {
                 birds = GameState.getVision().findBirdsRealShape();
                 logger.info("Birds: " + birds);
                 if (birds.size() > 0){
+                    setCurrentBirdType(birds);
                     return birds.size();
                 } else {
                     tryCounter++;
@@ -517,6 +535,7 @@ public abstract class StandaloneAgent implements Runnable {
             if (scaleDifference < 25) {
                 if (shot.getDx() < 0) {
                     actionRobot.cshoot(shot);
+                    birdsShot++;
                 }
             } else {
                 logger.warn("Scale is changed, can not execute the shot, will re-segement the image");
