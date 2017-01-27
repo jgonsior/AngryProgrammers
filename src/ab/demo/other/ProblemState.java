@@ -36,24 +36,35 @@ public class ProblemState {
     private List<ABObject> birds;
 
     public ProblemState() {
-        GameState.updateCurrentVision();
+        int tryCounter = 0;
+        while(true){
+            try{
+                if (tryCounter > 5){
+                    break;
+                }
+                tryCounter++;
+                GameState.updateCurrentVision();
 
-        findSlingshot();
-        
-        birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
-        pigs = new ArrayList<>(GameState.getVision().findPigsRealShape());
-        findBirdOnSlingshot();
+                findSlingshot();
+                
+                birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
+                pigs = new ArrayList<>(GameState.getVision().findPigsRealShape());
+                findBirdOnSlingshot();
 
-        allObjects = new ArrayList<>();
-        allObjects.addAll(GameState.getVision().findBirdsRealShape());
-        allObjects.addAll(GameState.getVision().findBlocksRealShape());
-        allObjects.addAll(GameState.getVision().findPigsRealShape());
-        allObjects.addAll(GameState.getVision().findHills());
-        allObjects.addAll(GameState.getVision().findTNTs());
+                allObjects = new ArrayList<>();
+                allObjects.addAll(GameState.getVision().findBirdsRealShape());
+                allObjects.addAll(GameState.getVision().findBlocksRealShape());
+                allObjects.addAll(GameState.getVision().findPigsRealShape());
+                allObjects.addAll(GameState.getVision().findHills());
+                allObjects.addAll(GameState.getVision().findTNTs());
 
-        possibleActions = calculatePossibleActions();
+                possibleActions = calculatePossibleActions();
+                break;
 
-
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public Rectangle getSlingshot() {
@@ -238,7 +249,6 @@ public class ProblemState {
         Set<ABObject> leftMostObjectSet = new HashSet<ABObject>();
         leftMostObjectSet.add(leftMostObject);
         pseudoObject.setObjectsLeftSet(leftMostObjectSet);
-        pseudoObject.setObjectsAround(safeAmountOfPigsOnTraj,maxAmountOfPigsOnTraj,0,0,0);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
         return new Action(pseudoObject, bestTrajType);
