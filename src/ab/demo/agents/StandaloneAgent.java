@@ -9,9 +9,8 @@ import ab.utils.ABUtil;
 import ab.utils.ScreenshotUtil;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
-import ab.vision.GameStateExtractor;
-import ab.vision.Vision;
 import ab.vision.ABType;
+import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -129,7 +128,7 @@ public abstract class StandaloneAgent implements Runnable {
         GameState.setCurrentLevel(currentLevel);
 
         int birdCounter = countBirds();
-        
+
         logger.info("Current Bird count: " + birdCounter);
         while (birdCounter > 0) {
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
@@ -152,7 +151,7 @@ public abstract class StandaloneAgent implements Runnable {
 
                 // check if there are still pigs available
                 List<ABObject> pigs = GameState.getVision().findPigsMBR();
-                
+
                 GameState.updateCurrentVision();
 
                 if (!pigs.isEmpty()) {
@@ -231,6 +230,7 @@ public abstract class StandaloneAgent implements Runnable {
     protected int getNumberOfProblemStateIds(ProblemState problemState) {
         return 0;
     }
+
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
         //doing nothing here
     }
@@ -300,7 +300,7 @@ public abstract class StandaloneAgent implements Runnable {
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
-            } else if (GameState.getGameStateEnum() != GameStateExtractor.GameStateEnum.PLAYING){
+            } else if (GameState.getGameStateEnum() != GameStateExtractor.GameStateEnum.PLAYING) {
                 birdsShot = 0;
             }
         }
@@ -426,7 +426,7 @@ public abstract class StandaloneAgent implements Runnable {
         logger.info("Total Score: " + totalScore);
     }
 
-    protected void setCurrentBirdType(List<ABObject> birds){
+    protected void setCurrentBirdType(List<ABObject> birds) {
         Collections.sort(birds, new Comparator<Rectangle>() {
 
             @Override
@@ -439,57 +439,53 @@ public abstract class StandaloneAgent implements Runnable {
     }
 
     protected int countBirds() {
-        List<ABObject> birds = new ArrayList<>();
+        List<ABObject> birds;
         int tryCounter = 0;
         ActionRobot.fullyZoomIn();
         GameState.updateCurrentVision();
-        while (tryCounter < 5){
+        while (tryCounter < 5) {
             try {
                 birds = GameState.getVision().findBirdsRealShape();
                 logger.info("Birds: " + birds);
 
-                if (birds.size() > 0){
+                if (birds.size() > 0) {
                     ActionRobot.fullyZoomOut();
                     setCurrentBirdType(birds);
                     return birds.size();
-                } else {
-                    tryCounter++;
                 }
             } catch (NullPointerException e) {
-                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter));
-                e.printStackTrace();
+                logger.error("Unable to find birds try: + " + tryCounter);
             }
 
             ActionRobot.skipPopUp();
             GameState.updateCurrentVision();
             ActionRobot.fullyZoomIn();
+            tryCounter++;
         }
-        
+
 
         ActionRobot.fullyZoomOut();
         tryCounter = 0;
         //failed on some lvls (e.g. 1), maybe zooms to pig/structure
-        while (tryCounter < 5){
+        while (tryCounter < 5) {
             GameState.updateCurrentVision();
             try {
                 birds = GameState.getVision().findBirdsRealShape();
                 logger.info("Birds: " + birds);
-                if (birds.size() > 0){
+                if (birds.size() > 0) {
                     setCurrentBirdType(birds);
                     return birds.size();
-                } else {
-                    tryCounter++;
                 }
             } catch (NullPointerException e) {
-                logger.error("Unable to find birds (try: + " + Integer.valueOf(tryCounter));
-                e.printStackTrace();
+                logger.error("Unable to find birds try: + " + tryCounter);
             }
 
             ActionRobot.skipPopUp();
             GameState.updateCurrentVision();
-            
+            tryCounter++;
+
         }
-        
+
         return 0;
 
     }

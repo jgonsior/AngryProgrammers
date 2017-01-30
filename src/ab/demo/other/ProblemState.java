@@ -4,7 +4,6 @@ import ab.planner.TrajectoryPlanner;
 import ab.vision.ABObject;
 import ab.vision.ABShape;
 import ab.vision.ABType;
-import ab.vision.Vision;
 import ab.vision.real.shape.Circle;
 import ab.vision.real.shape.Poly;
 import org.apache.log4j.Logger;
@@ -34,19 +33,18 @@ public class ProblemState {
     private ABObject birdOnSlingshot;
     private List<ABObject> pigs;
     private List<ABObject> birds;
-
     public ProblemState() {
         int tryCounter = 0;
-        while(true){
-            try{
-                if (tryCounter > 5){
+        while (true) {
+            try {
+                if (tryCounter > 5) {
                     break;
                 }
                 tryCounter++;
                 GameState.updateCurrentVision();
 
                 findSlingshot();
-                
+
                 birds = new ArrayList<>(GameState.getVision().findBirdsRealShape());
                 pigs = new ArrayList<>(GameState.getVision().findPigsRealShape());
                 findBirdOnSlingshot();
@@ -65,6 +63,10 @@ public class ProblemState {
                 e.printStackTrace();
             }
         }
+    }
+
+    public List<ABObject> getAllObjects() {
+        return allObjects;
     }
 
     public Rectangle getSlingshot() {
@@ -237,9 +239,10 @@ public class ProblemState {
                     bestTrajType = currentTrajectoryType;
                     bestShot = ptp;
                     leftMostObject = currentLeftMostObject;
-                    if (correctedPigs.size() > safeAmountOfPigsOnTraj){
+                    if (correctedPigs.size() > safeAmountOfPigsOnTraj) {
                         logger.debug(bestShot + " " + safeAmountOfPigsOnTraj);
-                    };
+                    }
+                    ;
                 }
             }
         }
@@ -431,25 +434,25 @@ public class ProblemState {
         }
 
         double leftMaterialMultiplier = 1.5;
-        for (ABObject obj : targetObject.getObjectsLeftSet()){
-            if (obj.getType() == ABType.Stone){
+        for (ABObject obj : targetObject.getObjectsLeftSet()) {
+            if (obj.getType() == ABType.Stone) {
                 leftMaterialMultiplier = 5;
-            } else if (obj.getType() == ABType.Wood && leftMaterialMultiplier < 5){
+            } else if (obj.getType() == ABType.Wood && leftMaterialMultiplier < 5) {
                 leftMaterialMultiplier = 2;
-            } else if (obj.getType() == ABType.Ground || obj.getType() == ABType.Hill){
+            } else if (obj.getType() == ABType.Ground || obj.getType() == ABType.Hill) {
                 leftMaterialMultiplier = 100;
             }
         }
 
-        
+
         Set<ABObject> possibleDominoObjects = new HashSet<>();
-        for (ABObject obj : targetObject.getObjectsRightSet()){
+        for (ABObject obj : targetObject.getObjectsRightSet()) {
             possibleDominoObjects.addAll(obj.getObjectsAboveSet());
         }
-        double rightDominoScore = possibleDominoObjects.size()/2;
+        double rightDominoScore = possibleDominoObjects.size() / 2;
         double reachabilityScore = (leftMaterialMultiplier * targetObject.objectsLeftCount);
         double aboveBelowScore = (targetObject.objectsAboveCount + targetObject.objectsBelowCount / 4);
-        double distanceMultiplier = (1000/pigDependentFactor - targetObject.distanceToPigs);
+        double distanceMultiplier = (1000 / pigDependentFactor - targetObject.distanceToPigs);
         double objectScore = (aboveBelowScore + rightDominoScore - reachabilityScore);
 
         score = objectScore * distanceMultiplier + orientationOffset + typeOffset;
@@ -488,14 +491,14 @@ public class ProblemState {
         // pre select the five best possibleActions
         allPossibleActions.sort((o1, o2) -> Double.compare(o1.getScore(), o2.getScore()));
 
-        if (allPossibleActions.size() < 5){
+        if (allPossibleActions.size() < 5) {
             possibleActions.addAll(allPossibleActions);
         } else {
             possibleActions.addAll(allPossibleActions.subList(allPossibleActions.size() - 5, allPossibleActions.size()));
         }
-        
+
         Action pigShot = calculateBestMultiplePigShot();
-        if (pigShot.getTargetObject().safePigsOnTrajectory > 0){
+        if (pigShot.getTargetObject().safePigsOnTrajectory > 0) {
             possibleActions.add(pigShot);
         }
 

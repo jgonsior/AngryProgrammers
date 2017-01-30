@@ -11,10 +11,10 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.awt.*;
 
 /**
  * @author jgonsior
@@ -103,8 +103,15 @@ public interface QValuesDAO {
                       @Bind("distanceToPig") double distanceToPig,
                       @Bind("trajectoryType") String trajectoryType);
 
-    @SqlQuery("SELECT stateId FROM q_values WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 AND targetObjectType=:targetObjectType AND :aboveCount BETWEEN aboveCount-1 AND aboveCount+1" +
-            "AND :leftCount BETWEEN leftCount-1 AND leftCount+1 AND :rightCount BETWEEN rightCount-1 AND rightCount+1 AND :belowCount BETWEEN belowCount-1 AND belowCount+1 AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 AND trajectorytype=:trajectoryType")
+    @SqlQuery("SELECT stateId FROM q_values " +
+            "WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 " +
+            "AND targetObjectType=:targetObjectType " +
+            "AND :aboveCount BETWEEN aboveCount-1 AND aboveCount+1" +
+            "AND :leftCount BETWEEN leftCount-1 AND leftCount+1 " +
+            "AND :rightCount BETWEEN rightCount-1 AND rightCount+1 " +
+            "AND :belowCount BETWEEN belowCount-1 AND belowCount+1 " +
+            "AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 " +
+            "AND trajectorytype=:trajectoryType")
     List<Integer> getStateIds(@Bind("x") int x,
                               @Bind("y") int y,
                               @Bind("targetObjectType") String targetObjectType,
@@ -143,14 +150,14 @@ public interface QValuesDAO {
             }
             // we allow 1 wrong action so we should instantiate it here ourself
             ABObject targetObject = new ABObject(
-                                        new Rectangle(new Point(resultSet.getInt("x"),resultSet.getInt("y"))), 
-                                        ABType.valueOf(resultSet.getString("targetObjectType"))
-                                        );
+                    new Rectangle(new Point(resultSet.getInt("x"), resultSet.getInt("y"))),
+                    ABType.valueOf(resultSet.getString("targetObjectType"))
+            );
 
-            targetObject.setObjectsAround(resultSet.getInt("aboveCount"),resultSet.getInt("leftCount"),resultSet.getInt("rightCount"),resultSet.getInt("belowCount"),resultSet.getDouble("distanceToPig"));
+            targetObject.setObjectsAround(resultSet.getInt("aboveCount"), resultSet.getInt("leftCount"), resultSet.getInt("rightCount"), resultSet.getInt("belowCount"), resultSet.getDouble("distanceToPig"));
             return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")));
-            
-            
+
+
             //throw new InstantiationError("Couldn't find the requested target object in the actions for this problemstate");
         }
     }

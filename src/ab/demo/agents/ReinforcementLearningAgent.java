@@ -7,6 +7,7 @@ import ab.demo.DAO.QValuesDAO;
 import ab.demo.other.Action;
 import ab.demo.other.GameState;
 import ab.demo.other.ProblemState;
+import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import org.apache.log4j.Logger;
 
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 /**
  * @author: Julius Gonsior
  */
@@ -29,7 +31,6 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
     /**
      * checks if highest q_value is 0.0 which means that we have never been in this state,
      * so we need to initialize all possible actions to 0.0
-     *
      */
     @Override
     protected void insertPossibleActionsForProblemStateIntoDatabase() {
@@ -50,6 +51,12 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                         action.getTargetObject().distanceToPigs,
                         action.getTrajectoryType().name(),
                         action.getTargetObject().myToString());
+            }
+
+            logger.info("Save object set of problemstate for easier recognition later on");
+
+            for (ABObject abObject : problemState.getAllObjects()) {
+                problemStatesDAO.insertObject(problemState.getId(), abObject.type.toString());
             }
         }
     }
@@ -73,18 +80,18 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
         Set<Integer> possibleProblemstateIds = new HashSet<Integer>();
         boolean firstFoundProblemStateIdS = true;
         int amountOfDifferentActions = 0;
-        
-        for (Action action : problemState.getPossibleActions()){
+
+        for (Action action : problemState.getPossibleActions()) {
             List<Integer> problemStateIds = qValuesDAO.getStateIds(
-                action.getTargetObject().x,
-                action.getTargetObject().y,
-                action.getTargetObject().getType().toString(),
-                action.getTargetObject().objectsAboveCount,
-                action.getTargetObject().objectsLeftCount,
-                action.getTargetObject().objectsRightCount,
-                action.getTargetObject().objectsBelowCount,
-                action.getTargetObject().distanceToPigs,
-                action.getTrajectoryType().name());
+                    action.getTargetObject().x,
+                    action.getTargetObject().y,
+                    action.getTargetObject().getType().toString(),
+                    action.getTargetObject().objectsAboveCount,
+                    action.getTargetObject().objectsLeftCount,
+                    action.getTargetObject().objectsRightCount,
+                    action.getTargetObject().objectsBelowCount,
+                    action.getTargetObject().distanceToPigs,
+                    action.getTrajectoryType().name());
             if (firstFoundProblemStateIdS) {
                 possibleProblemstateIds.addAll(problemStateIds);
                 firstFoundProblemStateIdS = false;
@@ -93,9 +100,9 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 // allow 1 wrong action
                 Set<Integer> _temp = new HashSet<Integer>(possibleProblemstateIds);
                 _temp.retainAll(problemStateIds);
-                if (_temp.size() == 0 && amountOfDifferentActions == 0){
+                if (_temp.size() == 0 && amountOfDifferentActions == 0) {
                     amountOfDifferentActions++;
-                } else if (possibleProblemstateIds.size() == 0){
+                } else if (possibleProblemstateIds.size() == 0) {
                     //if empty it wont fill up later so return here
                     return possibleProblemstateIds;
                 } else {
@@ -103,6 +110,21 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 }
             }
         }
+
+        possibleProblemstateIds.removeIf(possibleProblemStateId -> {
+            List<String> objects = problemStatesDAO.getObjects(possibleProblemStateId);
+
+            int originalObjectsSize = objects.size();
+
+            for (ABObject abObject : problemState.getAllObjects()) {
+                objects.removeIf(object -> object.equals(abObject.type));
+            }
+
+            logger.info("objects left: " + objects);
+
+            //if more than 90% aren't equal remove it
+            return objects.size() / originalObjectsSize > 0.1;
+        });
 
         return possibleProblemstateIds;
     }
@@ -113,7 +135,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
      * @param from
      * @param to
      * @param reward
-     * @param end        true if the current level was finished (could be either won or lost)
+     * @param end    true if the current level was finished (could be either won or lost)
      */
     private void updateQValue(ProblemState from, ProblemState to, Action action, double reward, boolean end) {
         double oldValue = qValuesDAO.getQValue(from.getId(),

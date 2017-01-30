@@ -113,7 +113,7 @@ public class ABObject extends Rectangle {
 
     public Set<ABObject> getObjectsLeftSet() {
         return objectsLeftSet;
-        
+
     }
 
     public void setObjectsLeftSet(Set<ABObject> objectsLeftSet) {
