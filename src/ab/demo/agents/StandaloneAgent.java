@@ -41,6 +41,7 @@ public abstract class StandaloneAgent implements Runnable {
     protected MovesDAO movesDAO;
     protected int pigsLeft;
     protected ABType currentBirdType;
+    protected ProblemState previousProblemState;
 
     protected ProblemStatesDAO problemStatesDAO;
 
@@ -119,8 +120,22 @@ public abstract class StandaloneAgent implements Runnable {
         frame.setVisible(true);
     }
 
+    protected void updateProblemState(){
+        //check if the problemState exists already
+        logger.info("Update Current Problemstate");
+        ProblemState problemState = new ProblemState();
+
+        if (getNumberOfProblemStateIds(problemState) == 0) {
+            problemState.setId(problemStatesDAO.insertId());
+        } else {
+            problemState.setId(getProblemStateId(problemState));
+        }
+
+        GameState.setProblemState(problemState);
+        this.insertPossibleActionsForProblemStateIntoDatabase();
+    }
+
     protected void playLevel() {
-        ProblemState previousProblemState;
 
         GameState.initNewGameState(currentLevel, gamesDAO, explorationRate, learningRate, discountFactor);
         GameState.setGameStateEnum(actionRobot.getState());
@@ -130,24 +145,17 @@ public abstract class StandaloneAgent implements Runnable {
         int birdCounter = countBirds();
 
         logger.info("Current Bird count: " + birdCounter);
+        GameState.setGameStateEnum(actionRobot.getState());
         while (birdCounter > 0) {
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
                 GameState.updateCurrentVision();
 
-                //check if the problemState exists already
-                ProblemState problemState = new ProblemState();
-
-                if (getNumberOfProblemStateIds(problemState) == 0) {
-                    problemState.setId(problemStatesDAO.insertId());
-                } else {
-                    problemState.setId(getProblemStateId(problemState));
+                //if first move, update Problemstate here, later we update the ProblemState after shot
+                if (birdsShot == 0){
+                   this.updateProblemState(); 
                 }
-
-                GameState.setProblemState(problemState);
-                this.insertPossibleActionsForProblemStateIntoDatabase();
-
-                previousProblemState = GameState.getProblemState();
+                
 
                 // check if there are still pigs available
                 List<ABObject> pigs = GameState.getVision().findPigsMBR();
@@ -157,13 +165,24 @@ public abstract class StandaloneAgent implements Runnable {
                 if (!pigs.isEmpty()) {
                     GameState.updateCurrentVision();
 
-                    // get next action
-                    nextAction = this.getNextAction();
-                    GameState.setNextAction(nextAction);
+                    //in lvl 18 somehow gets NullPointer in calcTappingtime, so catch this here
+                    Set<Object> blocksAndPigsBeforeShot = null;
+                    Point releasePoint = null;
+                    while(true){
+                        try{
+                            // get next action
+                            nextAction = this.getNextAction();
+                            GameState.setNextAction(nextAction);
 
-                    Set<Object> blocksAndPigsBeforeShot = GameState.getVision().getBlocksAndPigs(true);
+                            blocksAndPigsBeforeShot = GameState.getVision().getBlocksAndPigs(true);
 
-                    Point releasePoint = shootOneBird(nextAction);
+                            releasePoint = shootOneBird(nextAction);
+                            break;
+                        } catch (NullPointerException e) {
+                            logger.error("While shooting bird: " + e);
+                        }
+                    } 
+                    
 
                     //and one bird less…
                     birdCounter--;
@@ -175,6 +194,20 @@ public abstract class StandaloneAgent implements Runnable {
                     logger.info("done waiting for blocks to fall down");
 
                     checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
+
+                    previousProblemState = GameState.getProblemState();
+
+                    //save the information about the current zooming for the next shot
+                    List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
+                    GameState.getTrajectoryPlanner().adjustTrajectory(trajectoryPoints, GameState.getProblemState().getSlingshot(), releasePoint);
+
+                    //update currentGameStateEnum
+                    GameState.setGameStateEnum(actionRobot.getState());
+
+                    if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING){
+                        this.updateProblemState();
+                    }
+                    afterShotHook(previousProblemState);
 
                     movesDAO.save(
                             GameState.getGameId(),
@@ -195,15 +228,6 @@ public abstract class StandaloneAgent implements Runnable {
                             GameState.getReward(),
                             nextAction.isRand()
                     );
-
-                    //save the information about the current zooming for the next shot
-                    List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
-                    GameState.getTrajectoryPlanner().adjustTrajectory(trajectoryPoints, GameState.getProblemState().getSlingshot(), releasePoint);
-
-                    //update currentGameStateEnum
-                    GameState.setGameStateEnum(actionRobot.getState());
-
-                    afterShotHook(previousProblemState);
 
                     GameState.incrementMoveCounter();
                     logger.info("Ended current Turn in playLevel");
@@ -255,6 +279,11 @@ public abstract class StandaloneAgent implements Runnable {
             logger.info("Next iteration of the all mighty while loop");
 
             this.playLevel();
+            GameState.setGameStateEnum(actionRobot.getState());
+
+            if (GameState.getGameStateEnum() != GameStateExtractor.GameStateEnum.PLAYING) {
+                birdsShot = 0;
+            }
 
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON) {
                 logger.info("Wait for 3000 after won screen");
@@ -300,9 +329,8 @@ public abstract class StandaloneAgent implements Runnable {
                         + currentLevel);
                 ActionRobot.GoFromMainMenuToLevelSelection();
                 actionRobot.loadLevel(currentLevel);
-            } else if (GameState.getGameStateEnum() != GameStateExtractor.GameStateEnum.PLAYING) {
-                birdsShot = 0;
-            }
+            } 
+            
         }
     }
 

@@ -397,7 +397,7 @@ public class ProblemState {
 
         //todo: maybe rethink this values
         int orientationOffset = 0;
-        int typeOffset = 0;
+        double typeMultiplier = 1;
         if (targetObject.shape == ABShape.Rect && targetObject.width != targetObject.height) {
             // get orientation if its not quadratic
             if (targetObject.angle > 45 && targetObject.angle < 135) {
@@ -420,11 +420,11 @@ public class ProblemState {
         }
 
         if (targetObject.getType() == ABType.Stone && birdOnSlingshot.getType() == ABType.BlackBird) {
-            typeOffset = 5;
+            typeMultiplier = 2;
         } else if (targetObject.getType() == ABType.Wood && birdOnSlingshot.getType() == ABType.YellowBird) {
-            typeOffset = 3;
+            typeMultiplier = 1.2;
         } else if (targetObject.getType() == ABType.Ice && birdOnSlingshot.getType() == ABType.BlueBird) {
-            typeOffset = 3;
+            typeMultiplier = 1.2;
         }
         double pigDependentFactor;
         if (pigs.size() > 1) {
@@ -455,7 +455,7 @@ public class ProblemState {
         double distanceMultiplier = (1000 / pigDependentFactor - targetObject.distanceToPigs);
         double objectScore = (aboveBelowScore + rightDominoScore - reachabilityScore);
 
-        score = objectScore * distanceMultiplier + orientationOffset + typeOffset;
+        score = objectScore * distanceMultiplier * typeMultiplier + orientationOffset;
 
         return score;
     }
@@ -472,17 +472,6 @@ public class ProblemState {
                 a -> a.getTargetObject().type == ABType.TNT
         ).collect(Collectors.toList()));
 
-        for (ABObject obj : GameState.getVision().findBlocksRealShape()) {
-            if (obj.shape == ABShape.Circle) {
-                // have to see if 9000 is too big
-                if (((Circle) obj).r > 9) {
-                    logger.debug("found big round object with radius " + ((Circle) obj).r);
-                    logger.debug(obj);
-                }
-            }
-        }
-
-
         //extract round objects
         possibleActions.addAll(allPossibleActions.stream().filter(
                 a -> a.getTargetObject().shape == ABShape.Circle && ((Circle) a.getTargetObject()).r > 9
@@ -490,6 +479,8 @@ public class ProblemState {
 
         // pre select the five best possibleActions
         allPossibleActions.sort((o1, o2) -> Double.compare(o1.getScore(), o2.getScore()));
+        allPossibleActions.removeIf(action -> (action.getScore() < 55.0));
+
 
         if (allPossibleActions.size() < 5) {
             possibleActions.addAll(allPossibleActions);
@@ -501,7 +492,7 @@ public class ProblemState {
         if (pigShot.getTargetObject().safePigsOnTrajectory > 0) {
             possibleActions.add(pigShot);
         }
-
+        logger.info("Possible Actions: "+ possibleActions);
         return new ArrayList<>(possibleActions);
     }
 
@@ -550,8 +541,8 @@ public class ProblemState {
                 releasePoint = estimateLaunchPoints.get(0);
             }
         } else if (estimateLaunchPoints.isEmpty()) {
-            logger.info("No release point found for the target");
-            logger.info("Try a shot with 45 degree");
+            logger.error("No release point found for the target");
+            return null;
         }
         return releasePoint;
     }

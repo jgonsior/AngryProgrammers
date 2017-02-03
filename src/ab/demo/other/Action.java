@@ -27,6 +27,10 @@ public class Action {
         return score;
     }
 
+    public String toString(){
+        return name;
+    }
+
     public void setScore(double score) {
         this.score = score;
         setName(String.format("%.2f", score) + " " + getName());

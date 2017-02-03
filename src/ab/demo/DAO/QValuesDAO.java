@@ -104,12 +104,12 @@ public interface QValuesDAO {
                       @Bind("trajectoryType") String trajectoryType);
 
     @SqlQuery("SELECT stateId FROM q_values " +
-            "WHERE :x BETWEEN x-3 AND x+3 AND :y BETWEEN y-5 AND y+5 " +
+            "WHERE :x BETWEEN x-5 AND x+5 AND :y BETWEEN y-5 AND y+5 " +
             "AND targetObjectType=:targetObjectType " +
-            "AND :aboveCount BETWEEN aboveCount-1 AND aboveCount+1" +
-            "AND :leftCount BETWEEN leftCount-1 AND leftCount+1 " +
-            "AND :rightCount BETWEEN rightCount-1 AND rightCount+1 " +
-            "AND :belowCount BETWEEN belowCount-1 AND belowCount+1 " +
+            "AND :aboveCount BETWEEN aboveCount-2 AND aboveCount+2" +
+            "AND :leftCount BETWEEN leftCount-2 AND leftCount+2 " +
+            "AND :rightCount BETWEEN rightCount-2 AND rightCount+2 " +
+            "AND :belowCount BETWEEN belowCount-2 AND belowCount+2 " +
             "AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 " +
             "AND trajectorytype=:trajectoryType")
     List<Integer> getStateIds(@Bind("x") int x,
@@ -136,13 +136,13 @@ public interface QValuesDAO {
             for (Action possibleAction : possibleActions) {
                 if (
                         possibleAction.getTargetObject().type == ABType.valueOf(resultSet.getString("targetObjectType")) &&
-                                Math.abs(possibleAction.getTargetObject().objectsAboveCount - resultSet.getInt("aboveCount")) < 2 &&
-                                Math.abs(possibleAction.getTargetObject().objectsRightCount - resultSet.getInt("rightCount")) < 2 &&
-                                Math.abs(possibleAction.getTargetObject().objectsLeftCount - resultSet.getInt("leftCount")) < 2 &&
-                                Math.abs(possibleAction.getTargetObject().objectsBelowCount - resultSet.getInt("belowCount")) < 2 &&
-                                Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 5 &&
-                                Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 5 &&
-                                Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 5 &&
+                                Math.abs(possibleAction.getTargetObject().objectsAboveCount - resultSet.getInt("aboveCount")) < 3 &&
+                                Math.abs(possibleAction.getTargetObject().objectsRightCount - resultSet.getInt("rightCount")) < 3 &&
+                                Math.abs(possibleAction.getTargetObject().objectsLeftCount - resultSet.getInt("leftCount")) < 3 &&
+                                Math.abs(possibleAction.getTargetObject().objectsBelowCount - resultSet.getInt("belowCount")) < 3 &&
+                                Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 6 &&
+                                Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 6 &&
+                                Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 6 &&
                                 possibleAction.getTrajectoryType() == ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType"))
                         ) {
                     return possibleAction;

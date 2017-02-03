@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * @author: Julius Gonsior
@@ -53,7 +55,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                         action.getTargetObject().myToString());
             }
 
-            logger.info("Save object set of problemstate for easier recognition later on");
+            //logger.info("Save object set of problemstate for easier recognition later on");
 
             for (ABObject abObject : problemState.getAllObjects()) {
                 problemStatesDAO.insertObject(problemState.getId(), abObject.type.toString());
@@ -63,23 +65,35 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
 
     @Override
     protected int getProblemStateId(ProblemState problemState) {
-        int problemStateId = new ArrayList<>(getPossibleProblemStateIds(problemState)).get(0);
+        Map<Integer, Integer> idDict = getPossibleProblemStateIds(problemState);
+        int highestAmount = 0;
+        int problemStateId = -1;
+        for (Integer id : idDict.keySet()){
+            int amount = idDict.get(id);
+            if (id == -1){
+                //give other values a chance vs -1
+                amount -= 2;
+            }
+            if (amount > highestAmount){
+                highestAmount = amount;
+                problemStateId = id;
+            }
+        }
         logger.info("Calculated Problemstate ID: " + problemStateId);
         return problemStateId;
     }
 
     @Override
     protected int getNumberOfProblemStateIds(ProblemState problemState) {
-        Set<Integer> posIds = getPossibleProblemStateIds(problemState);
-        logger.info("Possible ProblemstateIDs: " + posIds);
-        return posIds.size();
+        // -1 represents nothing found, if this is the most often one return 0;
+        if (getProblemStateId(problemState) == -1){
+            return 0;
+        }
+        return 1;
     }
 
-    private Set<Integer> getPossibleProblemStateIds(ProblemState problemState) {
-        // idea: look for every action in which states it occurs and then intersect all of them
-        Set<Integer> possibleProblemstateIds = new HashSet<Integer>();
-        boolean firstFoundProblemStateIdS = true;
-        int amountOfDifferentActions = 0;
+    private Map<Integer, Integer> getPossibleProblemStateIds(ProblemState problemState) {
+        Map<Integer, Integer> idDict = new HashMap<Integer, Integer>();
 
         for (Action action : problemState.getPossibleActions()) {
             List<Integer> problemStateIds = qValuesDAO.getStateIds(
@@ -92,41 +106,28 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                     action.getTargetObject().objectsBelowCount,
                     action.getTargetObject().distanceToPigs,
                     action.getTrajectoryType().name());
-            if (firstFoundProblemStateIdS) {
-                possibleProblemstateIds.addAll(problemStateIds);
-                firstFoundProblemStateIdS = false;
-            } else {
-                // perform intersection
-                // allow 1 wrong action
-                Set<Integer> _temp = new HashSet<Integer>(possibleProblemstateIds);
-                _temp.retainAll(problemStateIds);
-                if (_temp.size() == 0 && amountOfDifferentActions == 0) {
-                    amountOfDifferentActions++;
-                } else if (possibleProblemstateIds.size() == 0) {
-                    //if empty it wont fill up later so return here
-                    return possibleProblemstateIds;
+            logger.info("Action in: " + problemStateIds);
+
+            for (Integer id : problemStateIds){
+                if (idDict.containsKey(id)){
+                    idDict.put(id, idDict.get(id)+1);
                 } else {
-                    possibleProblemstateIds.retainAll(problemStateIds);
+                    idDict.put(id, 1);
+                } 
+            }
+            if (problemStateIds.size() == 0){
+                // special ID for not found
+                Integer id = -1;
+                if (idDict.containsKey(id)){
+                    idDict.put(id, idDict.get(id)+1);
+                } else {
+                    idDict.put(id, 1);
                 }
             }
+             
         }
 
-        possibleProblemstateIds.removeIf(possibleProblemStateId -> {
-            List<String> objects = problemStatesDAO.getObjects(possibleProblemStateId);
-
-            int originalObjectsSize = objects.size();
-
-            for (ABObject abObject : problemState.getAllObjects()) {
-                objects.removeIf(object -> object.equals(abObject.type));
-            }
-
-            logger.info("objects left: " + objects);
-
-            //if more than 90% aren't equal remove it
-            return objects.size() / originalObjectsSize > 0.1;
-        });
-
-        return possibleProblemstateIds;
+        return idDict;
     }
 
     /**
