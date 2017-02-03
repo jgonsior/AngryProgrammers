@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  *
  * @author jgonsior
  */
-public class ProblemState {
+public class ProblemState implements Cloneable{
 
     private static final Logger logger = Logger.getLogger(ProblemState.class);
 
@@ -33,6 +33,8 @@ public class ProblemState {
     private ABObject birdOnSlingshot;
     private List<ABObject> pigs;
     private List<ABObject> birds;
+
+
     public ProblemState() {
         int tryCounter = 0;
         while (true) {
@@ -63,6 +65,10 @@ public class ProblemState {
                 e.printStackTrace();
             }
         }
+    }
+
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 
     public List<ABObject> getAllObjects() {
@@ -254,7 +260,7 @@ public class ProblemState {
         pseudoObject.setObjectsLeftSet(leftMostObjectSet);
         System.out.println("Best shot: " + bestShot + " - " + bestTrajType + " will kill approx: " + safeAmountOfPigsOnTraj + " to " + maxAmountOfPigsOnTraj);
 
-        return new Action(pseudoObject, bestTrajType);
+        return new Action(pseudoObject, bestTrajType, pigs.size());
     }
 
 
@@ -367,7 +373,7 @@ public class ProblemState {
                 objectsLeftCount = objectsOnTrajectory.size();
                 object.setObjectsLeftSet(new HashSet<>(objectsOnTrajectory));
                 object.setObjectsAround(object.getObjectsAboveSet().size(), objectsLeftCount, objectsRight.size(), objectsBelowCount, calculateDistanceToPig(object));
-                Action action = new Action(object, trajType);
+                Action action = new Action(object, trajType, pigs.size());
                 action.setScore(calculateScore(object, action));
                 result.add(action);
             }
@@ -398,6 +404,8 @@ public class ProblemState {
         //todo: maybe rethink this values
         int orientationOffset = 0;
         double typeMultiplier = 1;
+        double pigDependentFactor = 10;
+
         if (targetObject.shape == ABShape.Rect && targetObject.width != targetObject.height) {
             // get orientation if its not quadratic
             if (targetObject.angle > 45 && targetObject.angle < 135) {
@@ -426,7 +434,8 @@ public class ProblemState {
         } else if (targetObject.getType() == ABType.Ice && birdOnSlingshot.getType() == ABType.BlueBird) {
             typeMultiplier = 1.2;
         }
-        double pigDependentFactor;
+
+        
         if (pigs.size() > 1) {
             pigDependentFactor = 30;
         } else {

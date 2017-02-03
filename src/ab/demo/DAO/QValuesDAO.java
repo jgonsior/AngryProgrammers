@@ -23,13 +23,13 @@ import java.util.List;
 public interface QValuesDAO {
 
     @SqlUpdate("CREATE TABLE IF NOT EXISTS q_values " +
-            "(q_value DOUBLE PRECISION, stateId INT, x INT, y INT, targetObjectType VARCHAR(22), aboveCount INT, leftCount INT, rightCount INT, belowCount INT, distanceToPig DOUBLE PRECISION, trajectoryType VARCHAR(4), targetObject VARCHAR(150)," +
-            " PRIMARY KEY(stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType))")
+            "(q_value DOUBLE PRECISION, stateId INT, x INT, y INT, targetObjectType VARCHAR(22), aboveCount INT, leftCount INT, rightCount INT, belowCount INT, distanceToPig DOUBLE PRECISION, trajectoryType VARCHAR(4), targetObject VARCHAR(150), pigsLeft INT," +
+            " PRIMARY KEY(stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, pigsLeft))")
     void createTable();
 
     @SqlUpdate("UPDATE q_values SET q_value=:q_value " +
             "WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType AND pigsLeft=:pigsLeft;")
     void updateQValue(
             @Bind("q_value") double qValue,
             @Bind("stateId") int stateId,
@@ -41,13 +41,14 @@ public interface QValuesDAO {
             @Bind("rightCount") int rightCount,
             @Bind("belowCount") int belowCount,
             @Bind("distanceToPig") double distanceToPig,
-            @Bind("trajectoryType") String trajectoryType
+            @Bind("trajectoryType") String trajectoryType,
+            @Bind("pigsLeft") int pigsLeft
     );
 
     @SqlUpdate("INSERT INTO q_values(" +
-            "q_value, stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject" +
+            "q_value, stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject, pigsLeft" +
             ") VALUES (" +
-            ":q_value, :stateId, :x, :y, :targetObjectType, :aboveCount, :leftCount, :rightCount, :belowCount, :distanceToPig, :trajectoryType, :targetObject" +
+            ":q_value, :stateId, :x, :y, :targetObjectType, :aboveCount, :leftCount, :rightCount, :belowCount, :distanceToPig, :trajectoryType, :targetObject, :pigsLeft" +
             ")")
     void insertNewAction(
             @Bind("q_value") double qValue,
@@ -61,11 +62,12 @@ public interface QValuesDAO {
             @Bind("belowCount") int belowCount,
             @Bind("distanceToPig") double distanceToPig,
             @Bind("trajectoryType") String trajectoryType,
-            @Bind("targetObject") String targetObject
+            @Bind("targetObject") String targetObject,
+            @Bind("pigsLeft") int pigsLeft
     );
 
     @SqlQuery("SELECT q_value FROM q_values WHERE stateId=:stateId AND x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType;")
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType AND pigsLeft=:pigsLeft;")
     double getQValue(
             @Bind("stateId") int stateId,
             @Bind("x") int x,
@@ -76,23 +78,24 @@ public interface QValuesDAO {
             @Bind("rightCount") int rightCount,
             @Bind("belowCount") int belowCount,
             @Bind("distanceToPig") double distanceToPig,
-            @Bind("trajectoryType") String trajectoryType
+            @Bind("trajectoryType") String trajectoryType,
+            @Bind("pigsLeft") int pigsLeft
     );
 
     @SqlQuery("SELECT MAX(q_value) FROM q_values WHERE stateId=:stateId;")
     double getHighestQValue(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY q_value DESC LIMIT 1;")
+    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig, trajectoryType, targetObject, pigsLeft FROM q_values WHERE stateId=:stateId ORDER BY q_value DESC LIMIT 1;")
     Action getBestAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType, targetObject FROM q_values WHERE stateId=:stateId ORDER BY RANDOM() LIMIT 1;")
+    @SqlQuery("SELECT stateId, x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType, targetObject, pigsLeft FROM q_values WHERE stateId=:stateId ORDER BY RANDOM() LIMIT 1;")
     Action getRandomAction(@Bind("stateId") int stateId);
 
-    @SqlQuery("SELECT COUNT(*) FROM q_values WHERE stateId=:stateId GROUP BY x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType;")
+    @SqlQuery("SELECT COUNT(*) FROM q_values WHERE stateId=:stateId GROUP BY x, y, targetObjectType, aboveCount, leftCount, rightCount, belowCount, distanceToPig,  trajectoryType, pigsLeft;")
     int getActionCount(@Bind("stateId") int stateId);
 
     @SqlQuery("SELECT count(stateId) FROM q_values WHERE x=:x AND y=:y AND targetObjectType=:targetObjectType AND aboveCount=:aboveCount " +
-            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType")
+            "AND leftCount=:leftCount AND rightCount=:rightCount AND belowCount=:belowCount AND distanceToPig=:distanceToPig AND trajectorytype=:trajectoryType AND pigsLeft=:pigsLeft")
     int countStateIds(@Bind("x") int x,
                       @Bind("y") int y,
                       @Bind("targetObjectType") String targetObjectType,
@@ -111,7 +114,8 @@ public interface QValuesDAO {
             "AND :rightCount BETWEEN rightCount-2 AND rightCount+2 " +
             "AND :belowCount BETWEEN belowCount-2 AND belowCount+2 " +
             "AND :distanceToPig BETWEEN distanceToPig-3 AND distanceToPig+3 " +
-            "AND trajectorytype=:trajectoryType")
+            "AND trajectorytype=:trajectoryType "+
+            "AND pigsLeft =:pigsLeft")
     List<Integer> getStateIds(@Bind("x") int x,
                               @Bind("y") int y,
                               @Bind("targetObjectType") String targetObjectType,
@@ -120,7 +124,8 @@ public interface QValuesDAO {
                               @Bind("rightCount") int rightCount,
                               @Bind("belowCount") int belowCount,
                               @Bind("distanceToPig") double distanceToPig,
-                              @Bind("trajectoryType") String trajectoryType);
+                              @Bind("trajectoryType") String trajectoryType,
+                              @Bind("pigsLeft") int pigsLeft);
 
     /**
      * closes the connection
@@ -136,14 +141,15 @@ public interface QValuesDAO {
             for (Action possibleAction : possibleActions) {
                 if (
                         possibleAction.getTargetObject().type == ABType.valueOf(resultSet.getString("targetObjectType")) &&
-                                Math.abs(possibleAction.getTargetObject().objectsAboveCount - resultSet.getInt("aboveCount")) < 3 &&
-                                Math.abs(possibleAction.getTargetObject().objectsRightCount - resultSet.getInt("rightCount")) < 3 &&
-                                Math.abs(possibleAction.getTargetObject().objectsLeftCount - resultSet.getInt("leftCount")) < 3 &&
-                                Math.abs(possibleAction.getTargetObject().objectsBelowCount - resultSet.getInt("belowCount")) < 3 &&
-                                Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 6 &&
-                                Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 6 &&
-                                Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 6 &&
-                                possibleAction.getTrajectoryType() == ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType"))
+                            Math.abs(possibleAction.getTargetObject().objectsAboveCount - resultSet.getInt("aboveCount")) < 3 &&
+                            Math.abs(possibleAction.getTargetObject().objectsRightCount - resultSet.getInt("rightCount")) < 3 &&
+                            Math.abs(possibleAction.getTargetObject().objectsLeftCount - resultSet.getInt("leftCount")) < 3 &&
+                            Math.abs(possibleAction.getTargetObject().objectsBelowCount - resultSet.getInt("belowCount")) < 3 &&
+                            Math.abs(possibleAction.getTargetObject().distanceToPigs - resultSet.getDouble("distanceToPig")) < 6 &&
+                            Math.abs(possibleAction.getTargetObject().x - resultSet.getInt("x")) < 6 &&
+                            Math.abs(possibleAction.getTargetObject().y - resultSet.getInt("y")) < 6 &&
+                            possibleAction.pigsLeft == resultSet.getInt("pigsLeft") &&
+                            possibleAction.getTrajectoryType() == ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType"))
                         ) {
                     return possibleAction;
                 }
@@ -155,7 +161,7 @@ public interface QValuesDAO {
             );
 
             targetObject.setObjectsAround(resultSet.getInt("aboveCount"), resultSet.getInt("leftCount"), resultSet.getInt("rightCount"), resultSet.getInt("belowCount"), resultSet.getDouble("distanceToPig"));
-            return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")));
+            return new Action(targetObject, ABObject.TrajectoryType.valueOf(resultSet.getString("trajectoryType")), resultSet.getInt("pigsLeft"));
 
 
             //throw new InstantiationError("Couldn't find the requested target object in the actions for this problemstate");

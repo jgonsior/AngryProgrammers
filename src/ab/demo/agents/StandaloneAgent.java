@@ -195,7 +195,11 @@ public abstract class StandaloneAgent implements Runnable {
 
                     checkIfDonePlayingAndWaitForWinningScreen(birdCounter);
 
-                    previousProblemState = GameState.getProblemState();
+                    try {
+                        previousProblemState = (ProblemState) GameState.getProblemState().clone();
+                    } catch (CloneNotSupportedException e) {
+                        logger.error(e);
+                    }
 
                     //save the information about the current zooming for the next shot
                     List<Point> trajectoryPoints = GameState.getVision().findTrajPoints();
@@ -204,10 +208,16 @@ public abstract class StandaloneAgent implements Runnable {
                     //update currentGameStateEnum
                     GameState.setGameStateEnum(actionRobot.getState());
 
+                    
+                    afterShotHook(previousProblemState);
+
                     if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING){
                         this.updateProblemState();
+                    } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST){
+                        GameState.getProblemState().setId(-1);
+                    } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON){
+                        GameState.getProblemState().setId(-11);
                     }
-                    afterShotHook(previousProblemState);
 
                     movesDAO.save(
                             GameState.getGameId(),

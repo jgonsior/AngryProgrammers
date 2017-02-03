@@ -52,7 +52,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                         action.getTargetObject().objectsBelowCount,
                         action.getTargetObject().distanceToPigs,
                         action.getTrajectoryType().name(),
-                        action.getTargetObject().myToString());
+                        action.getTargetObject().myToString(),
+                        action.pigsLeft);
             }
 
             //logger.info("Save object set of problemstate for easier recognition later on");
@@ -72,7 +73,7 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
             int amount = idDict.get(id);
             if (id == -1){
                 //give other values a chance vs -1
-                amount -= 2;
+                amount -= 1;
             }
             if (amount > highestAmount){
                 highestAmount = amount;
@@ -105,7 +106,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                     action.getTargetObject().objectsRightCount,
                     action.getTargetObject().objectsBelowCount,
                     action.getTargetObject().distanceToPigs,
-                    action.getTrajectoryType().name());
+                    action.getTrajectoryType().name(),
+                    action.pigsLeft);
             logger.info("Action in: " + problemStateIds);
 
             for (Integer id : problemStateIds){
@@ -148,7 +150,8 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 action.getTargetObject().objectsRightCount,
                 action.getTargetObject().objectsBelowCount,
                 action.getTargetObject().distanceToPigs,
-                action.getTrajectoryType().name());
+                action.getTrajectoryType().name(),
+                action.pigsLeft);
         double newValue;
 
         if (end) {
@@ -167,18 +170,19 @@ public class ReinforcementLearningAgent extends StandaloneAgent {
                 action.getTargetObject().objectsRightCount,
                 action.getTargetObject().objectsBelowCount,
                 action.getTargetObject().distanceToPigs,
-                action.getTrajectoryType().name());
+                action.getTrajectoryType().name(),
+                action.pigsLeft);
 
     }
 
     public void afterShotHook(ProblemState previousProblemState) {
-        if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
-            updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
-                    GameState.getReward(), false);
-        } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
+        if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON || GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST) {
             updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
                     GameState.getReward(), true);
-        }
+        } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
+            updateQValue(previousProblemState, GameState.getProblemState(), GameState.getNextAction(),
+                    GameState.getReward(), false);
+        } 
     }
 
     /**

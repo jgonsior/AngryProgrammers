@@ -14,13 +14,15 @@ public class Action {
     private ABObject targetObject;
     private Point targetPoint;
     private double score = 0;
+    public int pigsLeft = -1;
 
-    public Action(ABObject targetObject, ABObject.TrajectoryType trajectoryType) {
+    public Action(ABObject targetObject, ABObject.TrajectoryType trajectoryType, int pigsLeft) {
         //this.id = actionId;
         this.targetObject = targetObject;
         this.targetPoint = targetObject.getCenter();
         this.trajectoryType = trajectoryType;
-        setName(targetObject.myToString() + " " + trajectoryType.name());
+        this.pigsLeft = pigsLeft;
+        setName(targetObject.myToString() + " " + trajectoryType.name() + " " + pigsLeft);
     }
 
     public double getScore() {
