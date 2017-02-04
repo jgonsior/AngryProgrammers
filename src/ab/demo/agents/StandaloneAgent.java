@@ -318,6 +318,10 @@ public abstract class StandaloneAgent implements Runnable {
                 if (fixedLevel == -1) {
                     currentLevel++;
                 }
+                //restart from beginning
+                if (currentLevel > 21){
+                    currentLevel = 1;
+                }
                 actionRobot.loadLevel(currentLevel); //actually currentLevel is now the next level because we have just won the current one
                 // make a new trajectory planner whenever a new level is entered because of reasons
                 GameState.refreshTrajectoryPlanner();
