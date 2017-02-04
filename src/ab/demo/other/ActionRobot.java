@@ -177,6 +177,7 @@ public class ActionRobot {
 
     public static void skipPopUp() {
         proxy.send(new ProxyClickMessage(255, 350));
+        proxy.send(new ProxyClickMessage(180, 130));
     }
 
     public void restartLevel() {
