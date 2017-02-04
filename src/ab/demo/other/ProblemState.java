@@ -482,13 +482,13 @@ public class ProblemState implements Cloneable{
         ).collect(Collectors.toList()));
 
         // get most right pig to see if round object still left of it
-        int mostRightX = 0;
+        int _mostRightX = 0;
         for (ABObject pig : pigs){
-            if (pig.x > mostRightX){
-                mostRightX = pig.x;
+            if (pig.x > _mostRightX){
+                _mostRightX = pig.x;
             }
         }
-
+        final int mostRightX = _mostRightX;
         //extract round objects
         possibleActions.addAll(allPossibleActions.stream().filter(
                 a -> a.getTargetObject().shape == ABShape.Circle && ((Circle) a.getTargetObject()).r > 9 && a.getTargetObject().x < mostRightX
