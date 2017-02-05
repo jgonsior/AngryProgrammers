@@ -454,7 +454,7 @@ public class ProblemState implements Cloneable{
             }
         }
 
-        if (action.getTrajectoryType() == ABObject.TrajectoryType.LOW && birdOnSlingshot.getType() == ABType.YellowBird){
+        if (action.getTrajectoryType() == ABObject.TrajectoryType.HIGH && birdOnSlingshot.getType() == ABType.YellowBird){
             accuracy = 0.7;
         }
 
