@@ -405,6 +405,7 @@ public class ProblemState implements Cloneable{
         int orientationOffset = 0;
         double typeMultiplier = 1;
         double pigDependentFactor = 10;
+        double accuracy = 1;
 
         if (targetObject.shape == ABShape.Rect && targetObject.width != targetObject.height) {
             // get orientation if its not quadratic
@@ -453,6 +454,10 @@ public class ProblemState implements Cloneable{
             }
         }
 
+        if (action.getTrajectoryType() == ABObject.TrajectoryType.LOW && birdOnSlingshot.getType() == ABType.YellowBird){
+            accuracy = 0.7;
+        }
+
 
         Set<ABObject> possibleDominoObjects = new HashSet<>();
         for (ABObject obj : targetObject.getObjectsRightSet()) {
@@ -464,7 +469,7 @@ public class ProblemState implements Cloneable{
         double distanceMultiplier = (1000 / pigDependentFactor - targetObject.distanceToPigs);
         double objectScore = (aboveBelowScore + rightDominoScore - reachabilityScore);
 
-        score = objectScore * distanceMultiplier * typeMultiplier + orientationOffset;
+        score = objectScore * distanceMultiplier * typeMultiplier  * accuracy + orientationOffset;
 
         return score;
     }
