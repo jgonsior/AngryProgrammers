@@ -145,8 +145,8 @@ public abstract class StandaloneAgent implements Runnable {
         int birdCounter = countBirds();
 
         logger.info("Current Bird count: " + birdCounter);
-        GameState.setGameStateEnum(actionRobot.getState());
         while (birdCounter > 0) {
+            GameState.setGameStateEnum(actionRobot.getState());
             if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING) {
 
                 GameState.updateCurrentVision();
@@ -208,9 +208,6 @@ public abstract class StandaloneAgent implements Runnable {
                     //update currentGameStateEnum
                     GameState.setGameStateEnum(actionRobot.getState());
 
-                    
-                    afterShotHook(previousProblemState);
-
                     if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.PLAYING){
                         this.updateProblemState();
                     } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.LOST){
@@ -218,6 +215,8 @@ public abstract class StandaloneAgent implements Runnable {
                     } else if (GameState.getGameStateEnum() == GameStateExtractor.GameStateEnum.WON){
                         GameState.getProblemState().setId(-11);
                     }
+
+                    afterShotHook(previousProblemState);
 
                     movesDAO.save(
                             GameState.getGameId(),
