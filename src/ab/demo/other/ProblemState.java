@@ -455,7 +455,7 @@ public class ProblemState implements Cloneable{
         }
 
         if (action.getTrajectoryType() == ABObject.TrajectoryType.HIGH && birdOnSlingshot.getType() == ABType.YellowBird){
-            accuracy = 0.7;
+            accuracy = 0.5;
         }
 
 
@@ -501,7 +501,7 @@ public class ProblemState implements Cloneable{
 
         // pre select the five best possibleActions
         allPossibleActions.sort((o1, o2) -> Double.compare(o1.getScore(), o2.getScore()));
-        allPossibleActions.removeIf(action -> (action.getScore() < 55.0));
+        allPossibleActions.removeIf(action -> (action.getScore() < 30.0));
 
 
         if (allPossibleActions.size() < 5) {
